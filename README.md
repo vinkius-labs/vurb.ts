@@ -33,7 +33,8 @@ cd my-server && fusion dev
 
 ## The MVA Pattern
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/f7593210-de49-46e4-a4b2-d00bd5907795" />
+<img width="994" height="224" alt="image" src="https://github.com/user-attachments/assets/c40e25d8-d748-4306-9f22-2c96465304cb" />
+
 
 MCP Fusion separates three concerns that raw MCP servers mix into a single handler:
 
