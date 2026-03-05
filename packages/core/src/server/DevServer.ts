@@ -209,9 +209,15 @@ export function createDevServer(config: DevServerConfig): DevServer {
         invalidateModule(changedFile);
 
         // Re-run the user's setup callback
-        // The user is responsible for creating a fresh registry or clearing it
+        // Provide a duck-typed registry that satisfies the interface.
+        // The user's setup may use this or close over their own registry.
+        const builders: unknown[] = [];
+        const reloadRegistry: ToolRegistryLike = {
+            register(builder: unknown) { builders.push(builder); },
+            getBuilders() { return builders; },
+        };
         try {
-            await setup({} as ToolRegistryLike);
+            await setup(reloadRegistry);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             // eslint-disable-next-line no-console

@@ -1,9 +1,5 @@
 # MVA Architecture
 
-::: info Prerequisites
-Install MCP Fusion before following this guide: `npm install @vinkius-core/mcp-fusion @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx fusion create`](/quickstart-lightspeed).
-:::
-
 Every software architecture in history assumes a human at the end of the pipeline. MVC renders HTML for browsers. MVVM binds state to visual components. REST exposes resources for mobile apps. All of them rely on a consumer that can **interpret ambiguity**, **navigate inconsistency**, and **apply domain knowledge** that the interface never provided.
 
 AI agents can do none of this. When an agent receives `{ "amount_cents": 45000 }`, it does not *know* it's cents. It does not *know* to divide by 100. It does not *know* that the next action is `billing.pay`. It guesses — and when it guesses wrong, it hallucinates.
@@ -46,39 +42,45 @@ When all five are present, the agent perceives the domain consistently. Hallucin
 ## Quick Reference: MVA in Code
 
 ```typescript
-import { initFusion, createPresenter, t, suggest, ui } from '@vinkius-core/mcp-fusion';
+import { createPresenter, ui, defineTool } from '@vinkius-core/mcp-fusion';
+import { z } from 'zod';
 
-const f = initFusion<AppContext>();
+// ── MODEL: Security boundary via Zod schema ──
+const invoiceSchema = z.object({
+    id: z.string(),
+    amount_cents: z.number(),
+    status: z.enum(['paid', 'pending', 'overdue']),
+    // internal_margin, password_hash → rejected by .strict()
+}).strict();  // explicit security boundary
 
 // ── VIEW: The Presenter — agent-centric perception layer ──
 const InvoicePresenter = createPresenter('Invoice')
-    .schema({                                             // Model
-        id:           t.string,
-        amount_cents: t.number,
-        status:       t.enum('paid', 'pending', 'overdue'),
-    })
-    .rules([                                              // Interpretation
+    .schema(invoiceSchema)                                // Model
+    .systemRules([                                        // Interpretation
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
     ])
-    .ui((inv) => [                                        // Visualization
+    .uiBlocks((inv) => [                                  // Visualization
         ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] }),
     ])
-    .limit(50)                                            // Guardrail
-    .suggest((inv) => [                                   // Affordance
-        suggest('billing.pay', 'Process payment'),
-        inv.status === 'overdue'
-            ? suggest('billing.escalate', 'Escalate to collections')
-            : null,
-    ].filter(Boolean));
+    .agentLimit(50, (omitted) =>                          // Guardrail
+        ui.summary(`⚠️ 50 shown, ${omitted} hidden. Use filters.`)
+    )
+    .suggestActions((inv) =>                               // Affordance
+        inv.status === 'pending'
+            ? [{ tool: 'billing.pay', reason: 'Process payment' }]
+            : []
+    );
 
 // ── AGENT: Receives a Structured Perception Package ──
-export const getInvoice = f.query('billing.get_invoice')
-    .describe('Retrieve an invoice by ID')
-    .withString('id', 'Invoice identifier')
-    .returns(InvoicePresenter)                            // ← One line. Zero boilerplate.
-    .handle(async (input, ctx) =>
-        ctx.db.invoices.findUnique({ where: { id: input.id } })
-    );
+const billing = defineTool<AppContext>('billing', {
+    actions: {
+        get_invoice: {
+            returns: InvoicePresenter,  // ← One line. Zero boilerplate.
+            params: { id: 'string' },
+            handler: async (ctx, args) => ctx.db.invoices.findUnique(args.id),
+        },
+    },
+});
 ```
 
 The handler returns **raw data**. The Presenter intercepts it in the execution pipeline, validates through Zod, strips undeclared fields, attaches domain rules, renders charts, applies truncation, and suggests next actions — all automatically. The agent never sees raw JSON. It sees a **structured perception package**.

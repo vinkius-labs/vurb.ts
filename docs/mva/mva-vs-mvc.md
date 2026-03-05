@@ -53,9 +53,9 @@ In MVA, the View is a **perception layer** — the Presenter. It does not produc
 | **Scope** | Tool-level (one view per action) | Domain-level (one Presenter per entity) |
 | **Reusability** | Low — views are coupled to specific pages | High — Presenter reused across all tools |
 | **Domain context** | Implicit (humans infer meaning) | Explicit (rules travel with data) |
-| **Next actions** | Links, buttons, forms | `.suggest()` / `.suggestActions()` — typed affordances |
-| **Data limits** | Pagination UI (next/prev buttons) | `.limit()` / `.agentLimit()` + teaching blocks |
-| **Visualizations** | Client-side rendering (Chart.js, etc.) | Server-side rendering (`.ui()` / `.uiBlocks()`) |
+| **Next actions** | Links, buttons, forms | `.suggestActions()` — typed affordances |
+| **Data limits** | Pagination UI (next/prev buttons) | `.agentLimit()` + teaching blocks |
+| **Visualizations** | Client-side rendering (Chart.js, etc.) | Server-side rendering (`.uiBlocks()`) |
 | **Security** | View templates selectively render fields | Schema `.strict()` rejects undeclared fields |
 | **Composition** | Partials, includes, slots | `.embed()` — nested Presenter composition |
 
@@ -68,9 +68,9 @@ In MVA, the View is a **perception layer** — the Presenter. It does not produc
 // MVA View — Presenter (domain-level)
 const InvoicePresenter = createPresenter('Invoice')
     .schema(invoiceSchema)
-    .rules(['amount_cents is in CENTS. Divide by 100.'])          // domain rule travels with data
-    .suggest((inv) => inv.status === 'pending'
-        ? [suggest('billing.pay', 'Process payment')]             // affordance as typed hint
+    .systemRules(['amount_cents is in CENTS. Divide by 100.'])      // domain rule travels with data
+    .suggestActions((inv) => inv.status === 'pending'
+        ? [{ tool: 'billing.pay', reason: 'Process payment' }]     // affordance as typed hint
         : []);
 ```
 
@@ -157,13 +157,15 @@ app.get('/api/invoices/:id', async (req, res) => {
 });
 
 // MVA: Agent-facing API (returns structured perception package)
-export const getInvoice = f.query('billing.get_invoice')
-    .describe('Retrieve an invoice by ID')
-    .withString('id', 'Invoice identifier')
-    .returns(InvoicePresenter)                      // ← Perception layer
-    .handle(async (input, ctx) =>
-        ctx.db.invoices.findUnique({ where: { id: input.id } })
-    );
+const billing = defineTool<AppContext>('billing', {
+    actions: {
+        get_invoice: {
+            returns: InvoicePresenter,  // ← Perception layer
+            params: { id: 'string' },
+            handler: async (ctx, args) => ctx.db.invoices.findUnique(args.id),
+        },
+    },
+});
 ```
 
 Both serve the same business data. Both use the same database. But they serve fundamentally different consumers through fundamentally different architectural patterns.

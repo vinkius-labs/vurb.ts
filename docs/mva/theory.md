@@ -1,9 +1,5 @@
 # The Theory Behind MVA
 
-::: info Prerequisites
-Install MCP Fusion before following this guide: `npm install @vinkius-core/mcp-fusion @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx fusion create`](/quickstart-lightspeed).
-:::
-
 ## The Consumer Has Changed
 
 For fifty years, software architecture has been shaped by one constant: the human consumer. Every paradigm — MVC, MVVM, REST, GraphQL — was designed around the assumption that a thinking, context-aware human would be the final consumer of the interface.
@@ -63,7 +59,7 @@ After receiving data, the agent must decide what to do next. Without guidance, i
 
 **Root cause:** The interface provides data without affordances. The human consumer would navigate a UI with buttons, links, and menus. The AI agent sees only text.
 
-**MVA solution:** Agentic Affordances (`.suggest()` / `.suggestActions()`) provide HATEOAS-style next-action hints computed from the current data state. The agent doesn't guess — it receives an explicit list of what it can do next.
+**MVA solution:** Agentic Affordances (`.suggestActions()`) provide HATEOAS-style next-action hints computed from the current data state. The agent doesn't guess — it receives an explicit list of what it can do next.
 
 ### Failure Mode 3: Perception Inconsistency
 
@@ -112,19 +108,19 @@ Working from first principles, we can derive the requirements for an architectur
 
 Every piece of data must arrive with explicit interpretation rules. The agent should never have to infer meaning from context, convention, or field names.
 
-**In MVA:** `.rules()` / `.systemRules()` attaches domain-specific directives to the data. The rules are not in a global system prompt — they travel **with the data**, appearing in the agent's context only when that domain is active.
+**In MVA:** `.systemRules()` attaches domain-specific directives to the data. The rules are not in a global system prompt — they travel **with the data**, appearing in the agent's context only when that domain is active.
 
 ### Requirement 2: Explicit Affordances
 
 After receiving data, the agent must be told what actions are available. The available actions must be computed from the current data state, not from a static list.
 
-**In MVA:** `.suggest()` / `.suggestActions()` is a function that receives the current data and returns a list of next actions. A pending invoice suggests `billing.pay`. A paid invoice suggests `billing.archive`. The affordances adapt to the data.
+**In MVA:** `.suggestActions()` is a function that receives the current data and returns a list of next actions. A pending invoice suggests `billing.pay`. A paid invoice suggests `billing.archive`. The affordances adapt to the data.
 
 ### Requirement 3: Bounded Output
 
 The response must respect the agent's cognitive limits — its context window. Unbounded data dumps are not just expensive; they degrade accuracy.
 
-**In MVA:** `.limit()` / `.agentLimit()` truncates large datasets and injects a teaching block: *"⚠️ 50 shown, 250 hidden. Use `status` or `date_range` filters."* The agent learns to use pagination.
+**In MVA:** `.agentLimit()` truncates large datasets and injects a teaching block: *"⚠️ 50 shown, 250 hidden. Use `status` or `date_range` filters."* The agent learns to use pagination.
 
 ### Requirement 4: Security Boundary
 
@@ -142,7 +138,7 @@ The same domain entity must be perceived identically regardless of which tool re
 
 Agents increasingly operate in environments that support rich rendering (Claude Artifacts, Copilot, custom UIs). The server should provide deterministic visualizations rather than leaving chart generation to the agent.
 
-**In MVA:** `.ui()` / `.uiBlocks()` generates server-rendered ECharts, Mermaid diagrams, tables, and summaries. The agent passes these through to the user interface unchanged.
+**In MVA:** `.uiBlocks()` generates server-rendered ECharts, Mermaid diagrams, tables, and summaries. The agent passes these through to the user interface unchanged.
 
 ## The Formalization
 
@@ -157,39 +153,42 @@ In traditional MVC, the View is **tool-level** — each controller action has it
 In MVA, the Presenter is **domain-level**. You don't create a Presenter per tool. You create a Presenter per **domain entity**:
 
 ```typescript
-import { initFusion, createPresenter, t, suggest } from '@vinkius-core/mcp-fusion';
+import { initFusion, definePresenter } from '@vinkius-core/mcp-fusion';
 
 const f = initFusion<Ctx>();
 
 // This Presenter is shared across EVERY tool that returns invoices
-const InvoicePresenter = createPresenter('Invoice')
-    .schema({
-        id:           t.string,
-        amount_cents: t.number,
-        status:       t.enum('paid', 'pending', 'overdue'),
-    })
-    .rules(['amount_cents is in CENTS. Divide by 100.'])
-    .suggest((inv) => inv.status === 'pending'
-        ? [suggest('billing.pay', 'Pay')]
-        : []);
+const InvoicePresenter = definePresenter({
+    name: 'Invoice',
+    schema: invoiceSchema,
+    systemRules: ['amount_cents is in CENTS. Divide by 100.'],
+    suggestActions: (inv) => inv.status === 'pending'
+        ? [{ tool: 'billing.pay', reason: 'Pay' }]
+        : [],
+});
 
 // Used in billing.get_invoice
-f.query('billing.get_invoice')
-    .describe('Get an invoice by ID')
-    .withString('id', 'Invoice ID')
-    .returns(InvoicePresenter)
-    .handle(async (input, ctx) => ctx.db.invoices.findUnique({ where: { id: input.id } }));
+f.tool({
+    name: 'billing.get_invoice',
+    input: z.object({ id: z.string() }),
+    returns: InvoicePresenter,
+    handler: async (ctx, { id }) => ctx.db.invoices.findUnique({ where: { id } }),
+});
 
-f.query('billing.list_invoices')
-    .describe('List all invoices')
-    .returns(InvoicePresenter)
-    .handle(async (input, ctx) => ctx.db.invoices.findMany());
+f.tool({
+    name: 'billing.list_invoices',
+    input: z.object({}),
+    returns: InvoicePresenter,
+    handler: async (ctx) => ctx.db.invoices.findMany(),
+});
 
 // Used in reports.financial_summary — same Presenter
-f.query('reports.financial_summary')
-    .describe('Financial summary report')
-    .returns(InvoicePresenter)
-    .handle(async (input, ctx) => ctx.db.invoices.findMany());
+f.tool({
+    name: 'reports.financial_summary',
+    input: z.object({}),
+    returns: InvoicePresenter,
+    handler: async (ctx) => ctx.db.invoices.findMany(),
+});
 ```
 
 The agent perceives invoices identically whether they come from `billing.get_invoice`, `billing.list_invoices`, or `reports.financial_summary`. This is **Perception Consistency** — the third requirement derived above.
@@ -206,7 +205,7 @@ MVC assumes a human browser consumer. The View renders HTML/CSS that a human int
 
 REST provides stateless resource access with hypermedia links. In theory, HATEOAS tells the client what it can do next by embedding links in the response.
 
-**Why it fails for agents:** REST returns raw JSON with no interpretation layer. HATEOAS links are URLs to HTTP endpoints — not tool names that an MCP agent can call. And REST cannot attach domain rules, UI blocks, or cognitive limits to the response. MVA's `.suggest()` / `.suggestActions()` is HATEOAS reinvented for the agent era: it returns tool names with semantic reasons, not URLs.
+**Why it fails for agents:** REST returns raw JSON with no interpretation layer. HATEOAS links are URLs to HTTP endpoints — not tool names that an MCP agent can call. And REST cannot attach domain rules, UI blocks, or cognitive limits to the response. MVA's `.suggestActions()` is HATEOAS reinvented for the agent era: it returns tool names with semantic reasons, not URLs.
 
 ### GraphQL
 

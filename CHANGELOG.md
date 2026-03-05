@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.5] - 2026-03-05
+
+### Fixed
+
+- **`StateMachineGate.restore()` loses restored state in serverless/edge environments** — `restore()` set `_currentState` but never synchronized with the XState actor. When `transition()` was called next, `init()` created the actor from `config.initial` (the default state), and the actor's subscription callback overwrote `_currentState` back to the initial state, silently discarding the restored state. Fixed by making `init()` create the machine with `_currentState` when it differs from `config.initial`, and having `restore()` stop any running actor and mark as uninitialized so the next transition re-creates the machine from the restored state.
+
+- **`DevServer.performReload` passes empty object as registry — crash on HMR reload** — The HMR reload called `await setup({} as ToolRegistryLike)`. The empty object `{}` has no `register()` method, so any setup callback calling `registry.register(builder)` threw `TypeError: registry.register is not a function`. Fixed by replacing the empty object with a proper duck-typed registry implementing `register()` and `getBuilders()`.
+
+### Test Suite
+
+- **10 new regression tests** in `StateMachineGate.restore-regression.test.ts` — Covers restore-before-init, restore-after-init, multiple restore cycles, tool visibility after restore, callbacks after restore, linear pipeline restore, and concurrent session simulation. Uses XState mock to reproduce the exact actor subscription bug.
+- **8 new regression tests** in `DevServer.reload-regression.test.ts` — Covers register() invocation during reload, builder collection, fresh registry per reload (no leaks), various builder types, error handling after registrations, async setup, and MCP notification on success/failure.
+
+---
+
 ## [3.1.4] - 2026-03-02
 
 ### Improved

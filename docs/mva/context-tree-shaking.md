@@ -60,15 +60,15 @@ The LLM's context window is finite. Every token spent on irrelevant rules is a t
 
 As the system prompt grows, the agent's effective reasoning capacity shrinks. This manifests as degraded accuracy on complex multi-step tasks.
 
-## The Solution: JIT Rules via `.rules()` / `.systemRules()`
+## The Solution: JIT Rules via `.systemRules()`
 
-MVA's `.rules()` (shorthand for `.systemRules()`) attaches domain rules to the **Presenter**, not to the system prompt. Rules appear in the agent's context only when the corresponding domain entity is being processed.
+MVA's `.systemRules()` attaches domain rules to the **Presenter**, not to the system prompt. Rules appear in the agent's context only when the corresponding domain entity is being processed.
 
 ```typescript
 // Invoice rules — sent ONLY when the agent receives invoice data
 const InvoicePresenter = createPresenter('Invoice')
     .schema(invoiceSchema)
-    .rules([
+    .systemRules([
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
         'Use currency format: $XX,XXX.00',
         'Use status emojis: ✅ paid, ⏳ pending, 🔴 overdue',
@@ -77,7 +77,7 @@ const InvoicePresenter = createPresenter('Invoice')
 // Task rules — sent ONLY when the agent receives task data
 const TaskPresenter = createPresenter('Task')
     .schema(taskSchema)
-    .rules([
+    .systemRules([
         'Use status emojis: 🔄 In Progress, ✅ Done, ❌ Blocked',
         'Estimates are in hours. Display as "Xh".',
         'Due dates in the past should be flagged as OVERDUE.',
@@ -86,7 +86,7 @@ const TaskPresenter = createPresenter('Task')
 // Sprint rules — sent ONLY when the agent receives sprint data
 const SprintPresenter = createPresenter('Sprint')
     .schema(sprintSchema)
-    .rules([
+    .systemRules([
         'Velocity is in story points per sprint. Never divide by 100.',
         'Display date ranges as "MMM DD – MMM DD".',
     ]);
@@ -120,12 +120,12 @@ Each tool call gets exactly the rules it needs — nothing more.
 
 ## Dynamic Rules with Context
 
-Static rules handle most cases, but some rules depend on who's asking and what they're looking at. The function form of `.rules()` receives both the data and the request context:
+Static rules handle most cases, but some rules depend on who's asking and what they're looking at. The function form of `.systemRules()` receives both the data and the request context:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
     .schema(invoiceSchema)
-    .rules((invoice, ctx) => [
+    .systemRules((invoice, ctx) => [
         // Always present
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
 
@@ -231,10 +231,10 @@ Each Presenter file owns the domain rules for its entity. When a developer needs
 ```typescript
 // ❌ WRONG: Same rule duplicated
 const InvoicePresenter = createPresenter('Invoice')
-    .rules(['Format dates in ISO 8601.']);
+    .systemRules(['Format dates in ISO 8601.']);
 
 const TaskPresenter = createPresenter('Task')
-    .rules(['Format dates in ISO 8601.']);  // Duplicated!
+    .systemRules(['Format dates in ISO 8601.']);  // Duplicated!
 
 // ✅ RIGHT: Use a shared constant or helper
 const sharedRules = {
@@ -242,10 +242,10 @@ const sharedRules = {
 };
 
 const InvoicePresenter = createPresenter('Invoice')
-    .rules([sharedRules.dateFormat, 'amount is in CENTS.']);
+    .systemRules([sharedRules.dateFormat, 'amount is in CENTS.']);
 
 const TaskPresenter = createPresenter('Task')
-    .rules([sharedRules.dateFormat, 'Estimates in hours.']);
+    .systemRules([sharedRules.dateFormat, 'Estimates in hours.']);
 ```
 
 ### ❌ Putting Rules in Handlers
@@ -262,5 +262,5 @@ handler: async (ctx, args) => {
 
 // ✅ RIGHT: Rules in the Presenter
 const InvoicePresenter = createPresenter('Invoice')
-    .rules(['amount_cents is in CENTS. Divide by 100.']);
+    .systemRules(['amount_cents is in CENTS. Divide by 100.']);
 ```

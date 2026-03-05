@@ -1,16 +1,12 @@
 # Cognitive Guardrails
 
-::: info Prerequisites
-Install MCP Fusion before following this guide: `npm install @vinkius-core/mcp-fusion @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx fusion create`](/quickstart-lightspeed).
-:::
-
 Cognitive Guardrails are the protective mechanisms in MVA that prevent the three most expensive failure modes in agent-based systems: **context overflow** (too much data), **parameter injection** (hallucinated fields), and **error spirals** (agents retrying blindly).
 
 Each guardrail is designed to be **zero-configuration by default, explicit when needed, and educational for the agent** — not just protective, but instructive.
 
 ## The Three Guardrails
 
-## ① Smart Truncation — `.limit()` / `.agentLimit()`
+## ① Smart Truncation — `.agentLimit()`
 
 ### The Problem: Context DDoS
 
@@ -26,16 +22,9 @@ Beyond cost, large responses degrade accuracy. LLMs lose coherence when the cont
 
 ### The Solution: Truncate + Teach
 
-`.limit()` is the shorthand; `.agentLimit()` gives full control over the truncation message:
+`.agentLimit()` does two things: it truncates the dataset AND injects a teaching block that tells the agent how to get better results.
 
 ```typescript
-// Shorthand — auto-generated truncation message
-const TaskPresenter = createPresenter('Task')
-    .schema(taskSchema)
-    .limit(50);
-// → "⚠️ Dataset truncated. 50 shown, {N} hidden. Use filters."
-
-// Full control — custom truncation with filter guidance
 const TaskPresenter = createPresenter('Task')
     .schema(taskSchema)
     .agentLimit(50, (omitted) =>
@@ -253,7 +242,7 @@ All three guardrails work together to create a multi-layered defense:
 **The virtuous cycle:**
 
 1. **First call:** Agent may send hallucinated params → `strict()` rejects → agent self-corrects
-2. **Second call:** Valid params → handler runs → large dataset → `.limit()` / `.agentLimit()` truncates + teaches
+2. **Second call:** Valid params → handler runs → large dataset → `agentLimit()` truncates + teaches
 3. **Third call:** Agent uses filters → smaller dataset → clean data → correct action
 
 By the third call, the agent has learned: which fields are valid, how to filter data, and what actions are available. The guardrails have transformed three potential failure loops into a three-step learning sequence.

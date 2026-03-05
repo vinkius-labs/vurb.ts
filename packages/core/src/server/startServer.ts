@@ -15,6 +15,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { attachToServer, type AttachOptions } from './ServerAttachment.js';
 import { createTelemetryBus, type TelemetryBusInstance } from '../observability/TelemetryBus.js';
 import type { PromptRegistry } from '../prompt/PromptRegistry.js';
+import type { ProgressSink } from '../core/execution/ProgressHelper.js';
 
 // ============================================================================
 // Types
@@ -51,12 +52,14 @@ export interface StartServerOptions<TContext> {
 interface ServerRegistry<TContext> {
     getBuilders(): Iterable<ToolBuilderLike>;
     attachToServer(server: unknown, options: AttachOptions<TContext>): Promise<unknown>;
+    routeCall(ctx: TContext, name: string, args: Record<string, unknown>, progressSink?: ProgressSink, signal?: AbortSignal): Promise<unknown>;
 }
 
 /** Minimal builder shape for topology extraction. */
 interface ToolBuilderLike {
     getName(): string;
     getActionNames(): string[];
+    buildToolDefinition(): unknown;
 }
 
 /** Result returned by `startServer`. */
@@ -105,6 +108,60 @@ export async function startServer<TContext>(
         telemetry = true,
         attach = {},
     } = options;
+
+    // ── Vinkius Cloud Edge Detection ─────────────────────────────────────
+    // When running inside a V8 Isolate, the host injects
+    // __vinkius_edge_interceptor into globalThis. If present:
+    //   1. Serialize tool definitions to host via IPC
+    //   2. Expose __vinkius_edge_dispatch for tool invocations
+    //   3. Abort normal server startup (no stdio transport)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = globalThis as any;
+    if (typeof g.__vinkius_edge_interceptor !== 'undefined') {
+        const tools: Array<{ definition: unknown; name: string }> = [];
+        for (const b of registry.getBuilders()) {
+            tools.push({
+                definition: b.buildToolDefinition(),
+                name: b.getName(),
+            });
+        }
+
+        // Send definitions to host via C++ IPC
+        g.__vinkius_edge_interceptor.applySync(undefined, [
+            JSON.stringify({ serverName: name, version, tools }),
+        ]);
+
+        // Expose async dispatcher — PLAIN OBJECT return, never Error class.
+        // Host extracts via { result: { copy: true } } (C++ structured clone).
+        g.__vinkius_edge_dispatch = async (
+            toolName: string,
+            args: Record<string, unknown>,
+        ) => {
+            try {
+                const ctx = contextFactory
+                    ? await contextFactory(undefined)
+                    : (undefined as TContext);
+                return await registry.routeCall(ctx, toolName, args);
+            } catch (e: unknown) {
+                // Error class cannot survive C++ structured clone.
+                // Return MCP-protocol plain object instead.
+                const err = e as { stack?: string; message?: string };
+                return {
+                    isError: true,
+                    content: [{
+                        type: 'text',
+                        text: String(err?.stack || err?.message || e),
+                    }],
+                };
+            }
+        };
+
+        // Abort normal startup — no Server, no Transport
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { server: null as any, close: async () => {} };
+    }
+
+    // ── Normal Server Startup ────────────────────────────────────────────
 
     // 1. Telemetry Bus (optional, default on)
     //    Gracefully degrades on serverless platforms (Vercel, Cloudflare)

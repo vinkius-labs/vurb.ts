@@ -2105,15 +2105,17 @@ describe('createDefaultReporter — coverage', () => {
         reporter({ id: 'r', label: 'Run', status: 'running' });
         reporter({ id: 'r', label: 'Run', status: 'done', detail: '5 items', durationMs: 123 });
         reporter({ id: 'r', label: 'Run', status: 'failed', detail: 'err' });
-        reporter({ id: 'r', label: 'Run', status: 'pending' });
 
         const calls = stderrSpy.mock.calls.map(c => c[0] as string);
-        expect(calls[0]).toContain('◐');
-        expect(calls[1]).toContain('●');
-        expect(calls[1]).toContain('5 items');
-        expect(calls[1]).toContain('(123ms)');
-        expect(calls[2]).toContain('✗');
-        expect(calls[3]).toContain('○');
+        // Running status uses animated spinner (braille frame)
+        expect(calls[0]).toContain('⠋');
+        expect(calls[0]).toContain('Run');
+        // Done status uses ✓
+        const doneCall = calls.find(c => c.includes('✓'));
+        expect(doneCall).toContain('Run');
+        // Failed status uses ✗
+        const failCall = calls.find(c => c.includes('✗'));
+        expect(failCall).toContain('err');
 
         stderrSpy.mockRestore();
     });

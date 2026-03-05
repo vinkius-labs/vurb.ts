@@ -32,3 +32,11 @@ export interface ProjectConfig {
     /** Include @vinkius-core/mcp-fusion-testing + Vitest */
     readonly testing: boolean;
 }
+
+/** Remote cloud configuration stored in .fusionrc (token-free) */
+export interface RemoteConfig {
+    /** API base URL (e.g., https://api.cloud.vinkius.com) */
+    readonly remote: string;
+    /** Target server UUID */
+    readonly serverId: string;
+}

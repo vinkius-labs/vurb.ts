@@ -229,7 +229,12 @@ export class StateMachineGate {
         }
 
         try {
-            const machine = xstate.createMachine(this._config);
+            // Use _currentState as initial — it may have been set by restore()
+            // before init() was called (serverless/edge: restore → transition → init)
+            const machineConfig = this._currentState !== this._config.initial
+                ? { ...this._config, initial: this._currentState }
+                : this._config;
+            const machine = xstate.createMachine(machineConfig);
             this._actor = xstate.createActor(machine);
             this._actor.subscribe((snapshot) => {
                 const newState = typeof snapshot.value === 'string'
@@ -428,11 +433,25 @@ export class StateMachineGate {
     /**
      * Restore FSM state from a persisted snapshot.
      *
+     * Resets the XState actor (if running) so the next `transition()`
+     * re-initializes the machine starting from the restored state.
+     * This ensures restore → transition works correctly in
+     * serverless/edge deployments (Vercel, Cloudflare Workers).
+     *
      * @param snap - Previously saved snapshot
      */
     restore(snap: FsmSnapshot): void {
         if (this._config.states[snap.state]) {
             this._currentState = snap.state;
+
+            // If the actor is already running, stop it and mark as
+            // uninitialized so the next transition() call will re-create
+            // the machine starting from the restored state.
+            if (this._actor) {
+                this._actor.stop();
+                this._actor = null;
+                this._initialized = false;
+            }
         }
     }
 
