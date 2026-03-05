@@ -285,7 +285,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
      */
     tags(...tags: string[]): this {
         this._assertNotFrozen();
-        this._tags = tags;
+        this._tags.push(...tags);
         return this;
     }
 

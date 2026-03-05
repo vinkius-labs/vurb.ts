@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.7] - 2026-03-05
+
+### Fixed
+
+- **`Group.addChildGroup()` does not remove child from previous parent (Bug #7)** — When a child group was re-parented, it was added to the new parent but never removed from the old one, creating an inconsistent tree where the child appeared under two parents simultaneously. Fixed by calling `childGroup.parent.removeChildGroup(childGroup)` before adding to the new parent.
+
+- **`timingSafeCompare` leaks timing information via early return (Bug #8)** — The function returned immediately when the two strings had different lengths, leaking timing information. Although HMACs always have the same length, the function violated its own constant-time contract. Fixed by removing the early return and using a `Math.max(len)` loop with XOR accumulation seeded with `bufA.length ^ bufB.length`.
+
+- **`autoValidator()` silently mishandles async validators (Bug #9)** — If an async validator was passed via `autoValidator()`, `spec.validate(value)` returned a `Promise`. Since `'value' in promise` is `false`, the result silently became `{ success: false, issues: undefined }`. Fixed by adding a `typeof result.then === 'function'` guard that throws a descriptive error with the vendor name.
+
+- **`mergeHooks` discards secondary `wrapResponse` return value (Bug #10)** — When both primary and secondary hooks defined `wrapResponse`, the secondary was called but its return value was discarded. Fixed: `return secondary.wrapResponse?.(wrapped) ?? wrapped;`.
+
+- **`.tags()` replaces vs. accumulates inconsistently between builders (Bug #11)** — `GroupedToolBuilder.tags()` used assignment (`this._tags = tags`) replacing all tags, while `FluentToolBuilder.tags()` used push. Fixed `GroupedToolBuilder.tags()` to use `this._tags.push(...tags)` for consistent accumulation.
+
+- **JWT test: signature corruption in padding bits (test fix)** — The `rejects token with unicode in signature` test corrupted only the last base64url character of an HMAC-SHA256 signature. For 32-byte digests the last character has 2 padding bits, so swapping between certain characters (e.g. A↔B) produces identical decoded bytes. Fixed by corrupting a middle character instead.
+
+### Test Suite
+
+- **6 new regression tests** in `Group.reparenting-bug7.test.ts` — Re-parenting removes from old parent, childGroups length updates, child never in two parents, getRoot() after re-parent, same-child no-op, null parent works.
+- **17 new regression tests** in `MediumBugs-8-9-10-11.test.ts` — Timing-safe comparison (5 tests), async validator guard (3 tests), wrapResponse chaining (4 tests), tags accumulation for GroupedToolBuilder (4 tests) and FluentToolBuilder consistency (1 test).
+
 ## [3.1.6] - 2026-03-05
 
 ### Fixed

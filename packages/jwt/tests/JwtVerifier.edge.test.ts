@@ -419,8 +419,11 @@ describe('JwtVerifier — Malformed Input', () => {
     it('rejects token with unicode in signature', async () => {
         const validToken = createHS256Token({ sub: 'u1', exp: freshNow() + 3600 }, SECRET);
         const parts = validToken.split('.');
-        // Replace last char of signature with a different base64url char to corrupt it
-        const corrupted = parts[2].slice(0, -1) + (parts[2].endsWith('A') ? 'B' : 'A');
+        // Corrupt a character in the MIDDLE of the signature (not the last —
+        // the last base64url char may only differ in padding bits for 32-byte HMAC)
+        const sig = parts[2];
+        const mid = Math.floor(sig.length / 2);
+        const corrupted = sig.slice(0, mid) + (sig[mid] === 'A' ? 'B' : 'A') + sig.slice(mid + 1);
         const result = await verifier.verify(`${parts[0]}.${parts[1]}.${corrupted}`);
         expect(result).toBeNull();
     });

@@ -131,6 +131,17 @@ export function toStandardValidator<T>(
         validate(value: unknown): ValidationResult<T> {
             const result = spec.validate(value);
 
+            // Guard: async validators return a Promise, which would silently
+            // produce { success: false, issues: undefined } because
+            // 'value' in Promise is false. Detect and throw early. (Bug #9 fix)
+            if (result != null && typeof (result as any).then === 'function') {
+                throw new Error(
+                    `[MCP-Fusion] Schema validator "${spec.vendor}" returned a Promise. ` +
+                    'Async validators are not supported — use a synchronous schema. ' +
+                    'See: https://mcp-fusion.vinkius.com/docs/standard-schema',
+                );
+            }
+
             if ('value' in result) {
                 return { success: true, data: result.value };
             }

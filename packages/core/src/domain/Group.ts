@@ -98,6 +98,12 @@ export class Group extends BaseModel {
      */
     public addChildGroup(childGroup: Group): boolean {
         if (this.childGroups.includes(childGroup)) return false;
+
+        // Remove from previous parent to avoid ghost references (Bug #7 fix)
+        if (childGroup.parent !== null) {
+            childGroup.parent.removeChildGroup(childGroup);
+        }
+
         this.childGroups.push(childGroup);
         childGroup.parent = this;
         return true;

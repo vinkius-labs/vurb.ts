@@ -86,7 +86,7 @@ export function mergeHooks(
         onExecuteError: (a, e) => { primary.onExecuteError?.(a, e); secondary.onExecuteError?.(a, e); },
     };
     if (primary.wrapResponse) {
-        merged.wrapResponse = (r) => { const wrapped = primary.wrapResponse!(r); secondary.wrapResponse?.(wrapped); return wrapped; };
+        merged.wrapResponse = (r) => { const wrapped = primary.wrapResponse!(r); return secondary.wrapResponse?.(wrapped) ?? wrapped; };
     } else if (secondary.wrapResponse) {
         merged.wrapResponse = secondary.wrapResponse;
     }

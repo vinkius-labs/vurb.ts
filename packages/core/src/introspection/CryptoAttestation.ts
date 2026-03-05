@@ -344,13 +344,16 @@ async function hmacSign(data: string, secret: string): Promise<string> {
  * @internal
  */
 function timingSafeCompare(a: string, b: string): boolean {
-    if (a.length !== b.length) return false;
     const encoder = new TextEncoder();
     const bufA = encoder.encode(a);
     const bufB = encoder.encode(b);
-    let diff = 0;
-    for (let i = 0; i < bufA.length; i++) {
-        diff |= bufA[i]! ^ bufB[i]!;
+
+    // Constant-time: always process max(lenA, lenB) bytes.
+    // Length mismatch contributes to diff but does NOT cause early return.
+    const maxLen = Math.max(bufA.length, bufB.length);
+    let diff = bufA.length ^ bufB.length; // length mismatch is a difference
+    for (let i = 0; i < maxLen; i++) {
+        diff |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
     }
     return diff === 0;
 }
