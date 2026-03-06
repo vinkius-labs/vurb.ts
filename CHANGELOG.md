@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.31] - 2026-03-06
+
+### Fixed
+
+- `SandboxGuard` now rejects `eval()` and `new Function()` at the fail-fast level with actionable LLM feedback — previously these passed through to V8 where they produce confusing or silent failures (Bug #139)
+- `GroupedToolBuilder.getSandboxConfig()` JSDoc now explicitly documents that this accessor is metadata-only and does NOT auto-create a `SandboxEngine` — prevents false impression that config drives runtime behavior (Bug #140)
+- `f.sandbox()` factory now tracks engine lifecycle via `FinalizationRegistry` — emits a `console.warn` when a `SandboxEngine` is garbage-collected without `.dispose()`, surfacing native V8 Isolate memory leaks (Bug #141)
+- `SandboxEngine` abort handler now releases the per-request `Context` when concurrent executions prevent full isolate disposal — reduces cancellation delay from timeout-bounded to near-instant in multi-execution scenarios (Bug #142)
+
 ## [3.1.30] - 2026-03-06
 
 ### Fixed

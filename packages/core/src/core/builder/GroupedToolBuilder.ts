@@ -557,7 +557,13 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
 
     /**
      * Get the sandbox configuration (if any).
-     * Used by framework internals and tests.
+     *
+     * **Important**: This is metadata only — it does NOT auto-create a
+     * `SandboxEngine` nor inject it into the execution pipeline.
+     * The developer must create the engine manually (e.g. via `f.sandbox()`).
+     * This accessor exists for introspection, testing, and contract tooling.
+     *
+     * @returns The stored `SandboxConfig`, or `undefined` if `.sandbox()` was not called
      */
     getSandboxConfig(): SandboxConfig | undefined {
         return this._sandboxConfig;

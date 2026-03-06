@@ -39,6 +39,10 @@ const SUSPICIOUS_PATTERNS: ReadonlyArray<{ pattern: RegExp; reason: string }> = 
     { pattern: /\bimport\s*\(/, reason: 'Dynamic import() is not available in the sandbox.' },
     { pattern: /\bimport\s+/, reason: 'ES module imports are not available in the sandbox.' },
     { pattern: /\brequire\s*\(/, reason: 'require() is not available in the sandbox.' },
+    // Bug #139: fail-fast for eval()/Function() — no security risk (empty Context),
+    // but provides immediate, actionable feedback to the LLM.
+    { pattern: /\beval\s*\(/, reason: 'eval() has no effect in the sandbox — use direct expressions instead.' },
+    { pattern: /\bnew\s+Function\s*\(/, reason: 'new Function() has no effect in the sandbox — use direct expressions instead.' },
 ];
 
 /**

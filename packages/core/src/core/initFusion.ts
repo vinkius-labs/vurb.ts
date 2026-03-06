@@ -418,7 +418,11 @@ export function initFusion<TContext = void>(): FusionInstance<TContext> {
         // ── Sandbox ──────────────────────────────────────
 
         sandbox(config?: SandboxConfig): SandboxEngine {
-            return new SandboxEngine(config);
+            const engine = new SandboxEngine(config);
+            // Bug #141: warn when engines are garbage-collected without dispose().
+            // V8 Isolates hold native memory invisible to the Node GC.
+            _trackSandboxDispose(engine);
+            return engine;
         },
 
         // ── Serialization ────────────────────────────────
@@ -430,5 +434,40 @@ export function initFusion<TContext = void>(): FusionInstance<TContext> {
         fsm(config: FsmConfig): StateMachineGate {
             return new StateMachineGate(config);
         },
+    };
+}
+
+// ── Bug #141: FinalizationRegistry leak-detection for SandboxEngine ──
+
+/**
+ * Track SandboxEngine instances and emit a console.warn when one is
+ * garbage-collected without being disposed first. V8 Isolates hold
+ * native C++ memory invisible to the Node.js GC — a forgotten
+ * `.dispose()` silently leaks until process exit.
+ *
+ * Uses `FinalizationRegistry` (ES2021). No-op if the API is unavailable.
+ * The warning is best-effort — GC timing is non-deterministic.
+ * @internal
+ */
+const _sandboxFinalizer: FinalizationRegistry<string> | undefined =
+    typeof FinalizationRegistry !== 'undefined'
+        ? new FinalizationRegistry<string>((label) => {
+            console.warn(
+                `[mcp-fusion] SandboxEngine was garbage-collected without dispose(). ` +
+                `This leaks native V8 Isolate memory. Call engine.dispose() when done. (${label})`,
+            );
+        })
+        : undefined;
+
+/** @internal */
+function _trackSandboxDispose(engine: SandboxEngine): void {
+    if (!_sandboxFinalizer) return;
+    const label = `created at ${new Date().toISOString()}`;
+    _sandboxFinalizer.register(engine, label, engine);
+    // When dispose() is called, unregister so no false warning fires
+    const originalDispose = engine.dispose.bind(engine);
+    engine.dispose = () => {
+        _sandboxFinalizer!.unregister(engine);
+        originalDispose();
     };
 }

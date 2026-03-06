@@ -165,9 +165,12 @@ describe('SandboxGuard: Suspicious Patterns', () => {
         expect(result.ok).toBe(true);
     });
 
-    it('should NOT reject "eval" in code (guard is fail-fast, not security)', () => {
-        // Same reasoning — eval may or may not exist in the isolate context
+    it('should reject "eval()" in code (Bug #139 — fail-fast feedback for LLM)', () => {
+        // Bug #139: eval() is now blocked at the guard level for
+        // fail-fast LLM feedback, even though the empty V8 Context
+        // ensures no security risk.
         const result = validateSandboxCode('(data) => eval("1+1")');
-        expect(result.ok).toBe(true);
+        expect(result.ok).toBe(false);
+        expect(result.violation).toContain('eval()');
     });
 });

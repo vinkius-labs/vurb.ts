@@ -313,14 +313,23 @@ export class SandboxEngine {
         // ── Step 3: Wire abort kill-switch ──────────────
         // When the signal fires and this is the ONLY execution in
         // progress, we call isolate.dispose() to kill V8 instantly.
-        // When other executions share the same isolate, we only set
-        // the `aborted` flag — the script will still terminate at
-        // its timeout boundary, preventing collateral disposal.
+        //
+        // Bug #142: When other executions share the same isolate
+        // (activeExecutions > 1), we cannot dispose the isolate
+        // without killing all concurrent work (Bug #63 fix). Instead
+        // we set the `aborted` flag AND release the per-request
+        // context (if already created) to interrupt the running
+        // script without collateral damage. If context is not yet
+        // created, the script will terminate at its timeout boundary.
         let aborted = false;
         const onAbort = signal ? () => {
             aborted = true;
             if (this._activeExecutions <= 1) {
                 try { isolate.dispose(); } catch { /* may already be dead */ }
+            } else {
+                // Release this request's context to interrupt execution
+                // without killing the shared isolate (Bug #142).
+                try { context?.release(); } catch { /* may already be released */ }
             }
         } : undefined;
 
