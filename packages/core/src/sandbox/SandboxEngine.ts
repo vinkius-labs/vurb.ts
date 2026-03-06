@@ -46,7 +46,7 @@
  */
 
 import { validateSandboxCode } from './SandboxGuard.js';
-import { type TelemetrySink } from '../observability/TelemetryEvent.js';
+import { type SandboxExecEvent, type TelemetrySink } from '../observability/TelemetryEvent.js';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -96,6 +96,7 @@ export interface SandboxConfig {
  * - `RUNTIME`: Script threw an error during execution
  * - `OUTPUT_TOO_LARGE`: Result exceeds `maxOutputBytes`
  * - `INVALID_CODE`: Failed the SandboxGuard fail-fast check
+ * - `INVALID_DATA`: Input data contains non-serializable values
  * - `UNAVAILABLE`: `isolated-vm` is not installed
  * - `ABORTED`: Execution was cancelled via AbortSignal (client disconnect)
  */
@@ -106,6 +107,7 @@ export type SandboxErrorCode =
     | 'RUNTIME'
     | 'OUTPUT_TOO_LARGE'
     | 'INVALID_CODE'
+    | 'INVALID_DATA'
     | 'UNAVAILABLE'
     | 'ABORTED';
 
@@ -134,6 +136,7 @@ const DEFAULT_TIMEOUT_MS = 5_000;
 const DEFAULT_MEMORY_LIMIT_MB = 128;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576; // 1MB
 const MAX_CODE_LENGTH = 65_536; // 64KB — generous for any legitimate sandbox function
+const TEXT_ENCODER = new TextEncoder(); // Bug #138: reuse stateless encoder
 
 // ── Lazy Require ─────────────────────────────────────────
 
@@ -157,6 +160,16 @@ function getIvm(): any {
         _ivm = null;
     }
     return _ivm;
+}
+
+/**
+ * Reset the cached isolated-vm module reference.
+ * Exported exclusively for testing — allows mock/unmock cycles
+ * without process restart (Bug #137).
+ * @internal
+ */
+export function resetIvmCache(): void {
+    _ivm = undefined;
 }
 
 // ── Engine Implementation ────────────────────────────────
@@ -330,7 +343,19 @@ export class SandboxEngine {
             context = await isolate.createContext();
 
             // Deep-copy data into isolated heap (no references!)
-            inputCopy = new ivm.ExternalCopy(data);
+            // Bug #135: catch serialization errors from ExternalCopy separately
+            try {
+                inputCopy = new ivm.ExternalCopy(data);
+            } catch (copyErr: unknown) {
+                const copyMsg = copyErr instanceof Error ? copyErr.message : String(copyErr);
+                const result: SandboxResult<T> = {
+                    ok: false,
+                    error: `Data serialization error: ${copyMsg}. The input data contains non-serializable values (functions, Symbols, WeakRefs, etc.).`,
+                    code: 'INVALID_DATA',
+                };
+                this._emitTelemetry(result);
+                return result;
+            }
             await context.global.set('__input__', inputCopy.copyInto());
 
             // Compile with wrapper: call the function and serialize result
@@ -344,7 +369,7 @@ export class SandboxEngine {
 
             // ── Step 5: Output size guard ───────────────
             if (typeof rawResult === 'string') {
-                const outputByteLength = new TextEncoder().encode(rawResult).byteLength;
+                const outputByteLength = TEXT_ENCODER.encode(rawResult).byteLength;
                 if (outputByteLength > this._maxOutputBytes) {
                     const oversized: SandboxResult<T> = {
                         ok: false,
@@ -427,13 +452,14 @@ export class SandboxEngine {
      */
     private _emitTelemetry(result: SandboxResult<unknown>): void {
         if (!this._telemetry) return;
-        this._telemetry({
+        const event: SandboxExecEvent = {
             type: 'sandbox.exec',
             ok: result.ok,
             executionMs: result.ok ? result.executionMs : 0,
-            errorCode: result.ok ? undefined : result.code,
+            ...(!result.ok ? { errorCode: result.code } : {}),
             timestamp: Date.now(),
-        } as any);
+        };
+        this._telemetry(event);
     }
 
     // ── Private ──────────────────────────────────────────

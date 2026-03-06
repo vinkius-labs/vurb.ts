@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.30] - 2026-03-06
+
+### Fixed
+
+- `SandboxEngine._emitTelemetry()` no longer uses `as any` — the telemetry event object is now typed as `SandboxExecEvent`, restoring compile-time safety against interface drift (Bug #134)
+- `SandboxEngine.execute()` now returns `INVALID_DATA` (new error code) when `ExternalCopy(data)` fails due to non-serializable values (functions, Symbols, WeakRefs) — previously misclassified as `RUNTIME` (Bug #135)
+- `SandboxGuard` async detection now scans the entire code body (after stripping string literals) instead of only the start — nested `async` IIFEs and callbacks are now caught with accurate feedback (Bug #136)
+- `resetIvmCache()` exported from `SandboxEngine` for test mock/unmock cycles — previously, a failed `require('isolated-vm')` permanently cached `null` with no way to retry (Bug #137)
+- `TextEncoder` hoisted to module-level constant `TEXT_ENCODER` — previously allocated per `execute()` call (Bug #138)
+
 ## [3.1.29] - 2026-03-06
 
 ### Fixed

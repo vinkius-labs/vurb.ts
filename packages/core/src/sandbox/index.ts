@@ -8,7 +8,7 @@
  * The `isolated-vm` package is an optional peerDependency.
  * The framework works fully without it — sandbox is a power add-on.
  */
-export { SandboxEngine } from './SandboxEngine.js';
+export { SandboxEngine, resetIvmCache } from './SandboxEngine.js';
 export type { SandboxConfig, SandboxResult, SandboxErrorCode } from './SandboxEngine.js';
 export { validateSandboxCode } from './SandboxGuard.js';
 export type { GuardResult } from './SandboxGuard.js';

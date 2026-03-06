@@ -39,7 +39,6 @@ const SUSPICIOUS_PATTERNS: ReadonlyArray<{ pattern: RegExp; reason: string }> = 
     { pattern: /\bimport\s*\(/, reason: 'Dynamic import() is not available in the sandbox.' },
     { pattern: /\bimport\s+/, reason: 'ES module imports are not available in the sandbox.' },
     { pattern: /\brequire\s*\(/, reason: 'require() is not available in the sandbox.' },
-    { pattern: /^\s*async\b/, reason: 'Async functions are not supported in the sandbox. The sandbox uses synchronous JSON.stringify(fn(input)) — an async function would serialize to \'{}\'. Use a synchronous function instead.' },
 ];
 
 /**
@@ -108,5 +107,41 @@ export function validateSandboxCode(code: string): GuardResult {
         }
     }
 
+    // Bug #136: detect `async` anywhere in the code (not just at the start).
+    // Strip string literals first to avoid false positives on e.g. "async".
+    if (containsAsyncKeyword(trimmed)) {
+        return {
+            ok: false,
+            violation:
+                'Async functions are not supported in the sandbox. ' +
+                'The sandbox uses synchronous JSON.stringify(fn(input)) — ' +
+                'an async function would serialize to \'{}\'. ' +
+                'Use a synchronous function instead.',
+        };
+    }
+
     return { ok: true };
+}
+
+// ── Helpers ──────────────────────────────────────────────
+
+/**
+ * Strip string literals (single, double, template) to avoid
+ * false positives when scanning for keywords like `async`.
+ * Replaces each string literal with empty quotes of the same kind.
+ * @internal
+ */
+function stripStringLiterals(code: string): string {
+    // Match single-quoted, double-quoted, and back-tick strings
+    // (respects escape sequences: \' \" \` don't close the string)
+    return code.replace(/(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/gs, '""');
+}
+
+/**
+ * Check if `async` appears as a keyword anywhere in the code,
+ * ignoring occurrences inside string literals (Bug #136).
+ * @internal
+ */
+function containsAsyncKeyword(code: string): boolean {
+    return /\basync\b/.test(stripStringLiterals(code));
 }
