@@ -44,6 +44,17 @@ export function parseDiscriminator<TContext>(
     args: Record<string, unknown>,
 ): Result<string> {
     const raw = args[execCtx.discriminator];
+    // Bug #116 fix: distinguish missing from wrong-type discriminator.
+    if (raw !== undefined && typeof raw !== 'string') {
+        const text = [
+            `<tool_error code="INVALID_DISCRIMINATOR">`,
+            `<message>Discriminator field "${escapeXml(execCtx.discriminator)}" must be a string, got ${typeof raw}.</message>`,
+            `<available_actions>${escapeXml(execCtx.actionKeysString)}</available_actions>`,
+            `<recovery>Set "${escapeXml(execCtx.discriminator)}" to one of the available actions as a string.</recovery>`,
+            `</tool_error>`,
+        ].join('\n');
+        return fail({ content: [{ type: 'text', text }], isError: true });
+    }
     const value = typeof raw === 'string' ? raw : undefined;
     if (!value) {
         const text = [

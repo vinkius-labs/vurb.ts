@@ -318,6 +318,15 @@ export function createDevServer(config: DevServerConfig): DevServer {
             // Start watching
             const watchOptions = { recursive: true };
 
+            // Bug #128: warn on Linux with Node.js < 20 where recursive watch is unsupported
+            if (process.platform === 'linux' && parseInt(process.versions.node, 10) < 20) {
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[fusion dev] Warning: recursive fs.watch() is not fully supported on Linux with Node.js < 20. ' +
+                    'File changes in subdirectories may not be detected. Consider upgrading to Node.js 20+.',
+                );
+            }
+
             watcher = watch(absoluteDir, watchOptions, (_eventType, filename) => {
                 if (!filename) return;
 

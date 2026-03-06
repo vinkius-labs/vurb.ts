@@ -29,6 +29,15 @@
 import { encode, type EncodeOptions } from '@toon-format/toon';
 import { type StringifyFn } from './serialization/JsonSerializer.js';
 
+/**
+ * Non-enumerable brand symbol stamped on all helper-created ToolResponse objects.
+ * Used by FluentToolBuilder to reliably distinguish framework responses from
+ * domain data that coincidentally matches the ToolResponse shape (Bug #127).
+ *
+ * @internal
+ */
+export const TOOL_RESPONSE_BRAND: unique symbol = Symbol.for('mcp-fusion.ToolResponse');
+
 // ============================================================================
 // XML Safety
 // ============================================================================
@@ -127,7 +136,9 @@ export function success(data: string | object, compiledStringify?: StringifyFn):
     const text = typeof data === 'string'
         ? (data || 'OK')
         : (compiledStringify ? compiledStringify(data) : JSON.stringify(data, null, 2));
-    return { content: [{ type: "text", text }] };
+    const resp: ToolResponse = { content: [{ type: "text", text }] };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }
 
 /**
@@ -160,10 +171,12 @@ export function success(data: string | object, compiledStringify?: StringifyFn):
  */
 export function error(message: string, code?: ErrorCode): ToolResponse {
     const codeAttr = code !== undefined ? ` code="${escapeXmlAttr(code)}"` : '';
-    return {
+    const resp: ToolResponse = {
         content: [{ type: "text", text: `<tool_error${codeAttr}>\n<message>${escapeXml(message)}</message>\n</tool_error>` }],
         isError: true,
     };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }
 
 /**
@@ -187,13 +200,15 @@ export function error(message: string, code?: ErrorCode): ToolResponse {
  */
 export function required(field: string): ToolResponse {
     const f = escapeXml(field);
-    return {
+    const resp: ToolResponse = {
         content: [{
             type: "text",
             text: `<tool_error code="MISSING_REQUIRED_FIELD">\n<message>Required field "${f}" is missing.</message>\n<recovery>Provide the "${f}" parameter and retry.</recovery>\n</tool_error>`,
         }],
         isError: true,
     };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }
 
 /**
@@ -226,7 +241,9 @@ export function required(field: string): ToolResponse {
 export function toonSuccess(data: unknown, options?: EncodeOptions): ToolResponse {
     const defaults: EncodeOptions = { delimiter: '|' };
     const text = encode(data, { ...defaults, ...options });
-    return { content: [{ type: "text", text }] };
+    const resp: ToolResponse = { content: [{ type: "text", text }] };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }
 
 // ============================================================================
@@ -387,5 +404,7 @@ export function toolError(code: ErrorCode, options: ToolErrorOptions): ToolRespo
     // Warnings are non-fatal — do not set isError so the response
     // flows through the success path while still carrying guidance.
     const isError = severity !== 'warning';
-    return { content: [{ type: "text", text: parts.join('\n') }], isError };
+    const resp: ToolResponse = { content: [{ type: "text", text: parts.join('\n') }], isError };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }

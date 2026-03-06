@@ -69,9 +69,13 @@ export class FluentRouter<TContext> {
      * raw `MiddlewareFn` functions.
      *
      * @param mw - Middleware function or MiddlewareDefinition
-     * @returns `this` for chaining
+     * @returns Router with narrowed `TContext` type (when using MiddlewareDefinition)
      */
-    use(mw: MiddlewareFn<TContext> | MiddlewareDefinition<TContext, Record<string, unknown>>): this {
+    use<TDerived extends Record<string, unknown>>(
+        mw: MiddlewareDefinition<TContext, TDerived>,
+    ): FluentRouter<TContext & TDerived>;
+    use(mw: MiddlewareFn<TContext>): this;
+    use(mw: MiddlewareFn<TContext> | MiddlewareDefinition<TContext, Record<string, unknown>>): FluentRouter<TContext> {
         this._middlewares.push(resolveMiddleware(mw));
         return this;
     }
@@ -139,7 +143,7 @@ export class FluentRouter<TContext> {
         }
 
         // Inherit router description as fallback
-        if (this._description && !builder._description) {
+        if (this._description) {
             builder._description = this._description;
         }
 

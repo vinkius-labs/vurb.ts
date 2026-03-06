@@ -698,6 +698,13 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
             );
         }
         this._hasFlat = true;
+        // Bug #115 fix: reject empty or whitespace-only action names.
+        if (!config.name || !config.name.trim()) {
+            throw new Error(
+                `Action name must be a non-empty string on builder "${this._name}". ` +
+                `Received: ${JSON.stringify(config.name)}.`,
+            );
+        }
         if (config.name.includes('.')) {
             throw new Error(
                 `Action name "${config.name}" must not contain dots. ` +

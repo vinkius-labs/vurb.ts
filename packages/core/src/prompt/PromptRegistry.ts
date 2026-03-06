@@ -481,8 +481,15 @@ export class PromptRegistry<TContext = void> {
     /** Check if a prompt with the given name is registered. */
     has(name: string): boolean { return this._builders.has(name); }
 
-    /** Remove all registered prompts. */
-    clear(): void { this._builders.clear(); }
+    /** Remove all registered prompts, interceptors, and cancel pending timers. */
+    clear(): void {
+        this._builders.clear();
+        this._interceptors.length = 0;
+        if (this._notifyDebounceTimer !== undefined) {
+            clearTimeout(this._notifyDebounceTimer);
+            this._notifyDebounceTimer = undefined;
+        }
+    }
 
     /** Number of registered prompts. */
     get size(): number { return this._builders.size; }

@@ -32,6 +32,7 @@ import { computeServerDigest } from '../introspection/BehaviorDigest.js';
 import { type ToolExposition } from '../exposition/types.js';
 import { compileExposition, type FlatRoute, type ExpositionResult } from '../exposition/ExpositionCompiler.js';
 import { type PromptRegistry, type PromptFilter } from '../prompt/PromptRegistry.js';
+import { type LoopbackContext } from '../prompt/types.js';
 import { StateMachineGate, type FsmStateStore, type FsmSnapshot } from '../fsm/StateMachineGate.js';
 import type { TelemetrySink } from '../observability/TelemetryEvent.js';
 
@@ -703,7 +704,7 @@ function injectLoopbackDispatcher<TContext>(
     ctx: TContext,
     registry: RegistryDelegate<TContext>,
     signal?: AbortSignal,
-): TContext {
+): TContext & LoopbackContext {
     // Protect the original context from mutation — use prototype-based proxy
     const wrapped = (ctx != null && typeof ctx === 'object'
         ? Object.create(ctx as object)
@@ -723,7 +724,7 @@ function injectLoopbackDispatcher<TContext>(
             raw: response,
         };
     };
-    return wrapped as TContext;
+    return wrapped as TContext & LoopbackContext;
 }
 
 /**

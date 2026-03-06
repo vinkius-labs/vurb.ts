@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.27] - 2026-03-06
+
+### Fixed
+
+- `GroupedToolBuilder.action()` now rejects empty/whitespace-only action names at registration — previously accepted `''`, creating unreachable discriminator values
+- `ExecutionPipeline.parseDiscriminator` now returns `INVALID_DISCRIMINATOR` when the `action` field is present but not a string — previously reported `MISSING_DISCRIMINATOR`, masking the actual type error
+- `PromptRegistry.clear()` now also clears interceptors and cancels pending debounce timers — previously only cleared the prompt map, leaving stale interceptors and timers active
+- `FluentToolBuilder._addParam()` now rejects duplicate parameter names with a clear error — previously last-write-wins silently overwrote the first definition
+- `FluentRouter.use()` now returns a type-narrowed `FluentRouter<TContext & TDerived>` when used with `MiddlewareDefinition` — previously returned `this` without narrowing, causing type erasure of derived context
+- `injectLoopbackDispatcher` now returns `TContext & LoopbackContext` — previously typed as `TContext`, hiding the `invokeTool` property from prompt handlers
+- `FluentToolBuilder` constructor now rejects empty/whitespace-only tool names — previously accepted `''`, creating invalid tools per MCP spec
+- `FluentToolBuilder._addParam()` now rejects empty/whitespace-only param names — previously accepted `''`, producing invalid JSON Schema
+- `FluentToolBuilder.handle()` now throws on double-invocation — previously allowed calling `.handle()` twice on the same builder without error
+- `FluentToolBuilder.annotations()` now merges with existing annotations — previously replaced the entire object, losing prior keys
+- `ActionGroupBuilder.action()` 2-arg shorthand now validates handler is a function — previously used `!` non-null assertion, risking undefined handler in dynamic construction
+- `FluentRouter._createBuilder()` description fallback no longer has dead `!builder._description` branch — the conditional was always true since the builder is freshly created
+- `FluentToolBuilder` ToolResponse auto-detection now uses a `TOOL_RESPONSE_BRAND` symbol for reliable identification — previously relied solely on a structural heuristic that could false-positive on domain data with `{ content: [{ type: 'text' }] }` shape
+- `DevServer` recursive `fs.watch()` now emits a warning on Linux with Node.js < 20 where recursive watching is unsupported — previously failed silently, missing file changes in subdirectories
+
 ## [3.1.26] - 2026-03-06
 
 ### Fixed

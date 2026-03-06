@@ -265,6 +265,11 @@ export class ActionGroupBuilder<TContext, TCommon extends Record<string, unknown
         maybeHandler?: ActionHandler<TContext>,
     ): this {
         // 2-arg shorthand: action('invite', inviteHandler)
+        if (typeof configOrName === 'string' && typeof maybeHandler !== 'function') {
+            throw new Error(
+                `action("${configOrName}") requires a handler function as the second argument.`,
+            );
+        }
         const config: ActionConfig<TContext> = typeof configOrName === 'string'
             ? { name: configOrName, handler: maybeHandler! }
             : configOrName;

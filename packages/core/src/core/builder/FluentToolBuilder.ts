@@ -28,7 +28,7 @@
 import { z, type ZodType, type ZodObject, type ZodRawShape } from 'zod';
 import { GroupedToolBuilder } from './GroupedToolBuilder.js';
 import { type ToolResponse, type MiddlewareFn } from '../types.js';
-import { success } from '../response.js';
+import { success, TOOL_RESPONSE_BRAND } from '../response.js';
 import { type Presenter } from '../../presenter/Presenter.js';
 import { type ConcurrencyConfig } from '../execution/ConcurrencyGuard.js';
 import { type SandboxConfig } from '../../sandbox/SandboxEngine.js';
@@ -87,6 +87,26 @@ export class FluentToolBuilder<
     /** @internal */ _inputSchema?: ZodObject<ZodRawShape>;
     /** @internal */ _withParams: Record<string, ZodType> = {};
     /** @internal */ _tags: string[] = [];
+
+    /**
+     * @internal Bug #118 fix: reject duplicate parameter names.
+     * All `withXxx()` methods delegate to this instead of assigning directly.
+     */
+    private _addParam(name: string, schema: ZodType): void {
+        if (!name || !name.trim()) {
+            throw new Error(
+                `Empty parameter name on tool "${this._name}". ` +
+                `Each parameter must have a non-empty name.`,
+            );
+        }
+        if (name in this._withParams) {
+            throw new Error(
+                `Duplicate parameter name "${name}" on tool "${this._name}". ` +
+                `Each parameter must have a unique name.`,
+            );
+        }
+        this._withParams[name] = schema;
+    }
     /** @internal */ _middlewares: MiddlewareFn<TContext>[] = [];
     /** @internal */ _returns?: Presenter<unknown>;
     /** @internal */ _semanticDefaults: SemanticDefaults;
@@ -100,6 +120,7 @@ export class FluentToolBuilder<
     /** @internal */ _concurrency?: ConcurrencyConfig;
     /** @internal */ _egressMaxBytes?: number;
     /** @internal */ _sandboxConfig?: SandboxConfig;
+    /** @internal */ _handlerSet = false;
     /** @internal */ _fsmStates?: string[];
     /** @internal */ _fsmTransition?: string;
 
@@ -108,6 +129,12 @@ export class FluentToolBuilder<
      * @param defaults - Semantic defaults from the verb (`query`, `mutation`, `action`)
      */
     constructor(name: string, defaults: SemanticDefaults = {}) {
+        if (!name || !name.trim()) {
+            throw new Error(
+                'Tool name must be a non-empty string. ' +
+                'Use the "domain.action" format (e.g. "users.list").',
+            );
+        }
         this._name = name;
         this._semanticDefaults = defaults;
     }
@@ -169,7 +196,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, string>, TCtx> {
-        this._withParams[name] = description ? z.string().describe(description) : z.string();
+        this._addParam(name, description ? z.string().describe(description) : z.string());
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, string>, TCtx>;
     }
 
@@ -185,7 +212,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, string>>, TCtx> {
         const base = description ? z.string().describe(description) : z.string();
-        this._withParams[name] = base.optional();
+        this._addParam(name, base.optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, string>>, TCtx>;
     }
 
@@ -200,7 +227,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, number>, TCtx> {
-        this._withParams[name] = description ? z.number().describe(description) : z.number();
+        this._addParam(name, description ? z.number().describe(description) : z.number());
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, number>, TCtx>;
     }
 
@@ -216,7 +243,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, number>>, TCtx> {
         const base = description ? z.number().describe(description) : z.number();
-        this._withParams[name] = base.optional();
+        this._addParam(name, base.optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, number>>, TCtx>;
     }
 
@@ -231,7 +258,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, boolean>, TCtx> {
-        this._withParams[name] = description ? z.boolean().describe(description) : z.boolean();
+        this._addParam(name, description ? z.boolean().describe(description) : z.boolean());
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, boolean>, TCtx>;
     }
 
@@ -247,7 +274,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, boolean>>, TCtx> {
         const base = description ? z.boolean().describe(description) : z.boolean();
-        this._withParams[name] = base.optional();
+        this._addParam(name, base.optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, boolean>>, TCtx>;
     }
 
@@ -273,7 +300,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, V>, TCtx> {
         const schema = z.enum(values as [V, ...V[]]);
-        this._withParams[name] = description ? schema.describe(description) : schema;
+        this._addParam(name, description ? schema.describe(description) : schema);
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, V>, TCtx>;
     }
 
@@ -291,7 +318,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, V>>, TCtx> {
         const schema = z.enum(values as [V, ...V[]]);
-        this._withParams[name] = description ? schema.describe(description).optional() : schema.optional();
+        this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, V>>, TCtx>;
     }
 
@@ -318,7 +345,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>, TCtx> {
         const schema = z.array(resolveArrayItemType(itemType));
-        this._withParams[name] = description ? schema.describe(description) : schema;
+        this._addParam(name, description ? schema.describe(description) : schema);
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>, TCtx>;
     }
 
@@ -336,7 +363,7 @@ export class FluentToolBuilder<
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>>, TCtx> {
         const schema = z.array(resolveArrayItemType(itemType));
-        this._withParams[name] = description ? schema.describe(description).optional() : schema.optional();
+        this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>>, TCtx>;
     }
 
@@ -477,7 +504,7 @@ export class FluentToolBuilder<
      * @returns `this` for chaining
      */
     annotations(a: Record<string, unknown>): FluentToolBuilder<TContext, TInput, TCtx> {
-        this._annotations = a;
+        this._annotations = { ...this._annotations, ...a };
         return this;
     }
 
@@ -661,6 +688,15 @@ export class FluentToolBuilder<
             ctx: TCtx,
         ) => Promise<ToolResponse | unknown>,
     ): GroupedToolBuilder<TContext> {
+        // Bug #123 fix: guard against double-invocation of handle()/resolve()
+        if (this._handlerSet) {
+            throw new Error(
+                `handle() already called on tool "${this._name}". ` +
+                `Each FluentToolBuilder can only have one handler.`,
+            );
+        }
+        this._handlerSet = true;
+
         // Build accumulated with* params into ZodObject
         if (Object.keys(this._withParams).length > 0) {
             this._inputSchema = z.object(this._withParams as ZodRawShape);
@@ -708,20 +744,24 @@ export class FluentToolBuilder<
             }
 
             // Auto-wrap non-ToolResponse results (implicit success)
-            // Check for MCP ToolResponse shape: { content: [{ type: 'text', text: string }] }
-            // We verify content[0].type === 'text' AND that the object has no extra
-            // properties beyond 'content'/'isError' to avoid false positives when a
-            // domain object happens to have a coincidental `content` array field.
-            if (
-                typeof result === 'object' &&
-                result !== null &&
-                'content' in result &&
-                Array.isArray((result as { content: unknown }).content) &&
-                (result as { content: Array<{ type?: unknown }> }).content.length > 0 &&
-                (result as { content: Array<{ type?: unknown }> }).content[0]?.type === 'text' &&
-                Object.keys(result).every(k => k === 'content' || k === 'isError')
-            ) {
-                return result as ToolResponse;
+            // Primary: check brand symbol stamped by success()/error()/toolError() helpers.
+            // Fallback: shape-based heuristic for manually constructed ToolResponse objects.
+            if (typeof result === 'object' && result !== null) {
+                // Brand check — reliable, no false positives (Bug #127)
+                if (TOOL_RESPONSE_BRAND in result) {
+                    return result as ToolResponse;
+                }
+                // Shape heuristic — backward compat for manually constructed ToolResponse
+                if (
+                    'content' in result &&
+                    Array.isArray((result as { content: unknown }).content) &&
+                    (result as { content: Array<{ type?: unknown }> }).content.length > 0 &&
+                    (result as { content: Array<{ type?: unknown }> }).content[0]?.type === 'text' &&
+                    typeof (result as { content: Array<{ text?: unknown }> }).content[0]?.text === 'string' &&
+                    Object.keys(result).every(k => k === 'content' || k === 'isError')
+                ) {
+                    return result as ToolResponse;
+                }
             }
 
             // Implicit success() — the dev just returns raw data!
