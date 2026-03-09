@@ -1,7 +1,7 @@
 # Tool Exposition Strategies
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -19,7 +19,7 @@ You define three actions — `list`, `create`, `delete` — inside one `projects
 The default. Every action becomes an independent MCP tool with its own name, schema, and annotations:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

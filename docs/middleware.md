@@ -1,7 +1,7 @@
 # Middleware
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -35,7 +35,7 @@ Vurb.ts's middleware system lets you extract these concerns into reusable, compo
 The primary pattern. Create a middleware that derives data and injects it into context — like tRPC's `.use()`:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -56,7 +56,7 @@ The returned object merges into `ctx` via `Object.assign`. Downstream handlers s
 Same as `f.middleware()` but without needing an `initVurb()` instance — for shared utility packages:
 
 ```typescript
-import { defineMiddleware } from 'vurb';
+import { defineMiddleware } from '@vurb/core';
 
 const addTenant = defineMiddleware(async (ctx: { orgId: string }) => {
   const tenant = await db.getTenant(ctx.orgId);
@@ -111,7 +111,7 @@ export const sensitiveTool = f.query('admin.sensitive_data')
 For before/after hooks that need to wrap `next()` directly:
 
 ```typescript
-import { type MiddlewareFn } from 'vurb';
+import { type MiddlewareFn } from '@vurb/core';
 
 const loggingMiddleware: MiddlewareFn<AppContext> = async (ctx, args, next) => {
   console.log(`[${new Date().toISOString()}] Action called`);

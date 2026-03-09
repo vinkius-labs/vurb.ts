@@ -1,7 +1,7 @@
 # MVA Presenter
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -35,7 +35,7 @@ The handler just queries the database. The Presenter does everything else.
 ## Creating Your First Presenter {#first}
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 export const UserPresenter = createPresenter('User')
   .schema({
@@ -89,7 +89,7 @@ const InvoicePresenter = createPresenter('Invoice')
 Connect a Presenter with `.returns()`. The handler returns raw data, the Presenter handles everything else:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -163,7 +163,7 @@ The AI automatically receives these rules when invoice data is in the response �
 Render charts, tables, and diagrams server-side. The AI passes them through unchanged:
 
 ```typescript
-import { createPresenter, t, ui } from 'vurb';
+import { createPresenter, t, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({ id: t.string, amount_cents: t.number, status: t.enum('paid', 'pending', 'overdue') })
@@ -189,7 +189,7 @@ ui.summary('3 invoices found.')         // Collection summaries
 Here's a production-ready Presenter that combines every feature:
 
 ```typescript
-import { createPresenter, t, suggest, ui } from 'vurb';
+import { createPresenter, t, suggest, ui } from '@vurb/core';
 
 export const InvoicePresenter = createPresenter('Invoice')
   .schema({

@@ -1,7 +1,7 @@
 # Self-Healing Context
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -84,7 +84,7 @@ The `llmHint` tells the AI that its mental model of this project is outdated —
 The most powerful pattern combines structured errors, affordances, and context injection. Here's a complete billing workflow:
 
 ```typescript
-import { createPresenter, t, suggest, toolError, success } from 'vurb';
+import { createPresenter, t, suggest, toolError, success } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({

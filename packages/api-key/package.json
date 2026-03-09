@@ -46,10 +46,10 @@
     "access": "public"
   },
   "peerDependencies": {
-    "vurb": "^3.0.0"
+    "@vurb/core": "^3.0.0"
   },
   "devDependencies": {
-    "vurb": ">=3.0.0"
+    "@vurb/core": ">=3.0.0"
   },
   "license": "Apache-2.0"
 }

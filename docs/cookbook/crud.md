@@ -1,7 +1,7 @@
 # CRUD Tools
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -16,7 +16,7 @@ Install Vurb.ts before following this recipe: `npm install vurb @modelcontextpro
 Every SaaS application has entities — projects, invoices, users, tasks. Vurb.ts's Fluent API makes defining CRUD operations for these entities a joy. Instead of writing verbose JSON schemas or tangled Zod objects, you declare your tool's intent with semantic verbs and chainable parameter methods.
 
 > [!TIP]
-> Already using Prisma? Skip manual tool definitions — [@vurb/prisma-gen](/prisma-gen) auto-generates CRUD tools directly from your `prisma/schema.prisma`. Scaffold a Prisma project with `npx vurb create my-api --vector prisma`.
+> Already using Prisma? Skip manual tool definitions — [@vurb/prisma-gen](/prisma-gen) auto-generates CRUD tools directly from your `prisma/schema.prisma`. Scaffold a Prisma project with `npx @vurb/core create my-api --vector prisma`.
 
 By the end of this page you'll have a complete, production-ready CRUD module that any developer can read and understand in seconds.
 
@@ -25,7 +25,7 @@ By the end of this page you'll have a complete, production-ready CRUD module tha
 Before building tools, define the **application context** — the shared state every tool handler receives. This is the foundation of type safety in Vurb.ts: once you declare it, every `.handle()` callback knows exactly what `ctx` contains.
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   db: DatabaseClient;
@@ -48,7 +48,7 @@ Use `f.query()` for any operation that **reads data without side effects**. The 
 Before building query tools, define a Presenter for the entity. The Presenter handles validation, truncation, and formatting — so your tools stay lean:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 export const ProjectPresenter = createPresenter('Project')
   .schema({
@@ -168,7 +168,7 @@ You don't need to tell the AI to "confirm before deleting" — the framework han
 Once your tools are built, registration is a single line:
 
 ```typescript
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 

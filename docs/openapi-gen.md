@@ -162,7 +162,7 @@ For rapid prototyping, `loadOpenAPI()` parses the spec at startup and creates li
 
 ```typescript
 import { loadOpenAPI } from '@vurb/openapi-gen';
-import { defineTool, ToolRegistry } from 'vurb';
+import { defineTool, ToolRegistry } from '@vurb/core';
 
 const tools = loadOpenAPI(specYaml, {
     baseUrl: 'https://api.example.com',
@@ -191,7 +191,7 @@ When the API spec changes, restart the server and the tools update automatically
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { defineTool, ToolRegistry, createServerAttachment } from 'vurb';
+import { defineTool, ToolRegistry, createServerAttachment } from '@vurb/core';
 import { loadOpenAPI } from '@vurb/openapi-gen';
 import { readFileSync } from 'node:fs';
 

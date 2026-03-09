@@ -23,7 +23,7 @@ Structured perception for AI agents. Zero hallucination. Zero data leaks.
 ## Get Started in 5 Seconds
 
 ```bash
-npx vurb create my-server
+npx @vurb/core create my-server
 cd my-server && vurb dev
 ```
 
@@ -51,13 +51,13 @@ Choose a vector to scaffold exactly the project you need:
 
 ```bash
 # Database-driven server with Presenter egress firewall
-npx vurb create my-api --vector prisma --transport sse --yes
+npx @vurb/core create my-api --vector prisma --transport sse --yes
 
 # Bridge your n8n workflows to any MCP client
-npx vurb create ops-bridge --vector n8n --yes
+npx @vurb/core create ops-bridge --vector n8n --yes
 
 # REST API → MCP in one command
-npx vurb create petstore --vector openapi --yes
+npx @vurb/core create petstore --vector openapi --yes
 ```
 
 Drop a file in `src/tools/`, restart — it's a live MCP tool. No central import file, no merge conflicts:
@@ -147,7 +147,7 @@ case 'get_invoice':
 **After** — Vurb.ts with MVA:
 
 ```typescript
-import { createPresenter, suggest, ui, t } from 'vurb';
+import { createPresenter, suggest, ui, t } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
     .schema({
@@ -423,7 +423,7 @@ Discriminator enum compilation. Per-field annotations tell the LLM which paramet
 ### tRPC-Style Client — Compile-Time Route Validation
 
 ```typescript
-import { createVurbClient } from 'vurb';
+import { createVurbClient } from '@vurb/core';
 import type { AppRouter } from './server.js';
 
 const client = createVurbClient<AppRouter>(transport);
@@ -456,8 +456,8 @@ return f.error('NOT_FOUND', `Project '${input.id}' not found`)
 Nine modules for SOC2-auditable AI deployments:
 
 ```bash
-npx vurb lock --server ./src/server.ts       # Generate vurb.lock
-npx vurb lock --check --server ./src/server.ts  # Gate CI builds
+npx @vurb/core lock --server ./src/server.ts       # Generate vurb.lock
+npx @vurb/core lock --check --server ./src/server.ts  # Gate CI builds
 ```
 
 - **Capability Lockfile** — deterministic, git-diffable artifact capturing every tool's behavioral contract
@@ -542,8 +542,8 @@ n8n handles the Stripe/Salesforce/webhook logic. Vurb.ts provides typing, Presen
 ## Inspector — Real-Time Dashboard
 
 ```bash
-npx vurb inspect        # Auto-discover and connect
-npx vurb inspect --demo  # Built-in simulator
+npx @vurb/core inspect        # Auto-discover and connect
+npx @vurb/core inspect --demo  # Built-in simulator
 ```
 
 ```

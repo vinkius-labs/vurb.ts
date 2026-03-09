@@ -80,7 +80,7 @@ skills/
 ### Step 2 — Discover and Register
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import { SkillRegistry, autoDiscoverSkills, createSkillTools } from '@vurb/skills';
 
 interface AppContext { db: PrismaClient; userId: string }

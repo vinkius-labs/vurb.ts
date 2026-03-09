@@ -6,7 +6,7 @@ description: "Protocol-level MCP transport inspection — verify the wire format
 # Raw Response
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 The `MvaTestResult.rawResponse` field gives you direct access to the raw MCP `ToolResponse` object — the exact data structure that would be sent over the wire to the MCP client.
@@ -50,7 +50,7 @@ describe('Raw Response Shape', () => {
 The critical property of the Symbol Backdoor: `JSON.stringify` ignores Symbol keys. This proves that MVA metadata never leaks to the MCP transport:
 
 ```typescript
-import { MVA_META_SYMBOL } from 'vurb';
+import { MVA_META_SYMBOL } from '@vurb/core';
 
 describe('Symbol Invisibility', () => {
     it('JSON.stringify does NOT include MVA metadata', async () => {

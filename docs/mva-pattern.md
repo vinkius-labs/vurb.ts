@@ -1,7 +1,7 @@
 # The MVA Pattern
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Why MVC Fails for Agents](#why-mvc-fails)
@@ -42,7 +42,7 @@ Three APIs produce the same result: `createPresenter('Name').schema(s).rules(r)`
 The Zod schema is a security boundary. Only declared fields pass through:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 export const InvoicePresenter = createPresenter('Invoice')
   .schema({
@@ -93,7 +93,7 @@ const InvoicePresenter = createPresenter('Invoice')
 Presenters generate charts and visualizations the agent renders directly:
 
 ```typescript
-import { definePresenter, ui } from 'vurb';
+import { definePresenter, ui } from '@vurb/core';
 
 export const InvoicePresenter = definePresenter({
   name: 'Invoice',
@@ -145,7 +145,7 @@ Without this, 10,000 rows dump into the context window. With it, the agent recei
 `.suggest()` with the `suggest()` helper tells the agent what it can do next based on state:
 
 ```typescript
-import { createPresenter, suggest } from 'vurb';
+import { createPresenter, suggest } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema(invoiceSchema)
@@ -184,7 +184,7 @@ const InvoicePresenter = createPresenter('Invoice')
 The `.returns()` method connects a Presenter to a tool. The handler returns raw data; the Presenter does everything else:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

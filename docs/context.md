@@ -1,7 +1,7 @@
 # State & Context
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -22,7 +22,7 @@ Define it once. Use it everywhere. Fully typed, zero annotations.
 Pass a generic to `initVurb()` and every tool, middleware, and Presenter inherits the type:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   userId: string;
@@ -108,7 +108,7 @@ After this middleware runs, handlers see `ctx.role` and `ctx.email` alongside th
 Context flows through to Presenter callbacks — `.rules()`, `.suggest()`, and `.ui()` all receive `ctx` as their second argument:
 
 ```typescript
-import { createPresenter, t, suggest } from 'vurb';
+import { createPresenter, t, suggest } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({

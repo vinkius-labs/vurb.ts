@@ -23,7 +23,7 @@ The `Vurb.ts` CLI generates and verifies capability lockfiles from the command l
 The CLI is included in `Vurb.ts` and available via npx:
 
 ```bash
-npx vurb lock --server ./src/server.ts
+npx @vurb/core lock --server ./src/server.ts
 ```
 
 Or install globally:
@@ -137,7 +137,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - run: npm ci
-      - run: npx vurb lock --check --server ./src/server.ts
+      - run: npx @vurb/core lock --check --server ./src/server.ts
 ```
 
 ### GitLab CI
@@ -146,7 +146,7 @@ jobs:
 governance:
   script:
     - npm ci
-    - npx vurb lock --check --server ./src/server.ts
+    - npx @vurb/core lock --check --server ./src/server.ts
 ```
 
 ### Pre-commit Hook
@@ -154,7 +154,7 @@ governance:
 ```bash
 #!/bin/sh
 # .husky/pre-commit
-npx vurb lock --check --server ./src/server.ts
+npx @vurb/core lock --check --server ./src/server.ts
 ```
 
 

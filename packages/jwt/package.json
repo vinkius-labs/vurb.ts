@@ -47,7 +47,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "vurb": "^3.0.0",
+    "@vurb/core": "^3.0.0",
     "jose": "^5.0.0"
   },
   "peerDependenciesMeta": {
@@ -56,7 +56,7 @@
     }
   },
   "devDependencies": {
-    "vurb": ">=3.0.0"
+    "@vurb/core": ">=3.0.0"
   },
   "license": "Apache-2.0"
 }

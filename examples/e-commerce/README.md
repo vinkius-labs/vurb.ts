@@ -77,7 +77,7 @@ The **Inspector** is the interactive terminal dashboard that connects to your se
 ### Demo Mode (no server needed)
 
 ```bash
-npx vurb insp --demo
+npx @vurb/core insp --demo
 ```
 
 Launches a built-in simulator that emits realistic events so you can explore the TUI immediately.
@@ -89,17 +89,17 @@ Launches a built-in simulator that emits realistic events so you can explore the
 npm start
 
 # Terminal 2 — Launch Inspector
-npx vurb inspect
+npx @vurb/core inspect
 ```
 
 ### Headless Mode (CI / ECS / K8s)
 
 ```bash
 # Colored stderr output
-npx vurb insp --out stderr --demo
+npx @vurb/core insp --out stderr --demo
 
 # NDJSON (for log aggregation)
-Vurb.ts_LOG_FORMAT=json npx vurb insp --out stderr
+Vurb.ts_LOG_FORMAT=json npx @vurb/core insp --out stderr
 ```
 
 ### What You See in the Inspector
@@ -170,8 +170,8 @@ Show system health
 | `npm run build` | Compile TypeScript |
 | `npm run typecheck` | Type-check without compiling |
 | `npm test` | Run tests |
-| `npx vurb insp --demo` | Inspector TUI with simulator |
-| `npx vurb inspect` | Inspector TUI connected to server |
+| `npx @vurb/core insp --demo` | Inspector TUI with simulator |
+| `npx @vurb/core inspect` | Inspector TUI connected to server |
 
 ---
 

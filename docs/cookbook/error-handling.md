@@ -1,7 +1,7 @@
 # Self-Healing Errors
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -22,7 +22,7 @@ Instead of a generic `"Invoice not found"` message that leaves the AI guessing, 
 For straightforward failures, use the `error()` helper. It wraps your message in the standard MCP `isError: true` response:
 
 ```typescript
-import { initVurb, error, success } from 'vurb';
+import { initVurb, error, success } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -43,7 +43,7 @@ This works, but the AI only sees a text message. It doesn't know *what to try ne
 `toolError()` creates a rich error envelope with everything the AI needs to self-correct:
 
 ```typescript
-import { initVurb, toolError, success } from 'vurb';
+import { initVurb, toolError, success } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

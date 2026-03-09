@@ -6,7 +6,7 @@ description: "Generate, verify, and integrate vurb.lock into CI/CD. A determinis
 # Capability Lockfile
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Generating the Lockfile](#generating)
@@ -36,7 +36,7 @@ If stale → CI fails → reviewer inspects the git diff before merge
 From the command line:
 
 ```bash
-npx vurb lock --server ./src/server.ts
+npx @vurb/core lock --server ./src/server.ts
 ```
 
 Or programmatically:
@@ -247,7 +247,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - run: npm ci
-      - run: npx vurb lock --check --server ./src/server.ts
+      - run: npx @vurb/core lock --check --server ./src/server.ts
 ```
 
 ### GitLab CI
@@ -257,7 +257,7 @@ governance:lockfile:
   stage: test
   script:
     - npm ci
-    - npx vurb lock --check --server ./src/server.ts
+    - npx @vurb/core lock --check --server ./src/server.ts
   rules:
     - if: $CI_MERGE_REQUEST_ID
 ```

@@ -1,7 +1,7 @@
 # Result Monad
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -21,7 +21,7 @@ You don't *have* to use them — returning raw data from a handler auto-wraps it
 The simplest pattern: return `success(data)` on the happy path, `error(message)` on failure:
 
 ```typescript
-import { initVurb, success, error } from 'vurb';
+import { initVurb, success, error } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -48,7 +48,7 @@ export const getProject = f.query('projects.get')
 When a simple error message isn't enough, `toolError()` creates a machine-readable error envelope with recovery instructions. See the [Self-Healing Errors](/cookbook/error-handling) cookbook for the full pattern.
 
 ```typescript
-import { toolError, success } from 'vurb';
+import { toolError, success } from '@vurb/core';
 
 export const chargeInvoice = f.mutation('billing.charge')
   .describe('Process a payment')
@@ -77,7 +77,7 @@ export const chargeInvoice = f.mutation('billing.charge')
 For complex responses that need UI blocks, rules, and hints, use the `response()` builder. See the [Custom Responses](/cookbook/custom-responses) cookbook for the full pattern.
 
 ```typescript
-import { response, ui } from 'vurb';
+import { response, ui } from '@vurb/core';
 
 export const getDashboard = f.query('analytics.dashboard')
   .describe('Get analytics dashboard')

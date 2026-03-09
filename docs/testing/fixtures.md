@@ -6,7 +6,7 @@ description: "Shared context, per-test overrides, async factories, and isolation
 # Fixtures
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 Fixtures are the foundation of every test suite — the shared context, mock data, and configuration that prepare the environment before any assertion runs. In the VurbTester, the fixture is the **`contextFactory`** and the **`setup.ts`** file.

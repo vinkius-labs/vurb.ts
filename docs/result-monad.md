@@ -1,7 +1,7 @@
 # Result Monad
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 A lightweight `Result<T>` type following Railway-Oriented Programming. Every step returns `Success<T>` or `Failure`, and TypeScript narrows the type at each checkpoint.
@@ -9,7 +9,7 @@ A lightweight `Result<T>` type following Railway-Oriented Programming. Every ste
 ## The Type {#type}
 
 ```typescript
-import { type Result, type Success, type Failure } from 'vurb';
+import { type Result, type Success, type Failure } from '@vurb/core';
 
 type Result<T> = Success<T> | Failure;
 
@@ -36,7 +36,7 @@ const user = result.value;               // Narrowed to User
 ## Constructors {#constructors}
 
 ```typescript
-import { succeed, fail, error, toolError } from 'vurb';
+import { succeed, fail, error, toolError } from '@vurb/core';
 
 succeed(42);
 succeed({ id: 'user_1', name: 'Alice' });
@@ -53,7 +53,7 @@ fail(toolError('NOT_FOUND', {
 ## Database Lookup {#lookup}
 
 ```typescript
-import { succeed, fail, error, success, type Result } from 'vurb';
+import { succeed, fail, error, success, type Result } from '@vurb/core';
 
 function findProject(db: Database, id: string): Result<Project> {
   const project = db.projects.findFirst({ where: { id } });

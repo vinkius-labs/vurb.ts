@@ -42,7 +42,7 @@ When all five are present, the agent perceives the domain consistently. Hallucin
 ## Quick Reference: MVA in Code
 
 ```typescript
-import { createPresenter, ui, defineTool } from 'vurb';
+import { createPresenter, ui, defineTool } from '@vurb/core';
 import { z } from 'zod';
 
 // ── MODEL: Security boundary via Zod schema ──

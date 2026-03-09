@@ -1,7 +1,7 @@
 # Authentication Middleware
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -18,14 +18,14 @@ Every production MCP server needs authentication. Without it, anyone with transp
 Middleware in Vurb.ts follows the **onion model**: each layer wraps the next, and the returned object gets merged into `ctx` for downstream layers and handlers. Define it once, apply it everywhere.
 
 > [!TIP]
-> Need OAuth Device Flow (RFC 8628) instead of raw JWT? Use [@vurb/oauth](/oauth) — it provides `createAuthTool()` and `requireAuth()` out of the box. Scaffold with `npx vurb create my-api --vector oauth`.
+> Need OAuth Device Flow (RFC 8628) instead of raw JWT? Use [@vurb/oauth](/oauth) — it provides `createAuthTool()` and `requireAuth()` out of the box. Scaffold with `npx @vurb/core create my-api --vector oauth`.
 
 ## Defining Middleware {#defining}
 
 Use `f.middleware()` to create a reusable middleware function. It receives the current `ctx` and returns an object to merge into context:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   token: string;

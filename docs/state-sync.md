@@ -1,7 +1,7 @@
 # State Sync
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -29,7 +29,7 @@ Vurb.ts's State Sync injects RFC 7234-inspired cache-control signals into MCP re
 The simplest way to declare state sync is directly on the tool builder:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -86,7 +86,7 @@ const updateTask = f.action('tasks.update')
 For full control over cache policies across your entire server, configure `stateSync` at the registry level:
 
 ```typescript
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 
 const registry = new ToolRegistry<AppContext>();
 registry.registerAll(sprintsTool, tasksTool, countriesEnumTool);
@@ -208,7 +208,7 @@ Fire-and-forget. Async rejections are swallowed.
 `detectOverlaps()` catches policy ordering bugs at startup:
 
 ```typescript
-import { detectOverlaps } from 'vurb';
+import { detectOverlaps } from '@vurb/core';
 
 const warnings = detectOverlaps([
   { match: 'sprints.*', cacheControl: 'no-store' },

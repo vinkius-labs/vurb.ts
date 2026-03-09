@@ -1,7 +1,7 @@
 # State Sync
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -42,7 +42,7 @@ The agent knows the sprint list is stale and re-fetches before answering.
 The fastest approach — declare cache behavior directly on the tool builder:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -98,7 +98,7 @@ const sync = f.stateSync()
 Configure State Sync when attaching the registry to the server:
 
 ```typescript
-import { initVurb, ToolRegistry } from 'vurb';
+import { initVurb, ToolRegistry } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 const registry = new ToolRegistry();

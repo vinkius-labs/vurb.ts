@@ -1,5 +1,5 @@
 {
-  "name": "vurb-dev",
+  "name": "@vurb/dev",
   "private": true,
   "type": "module",
   "workspaces": [

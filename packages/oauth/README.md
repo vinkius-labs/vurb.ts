@@ -19,7 +19,7 @@
 
 ```typescript
 import { createAuthTool, TokenManager } from '@vurb/oauth';
-import { ToolRegistry, createTool } from 'vurb';
+import { ToolRegistry, createTool } from '@vurb/core';
 
 const auth = createAuthTool({
     clientId: 'your-client-id',

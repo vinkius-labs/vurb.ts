@@ -1,7 +1,7 @@
 # Context-Aware Rules
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -22,7 +22,7 @@ Vurb.ts's system rules travel **with the data**. They appear only when the entit
 For rules that always apply to an entity, pass an array of strings to `.rules()`:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({

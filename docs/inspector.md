@@ -29,19 +29,19 @@ MCP servers communicate over **stdio**, which means traditional debugging tools 
 
 ```bash
 # Launch interactive TUI (auto-discovers running server)
-npx vurb inspect
+npx @vurb/core inspect
 
 # Short alias
-npx vurb insp
+npx @vurb/core insp
 
 # Built-in simulator (no server needed — great for demos)
-npx vurb insp --demo
+npx @vurb/core insp --demo
 
 # Headless stderr output (ECS / K8s / CI)
-npx vurb insp --out stderr
+npx @vurb/core insp --out stderr
 
 # Connect to a specific server PID
-npx vurb insp --pid 12345
+npx @vurb/core insp --pid 12345
 ```
 
 ::: tip Zero Configuration
@@ -271,7 +271,7 @@ The Inspector requires telemetry to be enabled on your Vurb.ts server. There are
 ### Via `startServer`
 
 ```typescript
-import { startServer, createToolRegistry } from 'vurb';
+import { startServer, createToolRegistry } from '@vurb/core';
 
 const registry = createToolRegistry();
 // ... register tools ...

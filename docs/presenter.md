@@ -1,7 +1,7 @@
 # Presenter
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 The Presenter separates what the agent sees from how data is fetched. Your handler returns raw data. The Presenter validates, strips, enriches, truncates, and governs the response. Define `InvoicePresenter` once — every tool and prompt that touches invoices uses the same schema, rules, and affordances. 
@@ -14,7 +14,7 @@ This is the **View** in the [MVA (Model-View-Agent)](/mva-pattern) pattern. Pres
 
 ::: code-group
 ```typescript [Fluent (recommended)]
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 export const UserPresenter = createPresenter('User')
   .schema({
@@ -25,7 +25,7 @@ export const UserPresenter = createPresenter('User')
   });
 ```
 ```typescript [Declarative]
-import { definePresenter } from 'vurb';
+import { definePresenter } from '@vurb/core';
 import { z } from 'zod';
 
 export const UserPresenter = definePresenter({
@@ -45,7 +45,7 @@ export const UserPresenter = definePresenter({
 The `t` namespace provides Zod-backed type helpers that eliminate `import { z } from 'zod'` for 95% of use cases. Every `t.*` value IS a real ZodType — `.describe()`, `.optional()`, `.nullable()` all work.
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({
@@ -143,7 +143,7 @@ const InvoicePresenter = createPresenter('Invoice')
 
 ::: code-group
 ```typescript [Shorthand — .ui()]
-import { createPresenter, t, ui } from 'vurb';
+import { createPresenter, t, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({ id: t.string, amount_cents: t.number })
@@ -220,7 +220,7 @@ HATEOAS-style hints based on the data's current state. Use the `suggest()` helpe
 
 ::: code-group
 ```typescript [Shorthand — suggest()]
-import { createPresenter, t, suggest } from 'vurb';
+import { createPresenter, t, suggest } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({ id: t.string, status: t.enum('pending', 'overdue', 'paid') })
@@ -294,7 +294,7 @@ The handler's only job is to query data. The framework calls `presenter.make(dat
 `PromptMessage.fromView()` decomposes a Presenter's output into prompt messages:
 
 ```typescript
-import { definePrompt, PromptMessage } from 'vurb';
+import { definePrompt, PromptMessage } from '@vurb/core';
 
 const AuditPrompt = definePrompt<AppContext>('audit', {
   args: { invoiceId: 'string' } as const,
@@ -343,7 +343,7 @@ The fluent `createPresenter()` is the recommended API. Both shorthand aliases an
 | `.suggest((item) => [...])` | `.suggestActions((item) => {...})` | HATEOAS suggestions |
 
 ```typescript
-import { createPresenter, t, suggest, ui } from 'vurb';
+import { createPresenter, t, suggest, ui } from '@vurb/core';
 
 export const InvoicePresenter = createPresenter('Invoice')
   .schema({
@@ -388,7 +388,7 @@ return builder.build();
 When validation fails, a `PresenterValidationError` is thrown with per-field details:
 
 ```typescript
-import { PresenterValidationError } from 'vurb';
+import { PresenterValidationError } from '@vurb/core';
 
 try {
   InvoicePresenter.make(badData);

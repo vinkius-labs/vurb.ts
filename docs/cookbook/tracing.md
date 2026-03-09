@@ -1,7 +1,7 @@
 # Tracing & Observability
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -47,7 +47,7 @@ This propagates the tracer to every registered builder via duck-typed `.tracing(
 For development, use the lightweight debug observer instead of full OTel:
 
 ```typescript
-import { createDebugObserver } from 'vurb';
+import { createDebugObserver } from '@vurb/core';
 
 const debug = createDebugObserver();
 

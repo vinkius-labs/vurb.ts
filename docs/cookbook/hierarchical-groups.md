@@ -1,7 +1,7 @@
 # Hierarchical Groups
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -62,7 +62,7 @@ export const resetUser = admin.mutation('reset')
 If your agent struggles with too many individual flat tools, you can group related actions behind a single MCP endpoint using `createTool()`. The framework will expose this as one tool and use an `action` enum to dispatch the call.
 
 ```typescript
-import { createTool, success } from 'vurb';
+import { createTool, success } from '@vurb/core';
 import { z } from 'zod';
 
 export const platformTool = createTool<AppContext>('platform')

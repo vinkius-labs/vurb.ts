@@ -13,7 +13,7 @@ Turn n8n webhook workflows into MCP tools. Tag filtering controls what the AI ca
 
 ```typescript
 import { createN8nConnector, defineN8nTool } from '@vurb/n8n';
-import { defineTool, ToolRegistry } from 'vurb';
+import { defineTool, ToolRegistry } from '@vurb/core';
 
 const n8n = await createN8nConnector({
   url: process.env.N8N_URL!,
@@ -153,7 +153,7 @@ process.on('SIGTERM', () => { n8n.stop(); process.exit(0); });
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { defineTool, ToolRegistry, createServerAttachment } from 'vurb';
+import { defineTool, ToolRegistry, createServerAttachment } from '@vurb/core';
 import { createN8nConnector, defineN8nTool } from '@vurb/n8n';
 
 const n8n = await createN8nConnector({

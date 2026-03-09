@@ -19,21 +19,21 @@ Each stage has one job. If any stage throws, everything after it is skipped — 
 ## Step 1 — Scaffold with Lightspeed {#step-1-scaffold}
 
 ```bash
-npx vurb create secure-api --vector oauth --transport sse --yes
+npx @vurb/core create secure-api --vector oauth --transport sse --yes
 cd secure-api
 ```
 
 The CLI scaffolds a complete project with OAuth middleware, SSE transport, `autoDiscover()`, Vitest, and pre-configured IDE connections — all dependencies installed. You're ready to code in seconds.
 
 ::: tip Manual setup?
-If you prefer manual setup: `npm install vurb @modelcontextprotocol/sdk zod` — then follow the [Traditional Quickstart](/quickstart).
+If you prefer manual setup: `npm install @vurb/core @modelcontextprotocol/sdk zod` — then follow the [Traditional Quickstart](/quickstart).
 :::
 
 ## Step 2 — Define Your Context Type {#step-2-context-type}
 
 ```typescript
 // src/vurb.ts
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   db: PrismaClient;
@@ -98,7 +98,7 @@ Instead of excluding what shouldn't be in the response, declare what _should_. T
 
 ```typescript
 // src/presenters/user.presenter.ts
-import { createPresenter, t, suggest } from 'vurb';
+import { createPresenter, t, suggest } from '@vurb/core';
 
 export const UserPresenter = createPresenter('User')
   .schema({

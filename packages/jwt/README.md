@@ -18,7 +18,7 @@
 ## Quick Start
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import { jwtGuard } from '@vurb/jwt';
 
 const f = initVurb<AppContext>();

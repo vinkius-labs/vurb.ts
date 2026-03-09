@@ -1,7 +1,7 @@
 # Cognitive Guardrails
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -43,7 +43,7 @@ Result: Fast, cheap, and the LLM knows to suggest filters
 The simplest guardrail is `.limit()`. It slices the array before validation and appends an auto-generated truncation message:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 const UserPresenter = createPresenter('User')
   .schema({
@@ -70,7 +70,7 @@ This is enough to teach the AI to add filters on the next call. No configuration
 When the auto-generated message isn't specific enough, `.agentLimit()` lets you craft a custom truncation message that guides the AI to the right filter:
 
 ```typescript
-import { createPresenter, t, ui } from 'vurb';
+import { createPresenter, t, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
   .schema({
@@ -95,7 +95,7 @@ The callback receives the number of `omitted` items, so you can build a dynamic 
 The real power emerges when you combine guardrails with [Agentic Affordances](/cookbook/agentic-affordances). The truncation warning tells the AI *that* data is missing; the suggested actions tell it *how* to get what it needs:
 
 ```typescript
-import { createPresenter, t, suggest, ui } from 'vurb';
+import { createPresenter, t, suggest, ui } from '@vurb/core';
 
 const TaskPresenter = createPresenter('Task')
   .schema({

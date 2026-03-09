@@ -1,7 +1,7 @@
 # Presenter Composition
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -21,7 +21,7 @@ Define `ClientPresenter` once. Embed it in `InvoicePresenter`, `OrderPresenter`,
 Use `.embed(key, ChildPresenter)` to declare that a field in the handler's output should be processed by a child Presenter:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 // ── Client Presenter (reusable) ────────────────────────────
 const ClientPresenter = createPresenter('Client')

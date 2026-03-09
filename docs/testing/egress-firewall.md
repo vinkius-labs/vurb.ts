@@ -6,7 +6,7 @@ description: "Prove mathematically that sensitive fields never reach the LLM —
 # Egress Firewall
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 The Egress Firewall is the Presenter's Zod schema acting as a **physical barrier** between your database and the LLM. Fields not declared in the schema are stripped in RAM — they never exist in the response object.
@@ -113,7 +113,7 @@ describe('Order Egress Firewall', () => {
 Prove that the structured MVA metadata is invisible to JSON transport:
 
 ```typescript
-import { MVA_META_SYMBOL } from 'vurb';
+import { MVA_META_SYMBOL } from '@vurb/core';
 
 it('Symbol metadata is invisible to JSON.stringify', async () => {
     const result = await tester.callAction('db_user', 'find_many', { take: 1 });

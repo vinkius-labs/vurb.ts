@@ -6,7 +6,7 @@ description: "Cryptographic signing, capability pinning, and runtime verificatio
 # Zero-Trust Attestation
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Sign at Build Time](#sign)
@@ -203,7 +203,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - run: npm ci
-      - run: npx vurb lock --check --server ./src/server.ts
+      - run: npx @vurb/core lock --check --server ./src/server.ts
       - name: Compute behavioral digest
         env:
           Vurb.ts_SIGNING_SECRET: ${{ secrets.Vurb.ts_SIGNING_SECRET }}

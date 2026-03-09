@@ -1,7 +1,7 @@
 # Dynamic Manifest
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -21,7 +21,7 @@ The Dynamic Manifest is a live `Vurb.ts://manifest.json` MCP Resource that descr
 ## Quick Start {#quickstart}
 
 ```typescript
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 
 const registry = new ToolRegistry<AppContext>();
 registry.registerAll(projectsTool, invoicesTool, adminTool);

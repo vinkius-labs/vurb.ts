@@ -66,7 +66,7 @@ npm install xstate
 ### Step 1 — Define the FSM
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext { db: PrismaClient; userId: string }
 export const f = initVurb<AppContext>();
@@ -160,7 +160,7 @@ When `transition` is provided, the framework automatically calls `gate.transitio
 MCP is stateless by nature. On platforms like Vercel or Cloudflare Workers, the FSM state must survive across requests. The framework provides `fsmStore` for this:
 
 ```typescript
-import type { FsmStateStore } from 'vurb';
+import type { FsmStateStore } from '@vurb/core';
 
 // Redis-backed state store
 const fsmStore: FsmStateStore = {
@@ -238,7 +238,7 @@ After `add_item` succeeds:
 For maximum performance, pre-load the XState engine at application bootstrap:
 
 ```typescript
-import { initFsmEngine } from 'vurb';
+import { initFsmEngine } from '@vurb/core';
 
 // Call once at boot — loads xstate into memory
 const hasXState = await initFsmEngine();
@@ -252,7 +252,7 @@ This ensures the dynamic `import('xstate')` is resolved before the first request
 For custom pipelines or testing, use `StateMachineGate` directly:
 
 ```typescript
-import { StateMachineGate } from 'vurb';
+import { StateMachineGate } from '@vurb/core';
 
 const gate = new StateMachineGate({
     id: 'approval',

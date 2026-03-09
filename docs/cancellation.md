@@ -1,7 +1,7 @@
 # Cancellation
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -21,7 +21,7 @@ Vurb.ts propagates `AbortSignal` through middleware, handlers, and generators. T
 Capture the `AbortSignal` from the MCP SDK's `RequestHandlerExtra` via `contextFactory`:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   db: PrismaClient;
@@ -80,7 +80,7 @@ for (const file of files) {
 Generators get cancellation for free. `drainGenerator()` checks `signal.aborted` before each `yield`. If fired mid-stream, the generator is aborted via `gen.return()`, triggering `finally {}` cleanup:
 
 ```typescript
-import { progress } from 'vurb';
+import { progress } from '@vurb/core';
 
 const analyzeRepo = f.query('repo.analyze')
   .describe('Analyze a repository')

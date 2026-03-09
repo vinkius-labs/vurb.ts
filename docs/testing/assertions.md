@@ -6,7 +6,7 @@ description: "Every assertion pattern for MvaTestResult — data, systemRules, u
 # Assertions
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 The `VurbTester` returns `MvaTestResult` objects. Every field in the result maps to a specific MVA pipeline layer. This page documents every assertion pattern.
@@ -238,7 +238,7 @@ expect(json).not.toContain('passwordHash');
 ### Assert Symbol accessibility
 
 ```typescript
-import { MVA_META_SYMBOL } from 'vurb';
+import { MVA_META_SYMBOL } from '@vurb/core';
 
 const meta = (result.rawResponse as any)[MVA_META_SYMBOL];
 expect(meta).toBeDefined();

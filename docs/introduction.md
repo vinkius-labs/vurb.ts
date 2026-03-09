@@ -33,7 +33,7 @@ A complete invoice tool with authentication, AI instructions, field-level protec
 ### 1. Context Init
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   db: PrismaClient;
@@ -93,7 +93,7 @@ export const getInvoice = f.query('billing.get')
 ## Installation {#installation}
 
 ```bash
-npm install vurb @modelcontextprotocol/sdk zod
+npm install @vurb/core @modelcontextprotocol/sdk zod
 ```
 
 Node.js 18+. Works with any MCP SDK-compatible transport (Stdio, HTTP/SSE, WebSocket).

@@ -14,7 +14,7 @@ Deploy your Vurb.ts server to Cloudflare Workers in one line. No transport hacks
 
 ```typescript
 // worker.ts — the entire file
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
 import { z } from 'zod';
 
@@ -134,7 +134,7 @@ Build tools exactly as you would for a Node.js MCP server. Nothing changes:
 
 ```typescript
 // src/tools.ts
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import { z } from 'zod';
 
 interface AppContext {

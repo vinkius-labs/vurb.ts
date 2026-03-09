@@ -1,7 +1,7 @@
 # Developer Experience Guide
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 `initVurb()` for type inference, JSON descriptors instead of Zod imports, `autoDiscover()` for file-based routing, `createDevServer()` for hot reload, and Standard Schema support for any validator.
@@ -12,7 +12,7 @@ Define your context type once. Every `f.query()`, `f.mutation()`, `f.action()`, 
 
 ```typescript
 // src/vurb.ts
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 interface AppContext {
   db: PrismaClient;
@@ -88,7 +88,7 @@ JSON descriptors don't support transforms, custom refinements, or deeply nested 
 Scans a directory and registers all exported builders automatically.
 
 ```typescript
-import { autoDiscover } from 'vurb';
+import { autoDiscover } from '@vurb/core';
 
 const registry = f.registry();
 await autoDiscover(registry, './src/tools');
@@ -180,7 +180,7 @@ const validator = autoValidator(anySchema); // Valibot, Zod, ArkType — all wor
 Each subpath is independently tree-shakeable:
 
 ```typescript
-import { initVurb, defineTool }    from 'vurb';           // full framework
+import { initVurb, defineTool }    from '@vurb/core';           // full framework
 import { createVurbClient }        from 'Vurb.ts/client';     // ~2kb
 import { ui }                        from 'Vurb.ts/ui';         // ~1kb
 import { definePresenter }           from 'Vurb.ts/presenter';  // ~4kb

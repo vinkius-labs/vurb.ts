@@ -1,7 +1,7 @@
 # Observability
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -21,7 +21,7 @@ Vurb.ts emits structured events at each pipeline stage. When debug is off (defau
 ## Quick Start {#quickstart}
 
 ```typescript
-import { ToolRegistry, createDebugObserver } from 'vurb';
+import { ToolRegistry, createDebugObserver } from '@vurb/core';
 
 const registry = new ToolRegistry<AppContext>();
 registry.registerAll(projectsTool, usersTool, billingTool);
@@ -62,7 +62,7 @@ registry.enableDebug(createDebugObserver());
 ## createDebugObserver() {#factory}
 
 ```typescript
-import { createDebugObserver } from 'vurb';
+import { createDebugObserver } from '@vurb/core';
 
 // Default — pretty console.debug output
 const observer = createDebugObserver();

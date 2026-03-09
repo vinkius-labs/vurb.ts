@@ -64,7 +64,7 @@ If `fast-redact` is not installed, the framework logs a warning and passes data 
 One method call. The framework compiles the redaction function at configuration time and applies it automatically on every `make()` call:
 
 ```typescript
-import { createPresenter, t, ui } from 'vurb';
+import { createPresenter, t, ui } from '@vurb/core';
 
 export const PatientPresenter = createPresenter('Patient')
     .schema({
@@ -112,7 +112,7 @@ Replace `[REDACTED]` with a custom mask:
 For teams that prefer configuration objects over the fluent chain:
 
 ```typescript
-import { definePresenter } from 'vurb';
+import { definePresenter } from '@vurb/core';
 import { z } from 'zod';
 
 export const EmployeePresenter = definePresenter({
@@ -182,7 +182,7 @@ Both methods return `this` for chaining.
 For maximum performance, pre-load `fast-redact` at application bootstrap:
 
 ```typescript
-import { initRedactEngine } from 'vurb';
+import { initRedactEngine } from '@vurb/core';
 
 // Call once at boot — loads fast-redact into memory
 await initRedactEngine();
@@ -195,7 +195,7 @@ This ensures the dynamic `import('fast-redact')` is resolved before the first re
 Use `compileRedactor()` directly when you need redaction outside the Presenter pipeline:
 
 ```typescript
-import { compileRedactor } from 'vurb';
+import { compileRedactor } from '@vurb/core';
 
 const redact = await compileRedactor({
     paths: ['*.password', 'users[*].token'],
@@ -305,7 +305,7 @@ If multiple objects share a field name (e.g., `email`), use wildcards:
 Call `initRedactEngine()` during application startup to avoid first-request latency:
 
 ```typescript
-import { initVurb, initRedactEngine } from 'vurb';
+import { initVurb, initRedactEngine } from '@vurb/core';
 
 await initRedactEngine();
 const server = initVurb({ /* ... */ });

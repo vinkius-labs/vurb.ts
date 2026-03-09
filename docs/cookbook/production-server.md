@@ -1,7 +1,7 @@
 # Production Server
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -20,7 +20,7 @@ Vurb.ts tools are transport-agnostic — the same `ToolRegistry` runs on Stdio (
 The simplest deployment. The MCP client spawns your server as a child process:
 
 ```typescript
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
@@ -96,7 +96,7 @@ app.listen(3000);
 See the full [Cloudflare Adapter](/cloudflare-adapter) guide. Quick start:
 
 ```typescript
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 import { McpAgent } from 'agents/mcp';
 
 const registry = new ToolRegistry();
@@ -121,7 +121,7 @@ See the full [Vercel Adapter](/vercel-adapter) guide. Quick start:
 
 ```typescript
 import { createMcpHandler } from '@vercel/mcp-adapter';
-import { ToolRegistry } from 'vurb';
+import { ToolRegistry } from '@vurb/core';
 
 const registry = new ToolRegistry();
 registry.registerAll(...tools);

@@ -1,7 +1,7 @@
 # Streaming Progress
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -24,7 +24,7 @@ Vurb.ts supports **generator handlers** that `yield` progress updates. When atta
 Instead of `async (input, ctx) => { ... }`, use `async function*` to create a generator handler. Use `yield` to send progress updates during execution:
 
 ```typescript
-import { initVurb, progress, success } from 'vurb';
+import { initVurb, progress, success } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

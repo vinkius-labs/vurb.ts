@@ -1,7 +1,7 @@
 # Scaling
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -54,7 +54,7 @@ The discriminator enum anchors the LLM to valid operations. If it sends an inval
 `.tags()` on the Fluent API lets you classify tools, then filter which ones appear in `tools/list`:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 const f = initVurb<AppContext>();
 
 const usersTool = f.query('users.list')

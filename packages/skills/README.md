@@ -71,7 +71,7 @@ This mirrors how developers browse documentation: **search → read overview →
 ## Quick Start
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import {
     SkillRegistry,
     autoDiscoverSkills,

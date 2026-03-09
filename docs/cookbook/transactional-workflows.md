@@ -1,7 +1,7 @@
 # Transactional Workflows
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -38,7 +38,7 @@ This is not an edge case. It is the **default behavior** of every AI agent inter
 Instead of 3 tools, expose **1 tool** that handles the entire workflow. The agent makes one call. The server orchestrates all steps internally. If any step fails, the handler compensates all previous steps before returning a self-healing error.
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

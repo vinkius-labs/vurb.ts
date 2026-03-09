@@ -17,7 +17,7 @@ The schema defines the shape of data the agent sees. When you use Zod's `.strict
 The Presenter validates with whatever Zod schema you provide. If you want strict field filtering, you must call `.strict()` on your schema explicitly. The framework auto-applies `.strict()` on **input** validation (tool parameters), but the Presenter's output schema is yours to define.
 
 ```typescript
-import { definePresenter } from 'vurb';
+import { definePresenter } from '@vurb/core';
 import { z } from 'zod';
 
 const invoiceSchema = z.object({
@@ -99,7 +99,7 @@ Presenters generate deterministic visual blocks that the agent renders directly.
 **Single-item blocks** — `.uiBlocks()` fires for individual objects:
 
 ```typescript
-import { createPresenter, ui } from 'vurb';
+import { createPresenter, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
     .schema(invoiceSchema)

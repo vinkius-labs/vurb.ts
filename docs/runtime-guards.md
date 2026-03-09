@@ -1,7 +1,7 @@
 # Runtime Guards
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -22,7 +22,7 @@ Vurb.ts provides three built-in runtime guards. Each has zero overhead when not 
 Limits simultaneous executions per tool with a semaphore, backpressure queue, and load shedding:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 
@@ -73,7 +73,7 @@ You MUST use pagination (limit/offset) or filters to retrieve smaller result set
 Both truncate at different layers. Use both for defense in depth:
 
 ```typescript
-import { createPresenter, t } from 'vurb';
+import { createPresenter, t } from '@vurb/core';
 
 // Domain guard — intelligent truncation with custom message
 const UserPresenter = createPresenter('User')
@@ -135,7 +135,7 @@ const analyticsQuery = f.query('analytics.query')
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { initVurb, success } from 'vurb';
+import { initVurb, success } from '@vurb/core';
 
 const f = initVurb<void>();
 

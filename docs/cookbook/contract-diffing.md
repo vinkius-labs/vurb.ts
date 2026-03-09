@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - run: npm ci
-      - run: npx vurb lock --check --server ./src/server.ts
+      - run: npx @vurb/core lock --check --server ./src/server.ts
 ```
 
 If the check fails, the developer knows they changed the tool surface and must:

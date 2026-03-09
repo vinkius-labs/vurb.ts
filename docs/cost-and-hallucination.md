@@ -1,7 +1,7 @@
 # Cost Reduction & Anti-Hallucination
 
 ::: info Prerequisites
-Install Vurb.ts before following this guide: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Before & After](#before-after)
@@ -93,7 +93,7 @@ Without **Context DDoS Prevention**, raw MCP servers routinely trigger **LLM OOM
 Operations grouped behind a single tool with a discriminator enum. Schema surface shrinks significantly:
 
 ```typescript
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 
 const f = initVurb<AppContext>();
 

@@ -1,7 +1,7 @@
 # HMR Dev Server
 
 ::: info Prerequisites
-Install Vurb.ts before following this recipe: `npm install vurb @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx vurb create`](/quickstart-lightspeed).
+Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`npx @vurb/core create`](/quickstart-lightspeed).
 :::
 
 - [Introduction](#introduction)
@@ -54,7 +54,7 @@ Add to `package.json` for convenience:
 For more control, use `createDevServer()` directly:
 
 ```typescript
-import { createDevServer, autoDiscover, ToolRegistry } from 'vurb';
+import { createDevServer, autoDiscover, ToolRegistry } from '@vurb/core';
 
 const registry = new ToolRegistry<AppContext>();
 

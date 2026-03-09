@@ -47,11 +47,11 @@
     "access": "public"
   },
   "peerDependencies": {
-    "vurb": "^3.0.0",
+    "@vurb/core": "^3.0.0",
     "@modelcontextprotocol/sdk": "^1.12.0"
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "vurb": ">=3.0.0"
+    "@vurb/core": ">=3.0.0"
   }
 }

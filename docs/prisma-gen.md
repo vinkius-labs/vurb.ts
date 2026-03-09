@@ -180,7 +180,7 @@ The generator produces `ToolBuilder` instances and `Presenter` files — no serv
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ToolRegistry, createServerAttachment } from 'vurb';
+import { ToolRegistry, createServerAttachment } from '@vurb/core';
 import { userTools } from './tools/database/userTools.js';
 import { prisma } from './lib/prisma.js';
 
