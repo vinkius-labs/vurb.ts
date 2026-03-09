@@ -15,8 +15,8 @@
  * ```
  */
 
-import { createTool } from 'vurb';
-import type { ToolResponse } from 'vurb';
+import { createTool } from '@vurb/core';
+import type { ToolResponse } from '@vurb/core';
 import { JwtVerifier } from './JwtVerifier.js';
 import type { JwtVerifierConfig, JwtPayload } from './JwtVerifier.js';
 

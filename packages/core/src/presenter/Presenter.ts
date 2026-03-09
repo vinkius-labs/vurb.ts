@@ -18,7 +18,7 @@
  *
  * @example
  * ```typescript
- * import { createPresenter, ui } from 'vurb';
+ * import { createPresenter, ui } from '@vurb/core';
  * import { z } from 'zod';
  *
  * export const InvoicePresenter = createPresenter('Invoice')
@@ -212,7 +212,7 @@ export class Presenter<T> {
      *
      * @example
      * ```typescript
-     * import { createPresenter, t } from 'vurb';
+     * import { createPresenter, t } from '@vurb/core';
      *
      * createPresenter('Invoice')
      *     .schema({
@@ -393,7 +393,7 @@ export class Presenter<T> {
      *
      * @example
      * ```typescript
-     * import { suggest } from 'vurb';
+     * import { suggest } from '@vurb/core';
      *
      * .suggest((inv) => [
      *     suggest('invoices.get', 'View details'),
@@ -905,7 +905,7 @@ export class Presenter<T> {
  *
  * @example
  * ```typescript
- * import { createPresenter, ui } from 'vurb';
+ * import { createPresenter, ui } from '@vurb/core';
  *
  * export const TaskPresenter = createPresenter('Task')
  *     .schema(taskSchema)

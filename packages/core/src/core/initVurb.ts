@@ -8,7 +8,7 @@
  * @example
  * ```typescript
  * // src/vurb.ts — defined once in the project
- * import { initVurb } from 'vurb';
+ * import { initVurb } from '@vurb/core';
  *
  * interface AppContext {
  *   db: PrismaClient;

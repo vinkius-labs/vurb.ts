@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { Role, createAnnotations } from 'vurb';
+ * import { Role, createAnnotations } from '@vurb/core';
  *
  * const annotations = createAnnotations({
  *     audience: [Role.USER, Role.ASSISTANT],

@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { createTool, success, error } from 'vurb';
+ * import { createTool, success, error } from '@vurb/core';
  * import { z } from 'zod';
  *
  * const projects = createTool<AppContext>('projects')
@@ -872,7 +872,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
      *
      * @example
      * ```typescript
-     * import { createTool, createDebugObserver, success } from 'vurb';
+     * import { createTool, createDebugObserver, success } from '@vurb/core';
      *
      * const debug = createDebugObserver();
      *

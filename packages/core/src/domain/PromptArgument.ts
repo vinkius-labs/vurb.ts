@@ -5,7 +5,7 @@ import { BaseModel } from './BaseModel.js';
  *
  * @example
  * ```typescript
- * import { PromptArgument } from 'vurb';
+ * import { PromptArgument } from '@vurb/core';
  *
  * const arg = new PromptArgument('text');
  * arg.required = true;

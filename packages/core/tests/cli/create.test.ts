@@ -484,7 +484,7 @@ describe('Template output — source files', () => {
     describe('vurbTs', () => {
         it('imports initVurb and exports f', () => {
             const content = tpl.vurbTs();
-            expect(content).toContain("import { initVurb } from 'vurb'");
+            expect(content).toContain("import { initVurb } from '@vurb/core'");
             expect(content).toContain("import type { AppContext } from './context.js'");
             expect(content).toContain('export const f = initVurb<AppContext>()');
         });

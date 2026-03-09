@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { initVurb, ToolRegistry } from 'vurb';
+ * import { initVurb, ToolRegistry } from '@vurb/core';
  * import { SkillRegistry, autoDiscoverSkills, createSkillTools } from '@vurb/skills';
  *
  * const f = initVurb<AppContext>();

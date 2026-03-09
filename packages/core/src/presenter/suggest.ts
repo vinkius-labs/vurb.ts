@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { suggest } from 'vurb';
+ * import { suggest } from '@vurb/core';
  *
  * .suggest((invoice) => [
  *     suggest('invoices.get', 'View invoice details'),

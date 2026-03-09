@@ -7,7 +7,7 @@
  *
  * This demonstrates the createTool() pattern for multi-action tools.
  */
-import { createTool, success, definePresenter, ui } from 'vurb';
+import { createTool, success, definePresenter, ui } from '@vurb/core';
 import { z } from 'zod';
 import type { AppContext } from '../../context.js';
 

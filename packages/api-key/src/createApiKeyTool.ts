@@ -13,8 +13,8 @@
  * ```
  */
 
-import { createTool } from 'vurb';
-import type { ToolResponse } from 'vurb';
+import { createTool } from '@vurb/core';
+import type { ToolResponse } from '@vurb/core';
 import { ApiKeyManager } from './ApiKeyManager.js';
 import type { ApiKeyManagerConfig } from './ApiKeyManager.js';
 

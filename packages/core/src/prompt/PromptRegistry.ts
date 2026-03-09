@@ -11,7 +11,7 @@
  *
  * @example
  * ```typescript
- * import { PromptRegistry, definePrompt } from 'vurb';
+ * import { PromptRegistry, definePrompt } from '@vurb/core';
  *
  * const promptRegistry = new PromptRegistry<AppContext>();
  * promptRegistry.register(AuditPrompt);

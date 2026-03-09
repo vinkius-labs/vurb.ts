@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { ToolRegistry, createTool, success } from 'vurb';
+ * import { ToolRegistry, createTool, success } from '@vurb/core';
  *
  * const registry = new ToolRegistry<AppContext>();
  *

@@ -2,7 +2,7 @@
  * requireApiKey Middleware — Edge Cases & Sad Paths
  */
 import { describe, it, expect, vi } from 'vitest';
-import type { ToolResponse } from 'vurb';
+import type { ToolResponse } from '@vurb/core';
 import { requireApiKey } from '../src/middleware.js';
 
 const VALID_KEY = 'sk_live_abc123def456ghi7';

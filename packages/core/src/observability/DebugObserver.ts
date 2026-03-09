@@ -13,7 +13,7 @@
  *
  * @example
  * ```typescript
- * import { createDebugObserver } from 'vurb';
+ * import { createDebugObserver } from '@vurb/core';
  *
  * // Default: pretty console.debug output
  * const debug = createDebugObserver();

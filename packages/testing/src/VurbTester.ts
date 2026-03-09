@@ -30,9 +30,9 @@
  *
  * @module
  */
-import type { ToolRegistry } from 'vurb';
-import { MVA_META_SYMBOL } from 'vurb';
-import type { MvaMeta } from 'vurb';
+import type { ToolRegistry } from '@vurb/core';
+import { MVA_META_SYMBOL } from '@vurb/core';
+import type { MvaMeta } from '@vurb/core';
 import type { TesterOptions, MvaTestResult } from './types.js';
 
 // ── VurbTester Class ───────────────────────────────────

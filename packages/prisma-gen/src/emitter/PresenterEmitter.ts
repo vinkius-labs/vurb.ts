@@ -73,7 +73,7 @@ export function emitPresenter(model: DMMFModel, annotations: ModelAnnotations): 
     lines.push(` * @generated`);
     lines.push(` */`);
     lines.push(`import { z } from 'zod';`);
-    lines.push(`import { createPresenter } from 'vurb';`);
+    lines.push(`import { createPresenter } from '@vurb/core';`);
     lines.push(``);
 
     // ── Response Schema ──────────────────────────────────

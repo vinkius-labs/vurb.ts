@@ -36,8 +36,8 @@ import {
     response,
     ui,
     MVA_META_SYMBOL,
-} from 'vurb';
-import type { MiddlewareFn, ToolResponse } from 'vurb';
+} from '@vurb/core';
+import type { MiddlewareFn, ToolResponse } from '@vurb/core';
 import { VurbTester, createVurbTester } from '../src/index.js';
 
 // ── Test Context ─────────────────────────────────────────

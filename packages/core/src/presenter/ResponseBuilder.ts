@@ -11,7 +11,7 @@
  *
  * @example
  * ```typescript
- * import { response, ui } from 'vurb';
+ * import { response, ui } from '@vurb/core';
  *
  * // Simple data response (equivalent to success())
  * return response({ id: '123', amount: 4500 }).build();
@@ -370,7 +370,7 @@ export class ResponseBuilder {
  *
  * @example
  * ```typescript
- * import { response, ui } from 'vurb';
+ * import { response, ui } from '@vurb/core';
  *
  * // Simple (equivalent to success())
  * return response('Task created').build();

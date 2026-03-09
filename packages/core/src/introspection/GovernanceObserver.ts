@@ -93,7 +93,7 @@ export interface GovernanceObserver {
  * @example
  * ```typescript
  * import { createGovernanceObserver } from 'vurb/introspection';
- * import { createDebugObserver } from 'vurb';
+ * import { createDebugObserver } from '@vurb/core';
  *
  * const observer = createGovernanceObserver({
  *     debug: createDebugObserver(),

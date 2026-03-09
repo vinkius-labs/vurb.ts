@@ -8,7 +8,7 @@ import { type Role } from './Role.js';
  *
  * @example
  * ```typescript
- * import { createAnnotations, Role } from 'vurb';
+ * import { createAnnotations, Role } from '@vurb/core';
  *
  * const annotations = createAnnotations({
  *     audience: [Role.ASSISTANT],

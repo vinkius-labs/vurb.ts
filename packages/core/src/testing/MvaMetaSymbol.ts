@@ -11,7 +11,7 @@
  *
  * @example
  * ```typescript
- * import { MVA_META_SYMBOL, type MvaMeta } from 'vurb';
+ * import { MVA_META_SYMBOL, type MvaMeta } from '@vurb/core';
  *
  * const response = await registry.routeCall(ctx, 'users', { action: 'list' });
  * const meta = (response as any)[MVA_META_SYMBOL] as MvaMeta | undefined;

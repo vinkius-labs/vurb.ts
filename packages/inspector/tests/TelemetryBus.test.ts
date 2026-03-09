@@ -28,11 +28,11 @@ import {
     createTelemetryBus,
     getTelemetryPath,
     discoverSockets,
-} from 'vurb';
+} from '@vurb/core';
 import type {
     TelemetryEvent,
     TelemetryBusInstance,
-} from 'vurb';
+} from '@vurb/core';
 
 // Helper: collect events from IPC
 function connectAndCollect(

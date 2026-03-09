@@ -416,7 +416,7 @@ describe('ToolEmitter', () => {
         it('should import defineTool', () => {
             const m = makeUserModel();
             const file = emitTool(m, parseAnnotations(m));
-            expect(file.content).toContain("import { defineTool } from 'vurb'");
+            expect(file.content).toContain("import { defineTool } from '@vurb/core'");
         });
 
         it('should generate tool name with db_ prefix + snake_case', () => {

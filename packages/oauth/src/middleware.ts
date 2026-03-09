@@ -7,7 +7,7 @@
  * @example
  * ```ts
  * import { requireAuth } from '@vinkius-core/oauth';
- * import { createTool } from 'vurb';
+ * import { createTool } from '@vurb/core';
  *
  * const projects = createTool<AppContext>('projects')
  *     .use(requireAuth())
@@ -15,8 +15,8 @@
  * ```
  */
 
-import { toolError } from 'vurb';
-import type { ToolResponse } from 'vurb';
+import { toolError } from '@vurb/core';
+import type { ToolResponse } from '@vurb/core';
 
 // ============================================================================
 // Types

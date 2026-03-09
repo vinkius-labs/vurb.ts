@@ -150,7 +150,7 @@ export interface CloudflareWorkerHandler<TEnv> {
  * @example
  * ```typescript
  * // worker.ts
- * import { ToolRegistry } from 'vurb';
+ * import { ToolRegistry } from '@vurb/core';
  * import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
  * import { billing, projects } from './tools.js';
  *

@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { createIcon } from 'vurb';
+ * import { createIcon } from '@vurb/core';
  *
  * const icon = createIcon({
  *     src: 'https://example.com/icon.png',

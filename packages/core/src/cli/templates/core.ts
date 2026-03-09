@@ -15,7 +15,7 @@ export function vurbTs(): string {
  * f.presenter(), f.prompt(), and f.middleware() call inherits
  * AppContext — zero generic repetition anywhere in the codebase.
  */
-import { initVurb } from 'vurb';
+import { initVurb } from '@vurb/core';
 import type { AppContext } from './context.js';
 
 export const f = initVurb<AppContext>();
@@ -66,7 +66,7 @@ export function serverTs(config: ProjectConfig): string {
  * Drop a file, it becomes a tool.
  */
 import { fileURLToPath } from 'node:url';
-import { autoDiscover, PromptRegistry, startServer } from 'vurb';
+import { autoDiscover, PromptRegistry, startServer } from '@vurb/core';
 import { createContext } from './context.js';
 import { f } from './vurb.js';
 import { GreetPrompt } from './prompts/greet.js';
@@ -100,7 +100,7 @@ import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from 'node:http';
-import { autoDiscover, PromptRegistry } from 'vurb';
+import { autoDiscover, PromptRegistry } from '@vurb/core';
 import { createContext } from './context.js';
 import { f } from './vurb.js';
 import { GreetPrompt } from './prompts/greet.js';

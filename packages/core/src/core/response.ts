@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { success, error, toonSuccess } from 'vurb';
+ * import { success, error, toonSuccess } from '@vurb/core';
  *
  * // String response
  * return success('Project created');

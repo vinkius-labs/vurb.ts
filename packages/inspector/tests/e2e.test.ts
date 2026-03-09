@@ -27,7 +27,7 @@ import { connect, type Socket } from 'node:net';
 import { Writable } from 'node:stream';
 import { startSimulator } from '../src/Simulator.js';
 import { parseInspectorArgs } from '../src/cli/inspector.js';
-import type { TelemetryEvent, TelemetryBusInstance } from 'vurb';
+import type { TelemetryEvent, TelemetryBusInstance } from '@vurb/core';
 import { platform } from 'node:os';
 
 // ─── Helpers ────────────────────────────────────────────────────────

@@ -21,7 +21,7 @@
  * ```
  */
 
-import { createTool, success, error as vurbError, type ToolResponse } from 'vurb';
+import { createTool, success, error as vurbError, type ToolResponse } from '@vurb/core';
 import { DeviceAuthenticator } from './DeviceAuthenticator.js';
 import type { DeviceCodeResponse, TokenResponse } from './DeviceAuthenticator.js';
 import { TokenManager } from './TokenManager.js';

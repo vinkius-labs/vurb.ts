@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { defineTool, success } from 'vurb';
+ * import { defineTool, success } from '@vurb/core';
  *
  * export const projects = defineTool('projects', {
  *     description: 'Manage workspace projects',

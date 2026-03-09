@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { createTypedRegistry, createTool, success } from 'vurb';
+ * import { createTypedRegistry, createTool, success } from '@vurb/core';
  *
  * interface AppContext { db: Database; user: User }
  *

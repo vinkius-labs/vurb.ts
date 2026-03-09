@@ -28,7 +28,7 @@ export function testSetupTs(): string {
  */
 import { fileURLToPath } from 'node:url';
 import { createVurbTester } from '@vurb/testing';
-import { autoDiscover } from 'vurb';
+import { autoDiscover } from '@vurb/core';
 import { f } from '../src/vurb.js';
 
 const registry = f.registry();

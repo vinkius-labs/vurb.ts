@@ -30,7 +30,7 @@ import {
     getTelemetryPath, discoverSockets,
     type TelemetryEvent, type TopologyEvent, type TopologyTool,
     type HeartbeatEvent,
-} from 'vurb';
+} from '@vurb/core';
 
 // ============================================================================
 // Types

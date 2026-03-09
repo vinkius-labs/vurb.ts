@@ -8,7 +8,7 @@
  * - MCP prompts/list + prompts/get
  */
 import { f } from '../vurb.js';
-import { PromptMessage } from 'vurb';
+import { PromptMessage } from '@vurb/core';
 
 export const GreetPrompt = f.prompt('greet', {
     description: 'Generate a personalized greeting for a user',

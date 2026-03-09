@@ -193,7 +193,7 @@ describe('PresenterEmitter', () => {
         it('should import createPresenter', () => {
             const m = makeUserModel();
             const file = emitPresenter(m, parseAnnotations(m));
-            expect(file.content).toContain("import { createPresenter } from 'vurb'");
+            expect(file.content).toContain("import { createPresenter } from '@vurb/core'");
         });
     });
 

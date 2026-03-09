@@ -23,7 +23,7 @@ import {
     createTelemetryBus,
     type TelemetryEvent,
     type TelemetryBusInstance,
-} from 'vurb';
+} from '@vurb/core';
 import { formatEvent, formatEventJson } from '../src/StreamLogger.js';
 import { startSimulator } from '../src/Simulator.js';
 

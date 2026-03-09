@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { connect } from 'node:net';
-import type { TelemetryEvent } from 'vurb';
+import type { TelemetryEvent } from '@vurb/core';
 import { startSimulator } from '../src/Simulator.js';
 import { platform } from 'node:os';
 

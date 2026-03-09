@@ -17,7 +17,7 @@ export function n8nConnectorTs(): string {
         ' * Configure N8N_BASE_URL and N8N_API_KEY in your .env file.',
         ' */',
         "import { N8nConnector } from '@vurb/n8n';",
-        "import type { ToolRegistry } from 'vurb';",
+        "import type { ToolRegistry } from '@vurb/core';",
         '',
         'export async function discoverWorkflows<TContext>(',
         '    registry: ToolRegistry<TContext>,',

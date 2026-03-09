@@ -12,7 +12,7 @@ import {
     createTool,
     ToolRegistry,
     success,
-} from 'vurb';
+} from '@vurb/core';
 import { VurbTester } from '../src/index.js';
 
 describe('Bug #100 — VurbTester spread-order (action after spread)', () => {

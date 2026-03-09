@@ -22,7 +22,7 @@ export function authMiddlewareTs(): string {
  * API key checks, or OAuth token verification.
  */
 import { f } from '../vurb.js';
-import { error } from 'vurb';
+import { error } from '@vurb/core';
 
 export const withAuth = f.middleware(async (ctx) => {
     if (ctx.role === 'GUEST') {

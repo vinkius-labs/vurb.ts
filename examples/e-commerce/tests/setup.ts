@@ -8,7 +8,7 @@
  * 2ms per test. $0.00 in tokens. Zero servers.
  */
 import { createVurbTester } from '@vurb/testing';
-import { ToolRegistry, autoDiscover } from 'vurb';
+import { ToolRegistry, autoDiscover } from '@vurb/core';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { AppContext } from '../src/context.js';

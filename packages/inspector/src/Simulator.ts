@@ -11,12 +11,12 @@
  *
  * @module
  */
-import { createTelemetryBus } from 'vurb';
+import { createTelemetryBus } from '@vurb/core';
 import type {
     TelemetryEvent,
     TopologyTool,
     TelemetryBusInstance,
-} from 'vurb';
+} from '@vurb/core';
 
 // ============================================================================
 // Fake Tool Registry

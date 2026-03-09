@@ -125,7 +125,7 @@ export type VercelHandler = (req: Request) => Promise<Response>;
  *
  * ```typescript
  * // app/api/mcp/route.ts
- * import { ToolRegistry } from 'vurb';
+ * import { ToolRegistry } from '@vurb/core';
  * import { vercelAdapter } from '@vurb/vercel';
  * import { billing, projects } from './tools.js';
  *

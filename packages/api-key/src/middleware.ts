@@ -15,8 +15,8 @@
  * ```
  */
 
-import { toolError } from 'vurb';
-import type { ToolResponse } from 'vurb';
+import { toolError } from '@vurb/core';
+import type { ToolResponse } from '@vurb/core';
 import { ApiKeyManager } from './ApiKeyManager.js';
 import type { ApiKeyManagerConfig } from './ApiKeyManager.js';
 

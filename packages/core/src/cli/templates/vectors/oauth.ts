@@ -18,7 +18,7 @@ export function oauthSetupTs(config: ProjectConfig): string {
  * 3. Use \`requireAuth()\` on protected tools
  */
 import { createAuthTool, TokenManager } from '@vurb/oauth';
-import type { ToolRegistry } from 'vurb';
+import type { ToolRegistry } from '@vurb/core';
 
 export function registerAuth<TContext>(registry: ToolRegistry<TContext>): void {
     const clientId = process.env['OAUTH_CLIENT_ID'];

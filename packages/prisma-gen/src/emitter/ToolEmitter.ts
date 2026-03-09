@@ -87,7 +87,7 @@ export function emitTool(model: DMMFModel, annotations: ModelAnnotations): Gener
     lines.push(` * @generated`);
     lines.push(` */`);
     lines.push(`import { z } from 'zod';`);
-    lines.push(`import { defineTool } from 'vurb';`);
+    lines.push(`import { defineTool } from '@vurb/core';`);
     lines.push(`import { ${name}Presenter } from './${prismaModel}Presenter.js';`);
     lines.push(``);
 

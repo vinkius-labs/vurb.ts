@@ -14,7 +14,7 @@
  *
  * @example
  * ```typescript
- * import { createGroup, success } from 'vurb';
+ * import { createGroup, success } from '@vurb/core';
  *
  * const billing = createGroup({
  *   name: 'billing',

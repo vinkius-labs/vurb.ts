@@ -15,9 +15,9 @@
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { connect } from 'node:net';
-import type { TelemetryEvent } from 'vurb';
+import type { TelemetryEvent } from '@vurb/core';
 import { startSimulator } from '../src/Simulator.js';
-import type { TelemetryBusInstance } from 'vurb';
+import type { TelemetryBusInstance } from '@vurb/core';
 import { parseInspectorArgs } from '../src/cli/inspector.js';
 import { platform } from 'node:os';
 

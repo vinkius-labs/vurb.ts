@@ -28,7 +28,7 @@
  *
  * @example
  * ```typescript
- * import { toStandardValidator } from 'vurb';
+ * import { toStandardValidator } from '@vurb/core';
  * import * as v from 'valibot';
  *
  * // Valibot schemas work natively via Standard Schema

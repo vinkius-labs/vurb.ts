@@ -84,7 +84,7 @@ export interface StartServerResult {
  *
  * @example
  * ```typescript
- * import { startServer, autoDiscover } from 'vurb';
+ * import { startServer, autoDiscover } from '@vurb/core';
  *
  * const registry = f.registry();
  * await autoDiscover(registry, new URL('./tools', import.meta.url));

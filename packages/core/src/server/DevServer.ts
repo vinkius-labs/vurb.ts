@@ -227,7 +227,7 @@ export function cacheBustUrl(filePath: string): string {
  *
  * @example
  * ```typescript
- * import { createDevServer, autoDiscover, ToolRegistry } from 'vurb';
+ * import { createDevServer, autoDiscover, ToolRegistry } from '@vurb/core';
  *
  * const devServer = createDevServer({
  *   dir: './src/tools',

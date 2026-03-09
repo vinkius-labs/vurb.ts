@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { createToolAnnotations } from 'vurb';
+ * import { createToolAnnotations } from '@vurb/core';
  *
  * const annotations = createToolAnnotations({
  *     title: 'File Reader',

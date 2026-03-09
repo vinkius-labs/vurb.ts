@@ -23,7 +23,7 @@ import * as net from 'node:net';
 import {
     getTelemetryPath, discoverSockets,
     type TelemetryEvent,
-} from 'vurb';
+} from '@vurb/core';
 
 // ============================================================================
 // ANSI (minimal — respects NO_COLOR)

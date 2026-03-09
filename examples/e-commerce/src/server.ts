@@ -5,7 +5,7 @@
  * Drop a file, it becomes a tool.
  */
 import { fileURLToPath } from 'node:url';
-import { autoDiscover, PromptRegistry, startServer } from 'vurb';
+import { autoDiscover, PromptRegistry, startServer } from '@vurb/core';
 import { createContext } from './context.js';
 import { f } from './vurb.js';
 import { GreetPrompt } from './prompts/greet.js';

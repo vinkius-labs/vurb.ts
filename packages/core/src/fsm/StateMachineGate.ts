@@ -184,7 +184,7 @@ export function resetXStateCache(): void {
  *
  * @example
  * ```typescript
- * import { initFsmEngine } from 'vurb';
+ * import { initFsmEngine } from '@vurb/core';
  * const available = await initFsmEngine();
  * if (!available) console.warn('xstate not installed — FSM gating disabled');
  * ```

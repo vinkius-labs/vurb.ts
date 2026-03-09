@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { requireAuth } from '../src/middleware.js';
-import type { ToolResponse } from 'vurb';
+import type { ToolResponse } from '@vurb/core';
 
 // ── Helpers ──────────────────────────────────────────────
 

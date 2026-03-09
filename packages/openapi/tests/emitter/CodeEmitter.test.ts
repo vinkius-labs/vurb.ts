@@ -141,7 +141,7 @@ describe('CodeEmitter', () => {
             const spec = makeSpec([PET_GROUP]);
             const files = emitFiles(spec);
             const presenter = files.find(f => f.path === 'views/pet.presenter.ts')!;
-            expect(presenter.content).toContain("import { createPresenter } from 'vurb'");
+            expect(presenter.content).toContain("import { createPresenter } from '@vurb/core'");
         });
 
         it('should import schema from models/ directory', () => {
@@ -167,7 +167,7 @@ describe('CodeEmitter', () => {
             const spec = makeSpec([PET_GROUP]);
             const files = emitFiles(spec);
             const tools = files.find(f => f.path === 'agents/pet.tool.ts')!;
-            expect(tools.content).toContain("import { defineTool, success, error } from 'vurb'");
+            expect(tools.content).toContain("import { defineTool, success, error } from '@vurb/core'");
         });
 
         it('should import Presenter from views/ directory', () => {
@@ -368,7 +368,7 @@ describe('CodeEmitter', () => {
             const spec = makeSpec([PET_GROUP]);
             const files = emitFiles(spec);
             const index = files.find(f => f.path === 'index.ts')!;
-            expect(index.content).toContain("import { ToolRegistry } from 'vurb'");
+            expect(index.content).toContain("import { ToolRegistry } from '@vurb/core'");
             expect(index.content).toContain('new ToolRegistry');
             expect(index.content).toContain('registry.registerAll(petTools)');
         });

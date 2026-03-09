@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { succeed, fail, error, type Result } from 'vurb';
+ * import { succeed, fail, error, type Result } from '@vurb/core';
  *
  * function parseId(input: string): Result<number> {
  *     const id = parseInt(input, 10);

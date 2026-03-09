@@ -139,7 +139,7 @@ function emitPresenterFile(group: ApiGroup, cfg: GeneratorConfig): GeneratedFile
     lines.push(`// MVA Layer: View (perception layer)`);
     lines.push(`// DO NOT EDIT — re-run the generator to update.`);
     lines.push(``);
-    lines.push(`import { createPresenter } from 'vurb';`);
+    lines.push(`import { createPresenter } from '@vurb/core';`);
 
     // Import schemas from model layer
     const schemas = collectResponseSchemas(group);
@@ -204,7 +204,7 @@ function emitToolFile(group: ApiGroup, cfg: GeneratorConfig): GeneratedFile {
     lines.push(`// MCP Tool: delivery layer for the Agent`);
     lines.push(`// DO NOT EDIT — re-run the generator to update.`);
     lines.push(``);
-    lines.push(`import { defineTool, success, error } from 'vurb';`);
+    lines.push(`import { defineTool, success, error } from '@vurb/core';`);
     lines.push(`import { z } from 'zod';`);
 
     // Import Presenters from the View layer
@@ -372,7 +372,7 @@ function emitBarrelFile(spec: ApiSpec, cfg: GeneratorConfig): GeneratedFile {
     lines.push(`// Barrel export with pre-built ToolRegistry`);
     lines.push(`// DO NOT EDIT — re-run the generator to update.`);
     lines.push(``);
-    lines.push(`import { ToolRegistry } from 'vurb';`);
+    lines.push(`import { ToolRegistry } from '@vurb/core';`);
 
     if (cfg.context.import) {
         const { typeName, importPath } = parseContextImport(cfg.context.import);
