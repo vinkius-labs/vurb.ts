@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { initVurb, ToolRegistry } from '@vurb/core';
+ * import { initVurb, ToolRegistry, defineTool } from '@vurb/core';
  * import { SkillRegistry, autoDiscoverSkills, createSkillTools } from '@vurb/skills';
  *
  * const f = initVurb<AppContext>();
@@ -16,12 +16,12 @@
  * const skills = new SkillRegistry();
  * await autoDiscoverSkills(skills, './skills');
  *
- * // 2. Create MCP tools for remote agents
- * const [search, load, readFile] = createSkillTools(f, skills);
+ * // 2. Create a grouped MCP tool with search/load/read_file actions
+ * const skillsTool = createSkillTools(defineTool, skills);
  *
  * // 3. Register alongside your domain tools
  * const registry = f.registry();
- * registry.registerAll(search, load, readFile);
+ * registry.register(skillsTool);
  *
  * // → Remote agents can now search/load/read skills via MCP
  * ```

@@ -1,5 +1,5 @@
 /**
- * Tests for createSkillTools — MCP Tool Factory.
+ * Tests for createSkillTools — Single Grouped MCP Tool Factory.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -7,39 +7,38 @@ import { createSkillTools } from '../src/tools/createSkillTools.js';
 import { SkillRegistry } from '../src/registry/SkillRegistry.js';
 import { type Skill } from '../src/domain/Skill.js';
 
-// ── Stub Vurb Builder ────────────────────────────────────
+// ── Stub defineTool ──────────────────────────────────────
 
-interface StubTool {
-    name: string;
-    description: string;
-    params: { name: string; desc: string; type: string }[];
-    handler: (input: Record<string, unknown>) => unknown | Promise<unknown>;
+interface StubAction {
+    readOnly?: boolean;
+    params: Record<string, unknown>;
+    description?: string;
+    handler: (ctx: unknown, args: Record<string, unknown>) => unknown | Promise<unknown>;
 }
 
-function createStubVurb() {
-    const tools: StubTool[] = [];
+interface StubToolDef {
+    name: string;
+    description: string;
+    actions: Record<string, StubAction>;
+}
 
-    return {
-        query(name: string) {
-            const tool: StubTool = { name, description: '', params: [], handler: () => null };
-            tools.push(tool);
+function createStubDefineTool() {
+    const tools: StubToolDef[] = [];
 
-            const builder = {
-                describe(desc: string) { tool.description = desc; return builder; },
-                withString(n: string, d: string) { tool.params.push({ name: n, desc: d, type: 'string' }); return builder; },
-                withNumber(n: string, d: string) { tool.params.push({ name: n, desc: d, type: 'number' }); return builder; },
-                handle(handler: (input: Record<string, unknown>) => unknown) {
-                    tool.handler = handler;
-                    return {
-                        getName() { return tool.name; },
-                        buildToolDefinition() { return tool; },
-                    };
-                },
-            };
-            return builder;
-        },
-        tools,
+    const defineTool = (name: string, config: { description?: string; actions: Record<string, StubAction> }) => {
+        const tool: StubToolDef = {
+            name,
+            description: config.description ?? '',
+            actions: config.actions,
+        };
+        tools.push(tool);
+        return {
+            getName() { return tool.name; },
+            buildToolDefinition() { return tool; },
+        };
     };
+
+    return { defineTool, tools };
 }
 
 // ── Test Helpers ─────────────────────────────────────────
@@ -72,117 +71,113 @@ function registryWith(...skills: Skill[]): SkillRegistry {
 
 describe('createSkillTools', () => {
     describe('tool creation', () => {
-        it('creates exactly 3 tools', () => {
-            const f = createStubVurb();
+        it('creates a single grouped tool', () => {
+            const { defineTool } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            const result = createSkillTools(f, registry);
+            const result = createSkillTools(defineTool, registry);
 
-            expect(result).toHaveLength(3);
+            expect(result).toBeDefined();
+            expect(result.getName()).toBe('skills');
         });
 
-        it('names tools with default prefix "skills"', () => {
-            const f = createStubVurb();
+        it('grouped tool has 3 actions', () => {
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            const [search, load, readFile] = createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            expect(search.getName()).toBe('skills.search');
-            expect(load.getName()).toBe('skills.load');
-            expect(readFile.getName()).toBe('skills.read_file');
+            expect(Object.keys(tools[0]!.actions)).toEqual(['search', 'load', 'read_file']);
         });
 
         it('uses custom prefix when provided', () => {
-            const f = createStubVurb();
+            const { defineTool } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            const [search, load, readFile] = createSkillTools(f, registry, { prefix: 'abilities' });
+            const result = createSkillTools(defineTool, registry, { prefix: 'abilities' });
 
-            expect(search.getName()).toBe('abilities.search');
-            expect(load.getName()).toBe('abilities.load');
-            expect(readFile.getName()).toBe('abilities.read_file');
+            expect(result.getName()).toBe('abilities');
         });
     });
 
-    describe('skills.search', () => {
+    describe('search action', () => {
         it('returns matching skills by query', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(
                 createSkill({ id: 'k8s', name: 'k8s', description: 'Deploy to Kubernetes', frontmatter: { name: 'k8s', description: 'Deploy to Kubernetes' } }),
                 createSkill({ id: 'pdf', name: 'pdf', description: 'Extract PDF text', frontmatter: { name: 'pdf', description: 'Extract PDF text' } }),
             );
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.search')!;
-            const result = tool.handler({ query: 'kubernetes' }) as { skills: unknown[]; total: number };
+            const handler = tools[0]!.actions['search']!.handler;
+            const result = handler(null, { query: 'kubernetes' }) as { skills: unknown[]; total: number };
 
             expect(result.skills.length).toBeGreaterThan(0);
             expect(result.total).toBe(2);
         });
 
         it('returns all skills for empty query', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(
                 createSkill({ id: 'a', name: 'a', description: 'Skill A', frontmatter: { name: 'a', description: 'Skill A' } }),
                 createSkill({ id: 'b', name: 'b', description: 'Skill B', frontmatter: { name: 'b', description: 'Skill B' } }),
             );
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.search')!;
-            const result = tool.handler({ query: '' }) as { skills: unknown[]; total: number };
+            const handler = tools[0]!.actions['search']!.handler;
+            const result = handler(null, { query: '' }) as { skills: unknown[]; total: number };
 
             expect(result.skills).toHaveLength(2);
             expect(result.total).toBe(2);
         });
 
         it('returns all skills for wildcard query', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(
                 createSkill({ id: 'x', name: 'x', description: 'X', frontmatter: { name: 'x', description: 'X' } }),
             );
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.search')!;
-            const result = tool.handler({ query: '*' }) as { skills: unknown[]; total: number };
+            const handler = tools[0]!.actions['search']!.handler;
+            const result = handler(null, { query: '*' }) as { skills: unknown[]; total: number };
 
             expect(result.skills).toHaveLength(1);
         });
 
         it('coerces missing query to empty string', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(
                 createSkill({ id: 'y', name: 'y', description: 'Y', frontmatter: { name: 'y', description: 'Y' } }),
             );
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.search')!;
-            // input with no "query" key at all
-            const result = tool.handler({}) as { skills: unknown[]; total: number };
+            const handler = tools[0]!.actions['search']!.handler;
+            const result = handler(null, {}) as { skills: unknown[]; total: number };
 
             expect(result.skills).toHaveLength(1);
         });
 
         it('omits name from result when it matches id', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(
                 createSkill({ id: 'same-name', name: 'same-name', description: 'Same', frontmatter: { name: 'same-name', description: 'Same' } }),
             );
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.search')!;
-            const result = tool.handler({ query: '*' }) as { skills: Array<{ id: string; name?: string }> };
+            const handler = tools[0]!.actions['search']!.handler;
+            const result = handler(null, { query: '*' }) as { skills: Array<{ id: string; name?: string }> };
 
             // When name === id, the name field should be omitted to reduce payload
             expect(result.skills[0]!.name).toBeUndefined();
         });
     });
 
-    describe('skills.load', () => {
+    describe('load action', () => {
         it('loads a skill by valid ID', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const skill = createSkill();
             const registry = registryWith(skill);
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.load')!;
-            const result = tool.handler({ skill_id: 'test-skill' }) as { id: string; instructions: string; files: string[] };
+            const handler = tools[0]!.actions['load']!.handler;
+            const result = handler(null, { skill_id: 'test-skill' }) as { id: string; instructions: string; files: string[] };
 
             expect(result.id).toBe('test-skill');
             expect(result.instructions).toContain('Do something');
@@ -190,93 +185,92 @@ describe('createSkillTools', () => {
         });
 
         it('returns error hint for unknown skill ID', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.load')!;
-            const result = tool.handler({ skill_id: 'nonexistent' }) as { error: string; hint: string };
+            const handler = tools[0]!.actions['load']!.handler;
+            const result = handler(null, { skill_id: 'nonexistent' }) as { error: string; hint: string };
 
             expect(result.error).toContain('nonexistent');
             expect(result.hint).toContain('skills.search');
         });
 
         it('returns error hint for empty skill ID', () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.load')!;
-            const result = tool.handler({}) as { error: string; hint: string };
+            const handler = tools[0]!.actions['load']!.handler;
+            const result = handler(null, {}) as { error: string; hint: string };
 
             expect(result.error).toBeDefined();
             expect(result.hint).toBeDefined();
         });
     });
 
-    describe('skills.read_file', () => {
+    describe('read_file action', () => {
         it('returns sanitized error for unknown skill', async () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.read_file')!;
-            const result = await tool.handler({ skill_id: 'unknown', file_path: 'foo.txt' }) as { error: string; hint: string };
+            const handler = tools[0]!.actions['read_file']!.handler;
+            const result = await handler(null, { skill_id: 'unknown', file_path: 'foo.txt' }) as { error: string; hint: string };
 
             expect(result.error).toBeDefined();
             expect(result.hint).toContain('skills.load');
         });
 
         it('returns sanitized error for path traversal', async () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.read_file')!;
-            const result = await tool.handler({ skill_id: 'test-skill', file_path: '../../../etc/passwd' }) as { error: string };
+            const handler = tools[0]!.actions['read_file']!.handler;
+            const result = await handler(null, { skill_id: 'test-skill', file_path: '../../../etc/passwd' }) as { error: string };
 
             expect(result.error).toBeDefined();
             // Error message should NOT contain absolute server paths
-            expect(result.error).not.toMatch(/[A-Z]:[\\/]/);
+            expect(result.error).not.toMatch(/[A-Z]:[\\\/]/);
         });
 
         it('returns sanitized error for SKILL.md access', async () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.read_file')!;
-            const result = await tool.handler({ skill_id: 'test-skill', file_path: 'SKILL.md' }) as { error: string };
+            const handler = tools[0]!.actions['read_file']!.handler;
+            const result = await handler(null, { skill_id: 'test-skill', file_path: 'SKILL.md' }) as { error: string };
 
             expect(result.error).toContain('skills.load');
         });
 
         it('returns sanitized error for empty inputs', async () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.read_file')!;
+            const handler = tools[0]!.actions['read_file']!.handler;
 
-            const result1 = await tool.handler({ skill_id: '', file_path: 'foo.txt' }) as { error: string };
+            const result1 = await handler(null, { skill_id: '', file_path: 'foo.txt' }) as { error: string };
             expect(result1.error).toBeDefined();
 
-            const result2 = await tool.handler({ skill_id: 'test-skill', file_path: '' }) as { error: string };
+            const result2 = await handler(null, { skill_id: 'test-skill', file_path: '' }) as { error: string };
             expect(result2.error).toBeDefined();
         });
 
         it('never exposes absolute server paths in errors', async () => {
-            const f = createStubVurb();
+            const { defineTool, tools } = createStubDefineTool();
             const registry = registryWith(createSkill());
-            createSkillTools(f, registry);
+            createSkillTools(defineTool, registry);
 
-            const tool = f.tools.find(t => t.name === 'skills.read_file')!;
-            // Try a file that doesn't exist
-            const result = await tool.handler({ skill_id: 'test-skill', file_path: 'nonexistent.txt' }) as { error: string };
+            const handler = tools[0]!.actions['read_file']!.handler;
+            const result = await handler(null, { skill_id: 'test-skill', file_path: 'nonexistent.txt' }) as { error: string };
 
             expect(result.error).toBeDefined();
             // Must not leak server paths like C:\Users\... or /srv/...
-            expect(result.error).not.toMatch(/[A-Z]:[\\/]/i);
+            expect(result.error).not.toMatch(/[A-Z]:[\\\/]/i);
             expect(result.error).not.toMatch(/\/srv\//);
         });
     });

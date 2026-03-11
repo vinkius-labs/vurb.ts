@@ -131,6 +131,15 @@ describe('ToolRegistry', () => {
             expect(tools).toHaveLength(3);
         });
 
+        it('should return all tools when getTools is called without arguments', () => {
+            const tools = registry.getTools();
+            expect(tools).toHaveLength(3);
+            const names = tools.map(t => t.name);
+            expect(names).toContain('auth');
+            expect(names).toContain('task');
+            expect(names).toContain('admin');
+        });
+
         it('should filter tools by anyTag (OR logic)', () => {
             const tools = registry.getTools({ anyTag: ['public', 'admin'] });
             const names = tools.map(t => t.name);

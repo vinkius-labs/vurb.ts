@@ -173,7 +173,7 @@ export class ToolRegistry<TContext = void> {
      *
      * @see {@link ToolFilter} for filter options
      */
-    getTools(filter: ToolFilter): McpTool[] {
+    getTools(filter: ToolFilter = {}): McpTool[] {
         return filterTools(this._builders.values(), filter);
     }
 

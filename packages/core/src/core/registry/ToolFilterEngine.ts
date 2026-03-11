@@ -31,7 +31,7 @@ export interface ToolFilter {
  */
 export function filterTools<TContext>(
     builders: Iterable<ToolBuilder<TContext>>,
-    filter: ToolFilter,
+    filter: ToolFilter = {},
 ): McpTool[] {
     // Pre-convert filter arrays to Sets for O(1) lookup
     const requiredTags = filter.tags && filter.tags.length > 0
