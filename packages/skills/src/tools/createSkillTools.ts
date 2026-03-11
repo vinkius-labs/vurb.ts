@@ -28,7 +28,7 @@ interface DefineToolConfig {
     description?: string;
     actions: Record<string, {
         readOnly?: boolean;
-        params: Record<string, string | { type: string; description?: string }>;
+        params?: Record<string, string | { type: string; description?: string }>;
         description?: string;
         handler: (ctx: unknown, args: Record<string, unknown>) => unknown | Promise<unknown>;
     }>;
@@ -98,20 +98,23 @@ export function createSkillTools(
     const limit = options.searchLimit ?? 10;
 
     return defineTool(name, {
-        description: 'Agent Skills — progressive discovery, loading, and file access.',
+        description:
+            'Discover and load Agent Skills. ' +
+            'Skills provide specialized instructions and files for specific tasks. ' +
+            'Workflow: search → load → read_file (if needed).',
         actions: {
             search: {
                 readOnly: true,
                 description:
-                    'Find skills relevant to a task description. ' +
-                    'Use this to discover skills. If you already have a skill_id, skip to load. ' +
-                    'If too many results, refine your query with more specific terms. ' +
-                    'Use "" or "*" to list all available skills.',
+                    'Search available skills by describing what you need. ' +
+                    'You MUST pass the query argument: arguments: { "query": "your task description" }. ' +
+                    'Use "*" to list all available skills. ' +
+                    'Returns skill IDs that can be passed to the load action.',
                 params: {
-                    query: { type: 'string', description: 'Natural-language task description (e.g. "extract PDF text")' },
+                    query: { type: 'string', description: 'Describe the task you need help with (e.g. "extract PDF text"). Use "*" to list all.' },
                 },
                 handler: (_ctx: unknown, args: Record<string, unknown>) => {
-                    const query = String(args['query'] ?? '');
+                    const query = String(args['query'] ?? '*');
                     const result = registry.search(query, limit);
                     return {
                         skills: result.skills.map(s => ({
@@ -128,11 +131,12 @@ export function createSkillTools(
             load: {
                 readOnly: true,
                 description:
-                    'Load a skill\'s full instructions. ' +
-                    'Call this after selecting an id from search. ' +
-                    'Returns detailed step-by-step instructions and available files.',
+                    'Load full instructions for a specific skill. ' +
+                    'Pass the skill_id from search results. ' +
+                    'Example: skill_id="pdf-processing". ' +
+                    'Returns step-by-step instructions and a list of available files.',
                 params: {
-                    skill_id: { type: 'string', description: 'Skill identifier from search results (e.g. "pdf-processing")' },
+                    skill_id: { type: 'string', description: 'Skill ID returned by search (e.g. "pdf-processing")' },
                 },
                 handler: (_ctx: unknown, args: Record<string, unknown>) => {
                     const skillId = String(args['skill_id'] ?? '');
@@ -158,12 +162,13 @@ export function createSkillTools(
             read_file: {
                 readOnly: true,
                 description:
-                    'Read a file inside a skill directory. ' +
-                    'Use this to access scripts, references, or assets listed in the skill\'s files array. ' +
-                    'Handles both text (utf-8) and binary (base64) files.',
+                    'Read a file from a skill\'s files list. ' +
+                    'Pass the skill_id and file_path from the load result. ' +
+                    'Example: skill_id="pdf-processing", file_path="scripts/extract.sh". ' +
+                    'Returns text (utf-8) or binary (base64) content.',
                 params: {
-                    skill_id: { type: 'string', description: 'Skill identifier from load' },
-                    file_path: { type: 'string', description: 'Relative path inside the skill (e.g. "scripts/deploy.sh")' },
+                    skill_id: { type: 'string', description: 'Skill ID from load result' },
+                    file_path: { type: 'string', description: 'File path from the skill files list (e.g. "scripts/deploy.sh")' },
                 },
                 handler: async (_ctx: unknown, args: Record<string, unknown>) => {
                     const skillId = String(args['skill_id'] ?? '');
