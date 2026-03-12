@@ -245,6 +245,20 @@ export interface PresenterConfig<T> {
  * });
  * ```
  *
+ * @example Mutation pattern (create/update/delete confirmation):
+ * ```typescript
+ * const CreateOrderPresenter = definePresenter({
+ *   name: 'CreateOrder',
+ *   schema: orderSchema,
+ *   rules: ['Order was created successfully. Show confirmation to the user.'],
+ *   suggestActions: (order) => [
+ *     { tool: 'orders.get', reason: 'View order details' },
+ *     { tool: 'orders.list', reason: 'View all orders' },
+ *     { tool: 'payments.create', reason: 'Process payment' },
+ *   ],
+ * });
+ * ```
+ *
  * @see {@link createPresenter} for the legacy fluent builder API
  * @see {@link Presenter} for the full Presenter class documentation
  */

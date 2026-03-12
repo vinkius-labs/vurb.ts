@@ -56,9 +56,22 @@ import { z, ZodType, type ZodRawShape, ZodError } from 'zod';
 import { ResponseBuilder } from './ResponseBuilder.js';
 import { type UiBlock } from './ui.js';
 import { PresenterValidationError } from './PresenterValidationError.js';
-import { applySelectFilter, extractZodKeys } from './SelectUtils.js';
+import { extractZodKeys } from './SelectUtils.js';
 import { defaultSerializer, type StringifyFn } from '../core/serialization/JsonSerializer.js';
 import { compileRedactor, type RedactConfig, type RedactFn } from './RedactEngine.js';
+import {
+    executePipeline,
+    stepValidate,
+    type PresenterSnapshot,
+    type RulesConfig,
+    type CollectionRulesFn,
+    type ItemUiBlocksFn,
+    type CollectionUiBlocksFn,
+    type SuggestActionsFn,
+    type CollectionSuggestActionsFn,
+    type AgentLimitConfig,
+    type EmbedEntry,
+} from './PresenterPipeline.js';
 
 // ── Brand ────────────────────────────────────────────────
 
@@ -92,35 +105,17 @@ export interface ActionSuggestion {
     readonly reason: string;
 }
 
-/** An embedded child Presenter for relational composition */
-interface EmbedEntry {
-    readonly key: string;
-    readonly presenter: Presenter<unknown>;
-}
-
-/** Agent limit configuration */
-interface AgentLimitConfig {
-    readonly max: number;
-    readonly onTruncate: (omittedCount: number) => UiBlock;
-}
-
-/** Static rules (string array) OR dynamic rules with context (function) */
-type RulesConfig<T> = readonly string[] | ((data: T, ctx?: unknown) => (string | null)[]);
-
-/** UI blocks callback — with optional context */
-type ItemUiBlocksFn<T> = (item: T, ctx?: unknown) => (UiBlock | null)[];
-
-/** Collection UI blocks callback — with optional context */
-type CollectionUiBlocksFn<T> = (items: T[], ctx?: unknown) => (UiBlock | null)[];
-
-/** Suggest actions callback — with optional context */
-type SuggestActionsFn<T> = (data: T, ctx?: unknown) => ActionSuggestion[];
-
-/** Collection-level suggest actions callback — receives full array */
-type CollectionSuggestActionsFn<T> = (items: T[], ctx?: unknown) => (ActionSuggestion | null)[];
-
-/** Collection-level rules callback — receives full array */
-type CollectionRulesFn<T> = readonly string[] | ((items: T[], ctx?: unknown) => (string | null)[]);
+// Type aliases re-exported from PresenterPipeline for backwards compatibility
+export type {
+    RulesConfig,
+    CollectionRulesFn,
+    ItemUiBlocksFn,
+    CollectionUiBlocksFn,
+    SuggestActionsFn,
+    CollectionSuggestActionsFn,
+    AgentLimitConfig,
+    EmbedEntry,
+} from './PresenterPipeline.js';
 
 // ── Async Callback Types ─────────────────────────────────
 
@@ -851,63 +846,8 @@ export class Presenter<T> {
         // Seal on first use — configuration is frozen from here
         this._sealed = true;
 
-        const isArray = Array.isArray(data);
-
-        // Step 0: Cognitive Guardrails — truncate if needed
-        let truncationBlock: UiBlock | undefined;
-        if (isArray && this._agentLimit && (data as T[]).length > this._agentLimit.max) {
-            const fullLength = (data as T[]).length;
-            const omitted = fullLength - this._agentLimit.max;
-            data = (data as T[]).slice(0, this._agentLimit.max) as T[];
-            truncationBlock = this._agentLimit.onTruncate(omitted);
-        }
-
-        // Step 1: Process embedded child Presenters (on RAW data, before validation)
-        // Embeds access relational keys (e.g. `client`) that the parent schema
-        // may not include — so they must run on pre-validation data.
-        const rawForEmbeds = data;
-
-        // Step 2: Validate — produces the FULL validated data
-        const validated = this._validate(data, isArray);
-
-        // ── Late Guillotine ──────────────────────────────────
-        // Steps 3-6 use the FULL validated data so that UI blocks,
-        // system rules, and action suggestions never see undefined
-        // for pruned fields (e.g. a chart using 'revenue' won't break
-        // if the AI only selected 'status').
-        //
-        // The _select filter is applied ONLY to the wire-facing data
-        // block in the ResponseBuilder — the last step before serialization.
-
-        // Step 3: Determine wire-facing data (filtered or full)
-        const wireData = (selectFields && selectFields.length > 0)
-            ? applySelectFilter(validated, selectFields, isArray)
-            : validated;
-
-        // Step 3.1: DLP Redaction — mask PII on the wire-facing data
-        // Uses structuredClone so UI blocks/rules still see full data.
-        const safeWireData = this._applyRedaction(wireData, isArray);
-
-        const builder = new ResponseBuilder(safeWireData as string | object, this._compiledStringify);
-
-        // Step 3.5: Truncation warning (first UI block, before all others)
-        if (truncationBlock) {
-            builder.uiBlock(truncationBlock);
-        }
-
-        // Step 4: Merge embedded child Presenter blocks (using FULL data)
-        this._processEmbeds(builder, rawForEmbeds, isArray, ctx);
-
-        // Step 5: Attach UI blocks (using FULL validated data)
-        this._attachUiBlocks(builder, validated, isArray, ctx);
-
-        // Step 6: Attach rules (using FULL validated data)
-        this._attachRules(builder, validated, isArray, ctx);
-
-        // Step 7: Attach action suggestions (using FULL validated data)
-        this._attachSuggestions(builder, validated, isArray, ctx);
-
-        return builder;
+        // Delegate entirely to the decomposed pipeline
+        return executePipeline(data, this._toSnapshot(), ctx, selectFields);
     }
 
     // ── Async Make ───────────────────────────────────────
@@ -953,15 +893,14 @@ export class Presenter<T> {
      * ```
      */
     async makeAsync(data: T | T[], ctx?: unknown, selectFields?: string[]): Promise<ResponseBuilder> {
-        // Step 1: Run all sync steps
+        // Step 1: Run all sync steps (via pipeline)
         const builder = this.make(data, ctx, selectFields);
 
         // Step 2: Async enrichment — append after sync blocks
         const isArray = Array.isArray(data);
 
         // Re-validate to get the validated data for async callbacks
-        // (reuse validation result from make() would be ideal, but make() doesn't expose it)
-        const validated = this._validate(data, isArray);
+        const validated = stepValidate(data, isArray, this._toSnapshot());
 
         // Async UI blocks
         if (isArray && this._asyncCollectionUiBlocks) {
@@ -997,195 +936,31 @@ export class Presenter<T> {
         return builder;
     }
 
-    // ── Private Decomposed Steps ─────────────────────────
+    // ── Pipeline Snapshot ─────────────────────────────────
 
     /**
-     * Apply PII redaction to wire-facing data.
-     * Creates a deep clone to preserve original data for UI/rules.
-     * @internal
-     */
-    private _applyRedaction(data: T | T[], isArray: boolean): T | T[] {
-        // Lazy recompilation: if redactPII was called before fast-redact loaded
-        // (e.g., top-level Presenter declared before initVurb()), retry now.
-        if (!this._compiledRedactor && this._redactConfig) {
-            this._compiledRedactor = compileRedactor(this._redactConfig);
-            if (!this._compiledRedactor) {
-                console.warn(
-                    `[vurb] Presenter "${this.name}": PII redaction configured but fast-redact is not available. ` +
-                    `Data will pass through WITHOUT redaction. Ensure initVurb() completes before .make() is called, ` +
-                    `or install fast-redact as a dependency.`,
-                );
-            }
-        }
-        if (!this._compiledRedactor) return data;
-
-        if (isArray) {
-            return (data as T[]).map(item =>
-                this._compiledRedactor!(item) as T,
-            );
-        }
-
-        return this._compiledRedactor(data) as T;
-    }
-
-    /**
-     * Validate data through the Zod schema (if configured).
-     * For arrays, each item is validated independently.
-     * @internal
-     */
-    private _validate(data: T | T[], isArray: boolean): T | T[] {
-        if (!this._schema) return data;
-
-        try {
-            if (isArray) {
-                return (data as T[]).map(item => this._schema!.parse(item));
-            }
-            return this._schema.parse(data);
-        } catch (err) {
-            if (err instanceof ZodError) {
-                throw new PresenterValidationError(this.name, err);
-            }
-            throw err;
-        }
-    }
-
-    /**
-     * Generate and attach UI blocks to the response builder.
-     * Auto-detects single vs collection. Filters `null` blocks.
-     * @internal
-     */
-    private _attachUiBlocks(builder: ResponseBuilder, data: T | T[], isArray: boolean, ctx?: unknown): void {
-        if (isArray && this._collectionUiBlocks) {
-            const blocks = this._collectionUiBlocks(data as T[], ctx).filter(Boolean) as UiBlock[];
-            if (blocks.length > 0) builder.uiBlocks(blocks);
-        } else if (!isArray && this._itemUiBlocks) {
-            const blocks = this._itemUiBlocks(data as T, ctx).filter(Boolean) as UiBlock[];
-            if (blocks.length > 0) builder.uiBlocks(blocks);
-        }
-    }
-
-    /**
-     * Resolve and attach domain rules to the response builder.
-     * Supports both static arrays and dynamic context-aware functions.
-     * Filters `null` rules automatically.
+     * Create a read-only snapshot of the Presenter's configuration
+     * for use by the decomposed pipeline steps.
      *
-     * For collections: also evaluates `collectionRules` (if defined) and
-     * merges them after per-item rules.
+     * @returns A {@link PresenterSnapshot} capturing the current config
      * @internal
      */
-    private _attachRules(builder: ResponseBuilder, data: T | T[], isArray: boolean, ctx?: unknown): void {
-        // Per-item rules (existing behavior)
-        if (typeof this._rules === 'function') {
-            const singleData = isArray ? (data as T[])[0] : data as T;
-            if (singleData !== undefined) {
-                const resolved = this._rules(singleData, ctx)
-                    .filter((r): r is string => r !== null);
-                if (resolved.length > 0) builder.systemRules(resolved);
-            }
-        } else if (this._rules.length > 0) {
-            builder.systemRules(this._rules);
-        }
-
-        // Collection-level rules (additive — appended after per-item rules)
-        if (isArray && this._hasCollectionRules()) {
-            const items = data as T[];
-            if (typeof this._collectionRules === 'function') {
-                const resolved = this._collectionRules(items, ctx)
-                    .filter((r): r is string => r !== null);
-                if (resolved.length > 0) builder.systemRules(resolved);
-            } else if (this._collectionRules.length > 0) {
-                builder.systemRules(this._collectionRules);
-            }
-        }
-    }
-
-    /** @internal Check if collection rules are configured */
-    private _hasCollectionRules(): boolean {
-        return typeof this._collectionRules === 'function'
-            || this._collectionRules.length > 0;
-    }
-
-    /**
-     * Evaluate and attach action suggestions to the response.
-     * Generates a `[SYSTEM HINT]` block with recommended next tools.
-     *
-     * For collections: uses `collectionSuggestActions` if defined (receives
-     * the full array), otherwise falls back to per-item evaluation on the
-     * first item for backwards compatibility.
-     * @internal
-     */
-    private _attachSuggestions(builder: ResponseBuilder, data: T | T[], isArray: boolean, ctx?: unknown): void {
-        // Collection-level suggestions (preferred for arrays)
-        if (isArray && this._collectionSuggestActions) {
-            const items = data as T[];
-            if (items.length === 0) return;
-            const suggestions = this._collectionSuggestActions(items, ctx)
-                .filter((s): s is ActionSuggestion => s !== null);
-            if (suggestions.length > 0) {
-                builder.systemHint(suggestions);
-            }
-            return;
-        }
-
-        // Per-item fallback (single item or first item of array)
-        if (!this._suggestActions) return;
-        const singleData = isArray ? (data as T[])[0] : data as T;
-        if (singleData === undefined) return;
-
-        const suggestions = this._suggestActions(singleData, ctx);
-        if (suggestions.length > 0) {
-            builder.systemHint(suggestions);
-        }
-    }
-
-    /**
-     * Process embedded child Presenters for nested relational data.
-     * Merges child UI blocks and rules into the parent builder.
-     *
-     * For collections: iterates all array items. Rules are deduplicated
-     * via a Set to avoid repetition. UI blocks are emitted only for the
-     * first item to prevent context window explosion.
-     * @internal
-     */
-    private _processEmbeds(builder: ResponseBuilder, data: T | T[], isArray: boolean, ctx?: unknown): void {
-        if (this._embeds.length === 0) return;
-
-        const items = isArray
-            ? (data as T[]).filter((item): item is T => item !== undefined && typeof item === 'object')
-            : [data as T].filter((item): item is T => item !== undefined && typeof item === 'object');
-
-        if (items.length === 0) return;
-
-        // Track which rule blocks we've already emitted (dedup for arrays)
-        const emittedRules = new Set<string>();
-
-        for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
-            const item = items[itemIdx]!;
-
-            for (const embed of this._embeds) {
-                const nestedData = (item as Record<string, unknown>)[embed.key];
-                if (nestedData === undefined || nestedData === null) continue;
-
-                const childBuilder = embed.presenter.make(nestedData, ctx);
-                const childResponse = childBuilder.build();
-
-                // Skip the first block (data) — parent already has it
-                for (let i = 1; i < childResponse.content.length; i++) {
-                    const blockText = childResponse.content[i]!.text;
-
-                    // For arrays: deduplicate rule/hint blocks, emit UI only for first item
-                    if (isArray && itemIdx > 0) {
-                        // Skip duplicate rule blocks (same text already emitted)
-                        if (emittedRules.has(blockText)) continue;
-                        // Skip UI blocks after the first item to avoid context explosion
-                        if (blockText.includes('<ui_passthrough')) continue;
-                    }
-
-                    emittedRules.add(blockText);
-                    builder.rawBlock(blockText);
-                }
-            }
-        }
+    _toSnapshot(): PresenterSnapshot<T> {
+        return {
+            name: this.name,
+            schema: this._schema,
+            rules: this._rules,
+            collectionRules: this._collectionRules,
+            itemUiBlocks: this._itemUiBlocks,
+            collectionUiBlocks: this._collectionUiBlocks,
+            suggestActions: this._suggestActions,
+            collectionSuggestActions: this._collectionSuggestActions,
+            agentLimit: this._agentLimit,
+            embeds: this._embeds,
+            redactConfig: this._redactConfig,
+            compiledRedactor: this._compiledRedactor,
+            compiledStringify: this._compiledStringify,
+        };
     }
 }
 

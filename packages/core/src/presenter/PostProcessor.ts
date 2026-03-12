@@ -12,6 +12,7 @@ import { type ToolResponse, success as successResponse } from '../core/response.
 import { isResponseBuilder, type ResponseBuilder } from './ResponseBuilder.js';
 import { type Presenter } from './Presenter.js';
 import { type TelemetrySink } from '../observability/TelemetryEvent.js';
+import { emitPresenterTelemetry } from './TelemetryCollector.js';
 
 // ── Telemetry Context ────────────────────────────────────
 
@@ -25,8 +26,6 @@ export interface PostProcessTelemetry {
     readonly tool: string;
     readonly action: string;
 }
-
-const _encoder = new TextEncoder();
 
 /**
  * Post-process a handler's return value through the MVA priority hierarchy.
@@ -65,83 +64,24 @@ export function postProcessResult(
 
     // Priority 3: Raw data + Presenter → pipe through MVA
     if (presenter) {
-        // Measure raw data size for telemetry
-        const rawJson = telemetry ? JSON.stringify(result) : undefined;
-        const rawBytes = rawJson ? _encoder.encode(rawJson).byteLength : 0;
+        // Pre-serialize for telemetry (skip if no sink)
+        const rawJson = telemetry ? JSON.stringify(result) : '';
         const rawRows = Array.isArray(result) ? result.length : 1;
 
         const response = presenter.make(result, ctx, selectFields).build();
 
-        // Emit presenter.slice and presenter.rules events
+        // Delegate all telemetry emission to TelemetryCollector
         if (telemetry) {
-            // Measure wire bytes from the built response
-            let wireBytes = 0;
-            for (const c of response.content) {
-                if ('text' in c && typeof c.text === 'string') {
-                    wireBytes += _encoder.encode(c.text).byteLength;
-                }
-            }
-
-            // Compute wire rows — agentLimit may have truncated
-            const agentLimitMax = presenter.getAgentLimitMax();
-            const wireRows = (agentLimitMax !== undefined && rawRows > agentLimitMax)
-                ? agentLimitMax
-                : rawRows;
-
-            telemetry.sink({
-                type: 'presenter.slice',
+            emitPresenterTelemetry({
+                sink: telemetry.sink,
                 tool: telemetry.tool,
                 action: telemetry.action,
-                rawBytes,
-                wireBytes,
-                rowsRaw: rawRows,
-                rowsWire: wireRows,
-                // Enriched fields for Inspector X-Ray
-                ...(selectFields && selectFields.length > 0 ? {
-                    selectFields,
-                    totalFields: presenter.getSchemaKeys().length || undefined,
-                } : {}),
-                ...(agentLimitMax !== undefined && rawRows > agentLimitMax ? {
-                    guardrailFrom: rawRows,
-                    guardrailTo: agentLimitMax,
-                    guardrailHint: 'Results truncated by agentLimit. Use pagination or filters.',
-                } : {}),
-                timestamp: Date.now(),
-            } as any);
-
-            // Extract rules from the built response text content
-            // Rules are embedded as <domain_rules> XML blocks by the ResponseBuilder
-            const rulesFromResponse: string[] = [];
-            for (const c of response.content) {
-                if ('text' in c && typeof c.text === 'string') {
-                    const match = c.text.match(/<domain_rules>\n([\s\S]*?)\n<\/domain_rules>/);
-                    if (match) {
-                        rulesFromResponse.push(...match[1]!.split('\n').filter(Boolean).map(r => r.replace(/^- /, '')));
-                    }
-                }
-            }
-            if (rulesFromResponse.length > 0) {
-                telemetry.sink({
-                    type: 'presenter.rules',
-                    tool: telemetry.tool,
-                    action: telemetry.action,
-                    rules: rulesFromResponse,
-                    timestamp: Date.now(),
-                } as any);
-            }
-
-            // Emit DLP redaction event if the Presenter has redact paths
-            const redactPaths = presenter.getRedactPaths();
-            if (redactPaths.length > 0) {
-                telemetry.sink({
-                    type: 'dlp.redact',
-                    tool: telemetry.tool,
-                    action: telemetry.action,
-                    fieldsRedacted: redactPaths.length,
-                    paths: [...redactPaths],
-                    timestamp: Date.now(),
-                } as any);
-            }
+                response,
+                presenter,
+                rawJson,
+                rawRows,
+                selectFields,
+            });
         }
 
         return response;

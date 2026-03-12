@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.3] - 2026-03-12
+
+### Added
+
+- **`TelemetryCollector` module** — Extracted `emitPresenterTelemetry()` from `PostProcessor.ts`, consolidating `presenter.slice`, `presenter.rules`, and `dlp.redact` event emission into a dedicated, testable module. PostProcessor reduced from 185 to ~115 lines.
+- **Mutation Presenter convention** — JSDoc `@example` in `definePresenter()` documenting the recommended pattern for create/update/delete confirmation flows with `suggestActions`.
+
+### Changed
+
+- **`PresenterPipeline` — decomposed god class** — Extracted 7 pure step functions (`stepTruncate`, `stepValidate`, `stepRedact`, `stepEmbeds`, `stepUiBlocks`, `stepRules`, `stepSuggestions`) + `executePipeline()` orchestrator into `PresenterPipeline.ts`. `Presenter.make()` now delegates entirely via `_toSnapshot()`. `Presenter.ts` reduced from 1219 to ~1030 lines. Zero public API changes — all existing tests pass unmodified.
+- **`PresenterSnapshot<T>` interface** — Read-only configuration snapshot enabling standalone, testable step functions without exposing private Presenter state.
+
 ## [3.3.2] - 2026-03-12
 
 ### Added
