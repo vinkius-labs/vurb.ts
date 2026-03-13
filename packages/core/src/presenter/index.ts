@@ -40,3 +40,16 @@ export { extractZodKeys, pickFields, applySelectFilter } from './SelectUtils.js'
 // ── DLP Compliance (PII Redaction) ───────────────────────
 export { compileRedactor, initRedactEngine } from './RedactEngine.js';
 export type { RedactConfig, RedactFn } from './RedactEngine.js';
+
+// ── JudgeChain (Multi-Adapter LLM Evaluation) ───────────
+export { createJudgeChain } from './JudgeChain.js';
+export type {
+    JudgeChain, JudgeChainConfig, JudgeChainResult,
+    JudgeResult, JudgeStrategy,
+} from './JudgeChain.js';
+
+// ── PromptFirewall (Output Protection) ──────────────────
+export { evaluateRules, buildFirewallPrompt, parseFirewallVerdict } from './PromptFirewall.js';
+export type {
+    PromptFirewallConfig, FirewallVerdict, FirewallRejection,
+} from './PromptFirewall.js';

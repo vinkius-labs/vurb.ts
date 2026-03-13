@@ -13,6 +13,10 @@ import {
     CallToolRequestSchema,
     ListPromptsRequestSchema,
     GetPromptRequestSchema,
+    ListResourcesRequestSchema,
+    ReadResourceRequestSchema,
+    SubscribeRequestSchema,
+    UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { type Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
 import { type ToolResponse, error, toolError } from '../core/response.js';
@@ -31,6 +35,7 @@ import { compileContracts } from '../introspection/ToolContract.js';
 import { computeServerDigest } from '../introspection/BehaviorDigest.js';
 import { type ToolExposition } from '../exposition/types.js';
 import { compileExposition, type FlatRoute, type ExpositionResult } from '../exposition/ExpositionCompiler.js';
+import { type ResourceRegistry } from '../resource/ResourceRegistry.js';
 import { type PromptRegistry, type PromptFilter } from '../prompt/PromptRegistry.js';
 import { type LoopbackContext } from '../prompt/types.js';
 import { StateMachineGate, type FsmStateStore, type FsmSnapshot } from '../fsm/StateMachineGate.js';
@@ -379,6 +384,34 @@ export interface AttachOptions<TContext> {
      * ```
      */
     fsmStore?: FsmStateStore;
+
+    // ── MCP Resources (Push Subscriptions) ───────────────
+
+    /**
+     * Resource registry for live data feeds with push subscriptions.
+     *
+     * When provided, the framework registers `resources/list`, `resources/read`,
+     * `resources/subscribe`, and `resources/unsubscribe` handlers on the MCP
+     * server, enabling AI agents to subscribe to real-time data updates.
+     *
+     * Zero overhead when omitted — no resource code runs.
+     *
+     * @example
+     * ```typescript
+     * const resourceRegistry = new ResourceRegistry<AppContext>();
+     * resourceRegistry.register(stockPrice);
+     * resourceRegistry.register(deployStatus);
+     *
+     * registry.attachToServer(server, {
+     *     contextFactory: createContext,
+     *     resources: resourceRegistry,
+     * });
+     * ```
+     *
+     * @see {@link ResourceRegistry} for resource registration
+     * @see {@link defineResource} for creating resources
+     */
+    resources?: ResourceRegistry<TContext>;
 }
 
 /** Function to detach the registry from the server */
@@ -763,6 +796,97 @@ function injectLoopbackDispatcher<TContext>(
 }
 
 /**
+ * Typed interface for MCP SDK Server with resource + subscribe handler support.
+ */
+interface McpServerWithResourceSubscriptions {
+    setRequestHandler(schema: typeof ListResourcesRequestSchema, handler: (...args: never[]) => unknown): void;
+    setRequestHandler(schema: typeof ReadResourceRequestSchema, handler: (...args: never[]) => unknown): void;
+    setRequestHandler(schema: typeof SubscribeRequestSchema, handler: (...args: never[]) => unknown): void;
+    setRequestHandler(schema: typeof UnsubscribeRequestSchema, handler: (...args: never[]) => unknown): void;
+}
+
+/**
+ * Register `resources/list`, `resources/read`, `resources/subscribe`,
+ * and `resources/unsubscribe` handlers on the MCP server.
+ *
+ * Wires the ResourceRegistry notification sink to the MCP server's
+ * notification method for push delivery via SSE/Streamable HTTP.
+ *
+ * @internal
+ */
+function registerResourceHandlers<TContext>(
+    resolved: McpServerTyped,
+    server: unknown,
+    resources: ResourceRegistry<TContext>,
+    contextFactory?: (extra: unknown) => TContext | Promise<TContext>,
+): void {
+    const resourceServer = resolved as unknown as McpServerWithResourceSubscriptions;
+
+    // Wire notification sink for `notifications/resources/updated`
+    const serverAny = server as Record<string, unknown>;
+    const sendResourceUpdated = serverAny['sendResourceUpdated'];
+    const sendNotification = serverAny['notification'];
+
+    if (typeof sendResourceUpdated === 'function') {
+        resources.setNotificationSink((uri: string) => {
+            (sendResourceUpdated as Function).call(server, uri);
+        });
+    } else if (typeof sendNotification === 'function') {
+        resources.setNotificationSink((uri: string) => {
+            void (sendNotification as Function).call(server, {
+                method: 'notifications/resources/updated',
+                params: { uri },
+            });
+        });
+    }
+
+    // Wire lifecycle sync for `notifications/resources/list_changed`
+    const sendListChanged = serverAny['sendResourceListChanged'];
+    if (typeof sendListChanged === 'function') {
+        resources.setListChangedSink(() => { (sendListChanged as Function).call(server); });
+    }
+
+    // resources/list — merge with introspection resources if present
+    resourceServer.setRequestHandler(ListResourcesRequestSchema, (() => {
+        return {
+            resources: resources.listResources(),
+        };
+    }) as (...args: never[]) => unknown);
+
+    // resources/read
+    resourceServer.setRequestHandler(ReadResourceRequestSchema, (async (
+        request: { params: { uri: string } },
+        extra: unknown,
+    ) => {
+        const ctx = contextFactory
+            ? await contextFactory(extra)
+            : _missingContextProxy as TContext;
+        return resources.readResource(request.params.uri, ctx);
+    }) as (...args: never[]) => unknown);
+
+    // resources/subscribe
+    resourceServer.setRequestHandler(SubscribeRequestSchema, ((
+        request: { params: { uri: string } },
+    ) => {
+        const accepted = resources.subscribe(request.params.uri);
+        if (!accepted) {
+            return {
+                _meta: {},
+            };
+        }
+        return { _meta: {} };
+    }) as (...args: never[]) => unknown);
+
+    // resources/unsubscribe
+    resourceServer.setRequestHandler(UnsubscribeRequestSchema, ((
+        request: { params: { uri: string } },
+    ) => {
+        resources.unsubscribe(request.params.uri);
+        return { _meta: {} };
+    }) as (...args: never[]) => unknown);
+}
+
+/**
  * Create the detach function that replaces all handlers with no-ops.
  */
 function createDetachFn(
@@ -922,7 +1046,13 @@ export async function attachToServer<TContext>(
         registerPromptHandlers(resolved, server, prompts, registry, filter, contextFactory);
     }
 
-    // 7. Return detach function
+    // 7. Register resource handlers (zero overhead when omitted)
+    const { resources } = options;
+    if (resources) {
+        registerResourceHandlers(resolved, server, resources, contextFactory);
+    }
+
+    // 8. Return detach function
     return createDetachFn(resolved, prompts !== undefined);
 }
 

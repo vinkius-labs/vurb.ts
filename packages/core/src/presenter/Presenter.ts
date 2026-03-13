@@ -72,6 +72,7 @@ import {
     type AgentLimitConfig,
     type EmbedEntry,
 } from './PresenterPipeline.js';
+import { evaluateRules, type PromptFirewallConfig } from './PromptFirewall.js';
 
 // ── Brand ────────────────────────────────────────────────
 
@@ -173,6 +174,7 @@ export class Presenter<T> {
     private _asyncCollectionUiBlocks?: AsyncCollectionUiBlocksFn<T>;
     private _asyncRules?: AsyncRulesFn<T>;
     private _asyncSuggestActions?: AsyncSuggestActionsFn<T>;
+    private _promptFirewall?: PromptFirewallConfig;
 
     /** @internal Use {@link createPresenter} factory instead */
     constructor(name: string) {
@@ -804,6 +806,34 @@ export class Presenter<T> {
         return this;
     }
 
+    /**
+     * Enable LLM-as-Judge evaluation of dynamic system rules.
+     *
+     * The PromptFirewall evaluates all resolved rules (sync + async)
+     * through a judge chain before they reach the LLM. This prevents
+     * prompt injection via tainted data interpolated in `.systemRules()`.
+     *
+     * **Important:** Presenters with a firewall MUST use `makeAsync()`.
+     * Calling `make()` will throw an error.
+     *
+     * @param config - Firewall configuration (adapter or chain)
+     * @returns `this` for chaining
+     *
+     * @example
+     * ```typescript
+     * createPresenter('Invoice')
+     *     .systemRules((inv) => [`Status: ${inv.description}`])
+     *     .promptFirewall({
+     *         adapter: { name: 'gpt-4o-mini', evaluate: (p) => openai.chat(p) },
+     *     });
+     * ```
+     */
+    promptFirewall(config: PromptFirewallConfig): this {
+        this._assertNotSealed();
+        this._promptFirewall = config;
+        return this;
+    }
+
     // ── Execution ────────────────────────────────────────
 
     /**
@@ -843,6 +873,15 @@ export class Presenter<T> {
      * ```
      */
     make(data: T | T[], ctx?: unknown, selectFields?: string[]): ResponseBuilder {
+        // Guard: PromptFirewall requires makeAsync()
+        if (this._promptFirewall) {
+            throw new Error(
+                `Presenter "${this.name}" has a PromptFirewall configured. ` +
+                `Use makeAsync() instead of make(). The firewall requires async ` +
+                `evaluation to filter system rules through the LLM judge.`,
+            );
+        }
+
         // Seal on first use — configuration is frozen from here
         this._sealed = true;
 
@@ -863,7 +902,8 @@ export class Presenter<T> {
      */
     hasAsyncCallbacks(): boolean {
         return !!(this._asyncItemUiBlocks || this._asyncCollectionUiBlocks
-            || this._asyncRules || this._asyncSuggestActions);
+            || this._asyncRules || this._asyncSuggestActions
+            || this._promptFirewall);
     }
 
     /**
@@ -894,7 +934,9 @@ export class Presenter<T> {
      */
     async makeAsync(data: T | T[], ctx?: unknown, selectFields?: string[]): Promise<ResponseBuilder> {
         // Step 1: Run all sync steps (via pipeline)
-        const builder = this.make(data, ctx, selectFields);
+        // Bypass the make() guard for firewall-enabled presenters
+        this._sealed = true;
+        const builder = executePipeline(data, this._toSnapshot(), ctx, selectFields);
 
         // Step 2: Async enrichment — append after sync blocks
         const isArray = Array.isArray(data);
@@ -930,6 +972,15 @@ export class Presenter<T> {
                 const suggestions = await this._asyncSuggestActions(singleData, ctx);
                 const filtered = suggestions.filter((s): s is ActionSuggestion => s !== null);
                 if (filtered.length > 0) builder.systemHint(filtered);
+            }
+        }
+
+        // Step 3: PromptFirewall — filter ALL accumulated rules via LLM judge
+        if (this._promptFirewall) {
+            const currentRules = builder.getRules();
+            if (currentRules.length > 0) {
+                const verdict = await evaluateRules(currentRules, this._promptFirewall);
+                builder.replaceRules(verdict.allowed);
             }
         }
 

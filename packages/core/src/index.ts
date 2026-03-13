@@ -172,6 +172,16 @@ export type {
     InvalidationEvent, ResourceNotification, OverlapWarning,
 } from './state-sync/index.js';
 
+// ── Resources (Push Subscriptions) ───────────────────────
+/** @category Resources */
+export { ResourceRegistry, defineResource, SubscriptionManager } from './resource/index.js';
+/** @category Resources */
+export type {
+    ResourceBuilder, ResourceConfig, ResourceContent,
+    ResourceHandler, McpResourceDef,
+    ResourceListChangedSink, ResourceNotificationSink,
+} from './resource/index.js';
+
 // ── Testing (In-Memory MVA Backdoor) ─────────────────────
 /** @category Testing */
 export { MVA_META_SYMBOL } from './testing/MvaMetaSymbol.js';
@@ -356,3 +366,34 @@ export { StateMachineGate, initFsmEngine, resetXStateCache } from './fsm/StateMa
 export type {
     FsmConfig, FsmStateStore, FsmSnapshot, TransitionResult,
 } from './fsm/StateMachineGate.js';
+
+// ── Security Layer ──────────────────────────────────────
+/** @category Security */
+export { createJudgeChain } from './presenter/JudgeChain.js';
+/** @category Security */
+export type {
+    JudgeChain, JudgeChainConfig, JudgeChainResult,
+    JudgeResult, JudgeStrategy,
+} from './presenter/JudgeChain.js';
+/** @category Security */
+export { evaluateRules, buildFirewallPrompt, parseFirewallVerdict } from './presenter/PromptFirewall.js';
+/** @category Security */
+export type {
+    PromptFirewallConfig, FirewallVerdict, FirewallRejection,
+} from './presenter/PromptFirewall.js';
+/** @category Security */
+export { inputFirewall } from './core/middleware/InputFirewall.js';
+/** @category Security */
+export type { InputFirewallConfig } from './core/middleware/InputFirewall.js';
+/** @category Security */
+export { auditTrail } from './core/middleware/AuditTrail.js';
+/** @category Security */
+export type { AuditTrailConfig, AuditIdentity, AuditSink } from './core/middleware/AuditTrail.js';
+/** @category Security */
+export { rateLimit, InMemoryStore } from './core/middleware/RateLimiter.js';
+/** @category Security */
+export type { RateLimitConfig, RateLimitStore, RateLimitEntry } from './core/middleware/RateLimiter.js';
+/** @category Security */
+export type {
+    SecurityFirewallEvent, SecurityAuditEvent, SecurityRateLimitEvent,
+} from './observability/TelemetryEvent.js';

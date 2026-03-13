@@ -333,6 +333,23 @@ const pages: Record<string, PageSEO> = {
   },
 
   // ═══════════════════════════════════════════════════════
+  // RESOURCE SUBSCRIPTIONS
+  // ═══════════════════════════════════════════════════════
+  'resource-subscriptions.md': {
+    title: 'Resource Subscriptions — Real-Time Push Notifications for AI Agents',
+    description: 'MCP Resource Subscriptions with zero-overhead push notifications. Define subscribable resources, manage subscriptions with SubscriptionManager, and deliver real-time updates via notifications/resources/updated.',
+    faqs: [
+      { q: 'What are MCP Resource Subscriptions in Vurb.ts?', a: 'Resource Subscriptions enable real-time push notifications for AI agents. Instead of the agent polling for changes, the server pushes notifications/resources/updated when data changes — stock prices, deploy pipeline status, live error logs. The agent subscribes once and receives updates automatically. Vurb.ts implements the full MCP subscription lifecycle: resources/subscribe and resources/unsubscribe.' },
+      { q: 'How do I define a subscribable resource in Vurb.ts?', a: 'Use the fluent builder: f.resource("stock_price").uri("stock://prices/{symbol}").subscribable().handle(async (uri, ctx) => {...}). The .subscribable() method marks the resource for push notifications. Alternatively, use defineResource("stock_price", { subscribable: true, handler: ... }). Non-subscribable resources are read-only and never tracked for subscriptions.' },
+      { q: 'What is the difference between subscribable and static resources?', a: 'Static resources (country codes, system config) change so rarely that push notifications add no value. Subscribable resources (stock prices, deploy status, live logs) change frequently and benefit from real-time push. When a client calls resources/subscribe on a non-subscribable resource, the framework responds gracefully without error — the subscription is simply not tracked.' },
+      { q: 'How do push notifications work in Vurb.ts resources?', a: 'After an external system notifies the server that data changed, call resourceRegistry.notifyUpdated("stock://prices/AAPL"). All agents subscribed to that URI receive a notifications/resources/updated notification, then call resources/read to get the new value. Notifications are best-effort — transport failures are silently dropped.' },
+      { q: 'What is the SubscriptionManager in Vurb.ts?', a: 'The SubscriptionManager tracks active subscriptions per URI. Access it via resourceRegistry.subscriptions. It provides: .size (number of active subscriptions), .isSubscribed(uri) (boolean check). Subscriptions are idempotent — subscribing to the same URI twice creates one subscription. Unsubscribing a non-existent subscription is a no-op.' },
+      { q: 'Are MCP resource subscriptions per-URI or per-template?', a: 'Per-URI. A client subscribing to stock://prices/AAPL receives notifications only for that specific URI — not for stock://prices/GOOG. This ensures agents receive only notifications relevant to the data they are actively monitoring.' },
+      { q: 'What is the relationship between Resource Subscriptions and State Sync?', a: 'They complement each other. State Sync (cache-control signals) tells agents when tool response data is stale after mutations — pull-based invalidation. Resource Subscriptions push real-time notifications when resource data changes — push-based updates. Use State Sync for tool data freshness. Use Resource Subscriptions for live data feeds.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
   // CONTEXT
   // ═══════════════════════════════════════════════════════
   'context.md': {
@@ -697,6 +714,89 @@ const pages: Record<string, PageSEO> = {
       { q: 'How do I configure PII redaction in Vurb.ts?', a: 'Use the fluent API: createPresenter(\"Patient\").schema({...}).redactPII([\"ssn\", \"diagnosis\", \"email\"]). Or the declarative API: definePresenter({ redactPII: { paths: [\"ssn\"], censor: \"***\" } }). Both compile the redaction function at configuration time for near-zero runtime overhead.' },
       { q: 'What path syntax does the DLP engine support?', a: 'The DLP engine supports fast-redact path syntax: dot notation (\"user.ssn\"), bracket notation (\"user[\\\"ssn\\\"]\"), wildcards (\"*.ssn\"), array items (\"patients[*].diagnosis\"), specific indices (\"items[0].secret\"), and deeply nested wildcards (\"records[*].contact.email\").' },
       { q: 'Is fast-redact required to use Vurb.ts?', a: 'No. fast-redact is an optional peer dependency. If not installed, the framework logs a warning and passes data through unmodified — no crashes. Install it only on servers that handle PII: npm install fast-redact.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — OVERVIEW
+  // ═══════════════════════════════════════════════════════
+  'security/index.md': {
+    title: 'Security Layer — LLM-as-Judge Firewalls for MCP Servers',
+    description: 'Semantic prompt injection defense, sliding-window rate limiting, and SOC2/GDPR audit trails for production MCP servers. Fail-closed by default.',
+    faqs: [
+      { q: 'How does Vurb.ts defend MCP servers against prompt injection?', a: 'Vurb.ts replaces regex-based pattern matching with LLM-as-Judge evaluation. A secondary LLM evaluates content for malicious intent regardless of language, encoding, or phrasing. The Security Layer includes four composable middlewares: InputFirewall (input-side argument validation), PromptFirewall (output-side rule filtering), RateLimiter (sliding-window throttling), and AuditTrail (SOC2/GDPR compliance logging).' },
+      { q: 'Why do regex-based defenses fail against MCP prompt injection?', a: 'Regex rules only match specific syntax patterns. Attackers bypass them with multilingual injection (Chinese, Arabic), encoding bypass (Base64, Unicode escapes, homoglyphs), semantic paraphrasing, and combinatorial explosion. The LLM-as-Judge approach understands semantics — it detects malicious intent regardless of how it is expressed.' },
+      { q: 'Is the Vurb.ts Security Layer fail-open or fail-closed?', a: 'All four security components default to fail-closed. If the LLM judge crashes, times out, or returns an unparseable response, content is blocked — not allowed. Fail-open is an explicit opt-in via failOpen: true for non-critical evaluations only.' },
+      { q: 'Does Vurb.ts Security Layer comply with SOC2 and GDPR?', a: 'Yes. The AuditTrail middleware maps to SOC2 controls CC6.1 (logical access), CC6.3 (access monitoring), CC7.2 (system monitoring), and CC7.3 (change monitoring). For GDPR, it addresses Art. 5(1)(c) (data minimization via SHA-256 hashing), Art. 25 (data protection by design), Art. 30 (records of processing), and Art. 32 (security of processing).' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — JUDGECHAIN
+  // ═══════════════════════════════════════════════════════
+  'security/judge-chain.md': {
+    title: 'JudgeChain — Multi-Adapter LLM Evaluation for MCP Security',
+    description: 'Composable LLM evaluation engine with fallback and consensus strategies, per-adapter timeouts, and fail-closed defaults. The primitive behind PromptFirewall and InputFirewall.',
+    faqs: [
+      { q: 'What is a JudgeChain in Vurb.ts?', a: 'A JudgeChain wraps one or more LLM adapters and orchestrates their evaluation with configurable strategies. It is the foundational primitive shared by both the PromptFirewall and InputFirewall. You provide the LLM adapter (any function that takes a string and returns a string), and the framework handles timeouts, retries, and verdict parsing.' },
+      { q: 'What strategies does JudgeChain support?', a: 'Two strategies: Fallback — try adapters sequentially, first success wins (cost-efficient for most use cases); Consensus — all adapters are called in parallel, every adapter must agree for the content to pass (maximum security for critical paths).' },
+      { q: 'How does JudgeChain handle adapter failures?', a: 'Each adapter call is guarded by Promise.race with a per-adapter timeout. In fallback mode, a failed adapter triggers the next in line. In consensus mode, a failed adapter is treated as an error and the failOpen flag determines the final verdict. Timeouts are properly cleaned up — no timer leaks.' },
+      { q: 'How does JudgeChain parse LLM responses?', a: 'The chain expects JSON with a safe, passed, or allowed boolean field. If the response is not valid JSON, it falls back to text matching. If nothing matches, the response is treated as unparseable — equivalent to an adapter error (fail-closed by default).' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — PROMPT FIREWALL
+  // ═══════════════════════════════════════════════════════
+  'security/prompt-firewall.md': {
+    title: 'Prompt Firewall — Output-Side Injection Defense for MCP Presenters',
+    description: 'Evaluate dynamically-generated system rules via LLM judges before they reach the AI agent. Prevents prompt injection through tainted database content in Presenter pipelines.',
+    faqs: [
+      { q: 'What is the Prompt Firewall in Vurb.ts?', a: 'The Prompt Firewall protects the output side of your MCP server. It evaluates dynamically-generated system rules — rules that interpolate database content — through an LLM judge before they reach the AI agent. Static rules are always safe; dynamic rules that reference user data need the firewall.' },
+      { q: 'How does the Prompt Firewall integrate with Presenters?', a: 'The firewall is configured on the Presenter via .promptFirewall() and runs inside makeAsync(). Calling make() when a firewall is configured throws an error — forcing the async path. This is intentional: the firewall requires an async LLM call.' },
+      { q: 'What is a FirewallVerdict in Vurb.ts?', a: 'A FirewallVerdict contains allowed rules (safe to pass), rejected rules (with per-rule reasons), whether the fallback was triggered, evaluation duration, and the raw JudgeChainResult. When the judge says safe: false without specifying which rules, all rules are blocked (fail-closed).' },
+      { q: 'Does the Prompt Firewall emit telemetry?', a: 'Yes. Add a telemetry sink to emit security.firewall events (type: prompt) with verdict details including allowed count, rejected count, fallback status, and evaluation duration.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — INPUT FIREWALL
+  // ═══════════════════════════════════════════════════════
+  'security/input-firewall.md': {
+    title: 'Input Firewall — Input-Side Injection Defense for MCP Tools',
+    description: 'Middleware that validates tool arguments against prompt injection and data exfiltration using an LLM judge. Runs before the handler in the middleware pipeline.',
+    faqs: [
+      { q: 'What is the Input Firewall in Vurb.ts?', a: 'The Input Firewall is a middleware that inspects tool arguments for hidden injection attempts — payloads disguised inside otherwise valid parameters. Zod validates types; the Input Firewall validates semantic content. It runs before your handler, evaluating all arguments through a JudgeChain.' },
+      { q: 'How does the Input Firewall differ from the Prompt Firewall?', a: 'The Input Firewall runs before the handler as middleware and protects tool arguments (input side). The Prompt Firewall runs after the handler inside the Presenter and protects system rules (output side). Use both together for defense in depth.' },
+      { q: 'What happens when the Input Firewall blocks a request?', a: 'It returns a toolError with code SECURITY_BLOCKED and a self-healing recovery hint instructing the LLM to review and modify its input arguments. The handler never executes.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — RATE LIMITER
+  // ═══════════════════════════════════════════════════════
+  'security/rate-limiter.md': {
+    title: 'Rate Limiter — Sliding-Window Request Throttling for MCP Tools',
+    description: 'Per-key sliding-window rate limiting middleware with custom stores (Redis, Valkey), two-phase increment/record design, and self-healing error responses.',
+    faqs: [
+      { q: 'How does rate limiting work in Vurb.ts?', a: 'The rateLimit() middleware applies per-key sliding-window throttling. It tracks timestamps instead of simple counts, preventing the boundary burst problem where a fixed window allows 2x requests at the boundary between two periods.' },
+      { q: 'What is the two-phase increment/record design?', a: 'The RateLimitStore interface separates increment() (check current count) from record() (add timestamp). This means rejected requests do not inflate the count. An attacker sending 1,000 requests sees the counter stay at max, not grow to 1,000.' },
+      { q: 'Can I use Redis as a rate limit store?', a: 'Yes. Implement the RateLimitStore interface with increment() and record() methods. The default InMemoryStore works for single-process servers; external stores like Redis or Valkey support multi-instance deployments.' },
+      { q: 'What happens when a request is rate-limited?', a: 'The middleware returns a toolError with code RATE_LIMITED, including the limit, remaining count, reset time, and a self-healing recovery suggestion telling the LLM to wait before retrying.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY LAYER — AUDIT TRAIL
+  // ═══════════════════════════════════════════════════════
+  'security/audit-trail.md': {
+    title: 'Audit Trail — SOC2/GDPR Compliance Logging for MCP Servers',
+    description: 'SHA-256 argument hashing, automatic identity extraction, and compliance-ready audit events for every tool call. Maps to SOC2 CC6.1, CC6.3, CC7.2 and GDPR Articles 5, 25, 30, 32.',
+    faqs: [
+      { q: 'How does the Audit Trail work in Vurb.ts?', a: 'The auditTrail() middleware wraps every tool call with compliance-ready logging. It captures who (identity), what (tool + action), when (timestamp), with what arguments (SHA-256 hashed for privacy), the outcome (success/error/blocked/rate-limited), and execution duration.' },
+      { q: 'Why does the Audit Trail hash arguments instead of storing them?', a: 'Arguments are serialized to JSON and hashed with SHA-256 for three reasons: privacy (raw arguments are never persisted), integrity (the hash proves arguments were not tampered with), and forensics (given the same arguments, you can verify the hash matches). This satisfies GDPR Art. 5(1)(c) data minimization.' },
+      { q: 'How does the Audit Trail map to SOC2 controls?', a: 'CC6.1 (Logical Access): identity field tracks who accessed what. CC6.3 (Access Monitoring): every tool call is logged with outcome. CC7.2 (System Monitoring): durationMs tracks performance anomalies. CC7.3 (Change Monitoring): argsHash provides integrity verification.' },
+      { q: 'How does the Audit Trail detect the outcome status?', a: 'The middleware automatically classifies outcomes as success (handler returned without error), error (handler returned with isError), firewall_blocked (previous middleware returned security error), or rate_limited (previous middleware returned rate-limit error).' },
     ],
   },
 
@@ -1676,6 +1776,43 @@ const pages: Record<string, PageSEO> = {
       { q: 'How does requireApiKey middleware work?', a: 'requireApiKey() is a middleware factory that extracts the API key from the context (ctx.apiKey, x-api-key header, or Authorization header with ApiKey/Bearer prefix), validates it using ApiKeyManager, and returns toolError(\"APIKEY_INVALID\") with self-healing hints if validation fails. On success, it calls next() and optionally invokes onValidated with key metadata.' },
       { q: 'Can the API Key package validate keys from a database?', a: 'Yes. Use the async validator strategy: provide a validator function that receives the raw key and returns { valid: boolean, metadata?: object, reason?: string }. The validator takes priority over static keys, enabling database lookups, rate limiting, scope checking, and key revocation.' },
       { q: 'How do I safely store API keys?', a: 'Use ApiKeyManager.hashKey(rawKey) to generate a SHA-256 hex hash, store the hash in your database, and configure the manager with hashedKeys. The original plaintext key is never stored. Use ApiKeyManager.generateKey() to create cryptographically random keys with custom prefixes.' },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // BLOG
+  // ═══════════════════════════════════════════════════════
+  'blog/index.md': {
+    title: 'Blog — Vurb.ts Articles & Insights',
+    description: 'Articles, guides, and deep dives about Vurb.ts — the AI-First DX for the Model Context Protocol. Architecture patterns, best practices, and ecosystem updates.',
+    faqs: [],
+  },
+
+  'blog/posts/introducing-vurb-ts.md': {
+    title: 'Introducing Vurb.ts — AI-First DX for the Model Context Protocol',
+    description: 'Discover Vurb.ts — a framework that brings the MVA pattern, Presenters, and a world-class developer experience to the Model Context Protocol.',
+    faqs: [
+      { q: 'What is Vurb.ts?', a: 'Vurb.ts is the AI-First Developer Experience for the Model Context Protocol. It introduces the MVA (Model-View-Agent) architectural pattern alongside a rich toolkit that lets you ship production-ready MCP servers in minutes instead of days.' },
+      { q: 'What does Vurb.ts include out of the box?', a: 'Vurb.ts includes Presenters (a deterministic View layer for AI agents), Zod-first tools, a composable middleware pipeline, error self-healing, and a full governance suite with capability lockfiles, contract diffing, and zero-trust attestation.' },
+    ],
+  },
+
+  'blog/posts/mva-pattern-deep-dive.md': {
+    title: 'MVA Pattern Deep Dive — Rethinking Architecture for AI Agents',
+    description: 'An in-depth exploration of the Model-View-Agent pattern — why MVC falls short for agentic workloads and how MVA solves perception, affordances, and guardrails.',
+    faqs: [
+      { q: 'Why is MVC inadequate for AI agents?', a: 'MVC was designed for human-driven request cycles. Agents don\'t render HTML — they consume structured data. Agents don\'t click buttons — they select affordances. And agents can hallucinate, requiring cognitive guardrails as a first-class concern.' },
+      { q: 'What are the three responsibilities of an MVA Presenter?', a: 'Perception (structured data packages with context tree-shaking), Affordances (explicit next-action hints inspired by HATEOAS), and Guardrails (server-side constraints that prevent hallucinated actions).' },
+    ],
+  },
+
+  'blog/posts/anatomy-of-an-ai-platform-breach.md': {
+    title: 'Anatomy of an AI Platform Breach — How Vurb.ts Defends Every Attack Vector',
+    description: 'A rigorous analysis of how Vurb.ts\'s security architecture — InputFirewall, PromptFirewall, AuditTrail, and CapabilityLockfile — would have prevented, detected, or mitigated each vulnerability in a recent Fortune-100 AI platform breach.',
+    faqs: [
+      { q: 'How does Vurb.ts prevent SQL injection attacks?', a: 'Vurb.ts provides two layers: Zod schema validation eliminates dynamic-key injection structurally (only allowlisted keys reach the handler), and the InputFirewall uses an LLM-as-Judge to semantically detect SQL payloads in values before they reach application code.' },
+      { q: 'How does Vurb.ts protect system prompts from tampering?', a: 'System rules in Vurb.ts are defined in source code, not stored in databases. The PromptFirewall evaluates dynamic rules before they reach the LLM, and the CapabilityLockfile tracks SHA-256 digests of all behavioral surfaces in CI.' },
+      { q: 'What is the CapabilityLockfile in Vurb.ts?', a: 'vurb.lock is a deterministic, git-diffable lockfile that captures SHA-256 digests of every tool\'s behavioral surface — including system rules, schemas, middleware chains, and entitlements. The CI gate (vurb lock --check) fails if the lockfile is stale, forcing a conscious review of all behavioral changes.' },
     ],
   },
 };

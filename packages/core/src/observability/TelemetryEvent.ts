@@ -149,9 +149,65 @@ export interface HeartbeatEvent {
     readonly timestamp: number;
 }
 
-// ============================================================================
-// Union Type
-// ============================================================================
+/**
+ * Emitted when the PromptFirewall or InputFirewall evaluates content.
+ * Tracks firewall verdicts for security monitoring and incident response.
+ */
+export interface SecurityFirewallEvent {
+    readonly type: 'security.firewall';
+    /** Which firewall triggered: 'prompt' (output) or 'input' */
+    readonly firewallType: 'prompt' | 'input';
+    /** Tool name */
+    readonly tool: string;
+    /** Action name */
+    readonly action: string;
+    /** Whether the content passed the firewall */
+    readonly passed: boolean;
+    /** Number of rules/fields allowed */
+    readonly allowedCount: number;
+    /** Number of rules/fields rejected */
+    readonly rejectedCount: number;
+    /** Whether the result was determined by failOpen/failClosed */
+    readonly fallbackTriggered: boolean;
+    /** Total evaluation duration in milliseconds */
+    readonly durationMs: number;
+    readonly timestamp: number;
+}
+
+/**
+ * Emitted on every tool invocation for SOC2/GDPR audit compliance.
+ * See {@link AuditTrail} middleware for emission.
+ */
+export interface SecurityAuditEvent {
+    readonly type: 'security.audit';
+    readonly tool: string;
+    readonly action: string;
+    /** Extracted identity (userId, role, ip) */
+    readonly identity: Record<string, string | undefined>;
+    /** SHA-256 hash of arguments (no PII in log) */
+    readonly argsHash: string;
+    /** Execution result status */
+    readonly status: 'success' | 'error' | 'firewall_blocked' | 'rate_limited';
+    /** Execution duration in milliseconds */
+    readonly durationMs: number;
+    readonly timestamp: number;
+}
+
+/**
+ * Emitted when the rate limiter blocks a request.
+ */
+export interface SecurityRateLimitEvent {
+    readonly type: 'security.rateLimit';
+    /** Rate limit key that was exceeded */
+    readonly key: string;
+    /** Current request count */
+    readonly count: number;
+    /** Maximum allowed requests */
+    readonly max: number;
+    /** Seconds until window resets (RFC 7231) */
+    readonly retryAfterSeconds: number;
+    readonly timestamp: number;
+}
 
 /**
  * All possible telemetry events that flow through the Shadow Socket.
@@ -176,6 +232,9 @@ export interface HeartbeatEvent {
  *         case 'fsm.transition':  // FsmTransitionEvent
  *         case 'topology':        // TopologyEvent
  *         case 'heartbeat':       // HeartbeatEvent
+ *         case 'security.firewall':  // SecurityFirewallEvent
+ *         case 'security.audit':     // SecurityAuditEvent
+ *         case 'security.rateLimit': // SecurityRateLimitEvent
  *     }
  * }
  * ```
@@ -188,7 +247,10 @@ export type TelemetryEvent =
     | SandboxExecEvent
     | FsmTransitionEvent
     | TopologyEvent
-    | HeartbeatEvent;
+    | HeartbeatEvent
+    | SecurityFirewallEvent
+    | SecurityAuditEvent
+    | SecurityRateLimitEvent;
 
 // ============================================================================
 // Sink Interface

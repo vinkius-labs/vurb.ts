@@ -253,6 +253,24 @@ export class ResponseBuilder {
     }
 
     /**
+     * Replace all domain rules atomically.
+     *
+     * Used by the PromptFirewall to swap the full rule set after
+     * LLM-as-Judge evaluation. Normal usage should prefer
+     * `systemRules()` (append-only).
+     *
+     * @param rules - New rule set to replace the current rules
+     * @returns `this` for chaining
+     *
+     * @internal Used by PromptFirewall
+     */
+    replaceRules(rules: readonly string[]): this {
+        this._rules.length = 0;
+        this._rules.push(...rules);
+        return this;
+    }
+
+    /**
      * Get the accumulated UI blocks.
      *
      * @returns Read-only array of UI blocks

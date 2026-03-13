@@ -3,7 +3,7 @@ import { getPageHeadTags, getPageSEO } from './seo'
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
 export default defineConfig({
-  title: "MCP Fusion",
+  title: "Vurb.ts",
   description: "The AI-First DX for the Model Context Protocol: building scalable Agentic APIs with the MVA pattern.",
   base: '/',
   cleanUrls: true,
@@ -13,39 +13,6 @@ export default defineConfig({
   },
 
   head: [
-    // ── Logo + title layout fix (in head to beat VitePress scoped styles) ──
-    ['style', {}, `
-      .VPNavBarTitle .title {
-        display: grid !important;
-        grid-template-columns: 36px auto !important;
-        grid-template-rows: auto auto !important;
-        align-items: center !important;
-        align-content: center !important;
-        gap: 2px 10px !important;
-      }
-      .VPNavBarTitle .title img,
-      .VPNavBarTitle .title .VPImage {
-        grid-row: 1 / span 2 !important;
-        grid-column: 1 !important;
-        height: 36px !important;
-        width: 36px !important;
-        min-width: 36px !important;
-        flex-shrink: 0 !important;
-        object-fit: contain !important;
-        margin: 0 !important;
-      }
-      .VPNavBarTitle .title > span {
-        grid-column: 2 !important;
-        grid-row: 1 !important;
-        align-self: end !important;
-      }
-      .VPNavBarTitle .title .nav-subtitle {
-        grid-column: 2 !important;
-        grid-row: 2 !important;
-        align-self: start !important;
-      }
-    `],
-
     // ── Google Analytics ──
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-346DSQJMFD' }],
     ['script', {}, "window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-346DSQJMFD');"],
@@ -60,18 +27,18 @@ export default defineConfig({
     ['meta', { name: 'msapplication-TileColor', content: '#30363D' }],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
     ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }],
-    ['meta', { name: 'apple-mobile-web-app-title', content: 'MCP Fusion' }],
-    ['meta', { name: 'application-name', content: 'MCP Fusion' }],
+    ['meta', { name: 'apple-mobile-web-app-title', content: 'Vurb.ts' }],
+    ['meta', { name: 'application-name', content: 'Vurb.ts' }],
 
     // ── JSON-LD: SoftwareSourceCode ──
     ['script', { type: 'application/ld+json' }, JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareSourceCode',
-      'name': 'mcp-fusion',
-      'alternateName': 'MCP Fusion',
+      'name': 'vurb-ts',
+      'alternateName': 'Vurb.ts',
       'description': 'The AI-First DX for the Model Context Protocol. Introduces Presenters — a deterministic View layer for AI agents — with action consolidation, cognitive guardrails, structured perception packages, and self-healing errors.',
       'url': 'https://mcp-fusion.vinkius.com/',
-      'codeRepository': 'https://github.com/vinkius-labs/mcp-fusion',
+      'codeRepository': 'https://github.com/vinkius-labs/vurb.ts',
       'programmingLanguage': 'TypeScript',
       'runtimePlatform': 'Node.js',
       'license': 'https://opensource.org/licenses/Apache-2.0',
@@ -90,7 +57,9 @@ export default defineConfig({
         'mcp-fusion-vercel', 'mcp-fusion-cloudflare', 'mcp-fusion-aws',
         'mcp-fusion-openapi-gen', 'mcp-fusion-prisma-gen', 'mcp-fusion-n8n',
         'mcp-fusion-oauth', 'mcp-fusion-jwt', 'mcp-fusion-api-key', 'mcp-fusion-testing',
-        'MCP server framework', 'build MCP server', 'MCP tool builder'
+        'MCP server framework', 'build MCP server', 'MCP tool builder',
+        'MCP resource subscriptions', 'real-time AI agent notifications',
+        'MCP resources', 'subscribable resources', 'push notifications MCP'
       ],
       'author': {
         '@type': 'Person',
@@ -130,7 +99,8 @@ export default defineConfig({
   },
 
   themeConfig: {
-    logo: { src: 'https://site-assets.vinkius.com/vk/icon-v-black-min.png', width: 36, height: 36 },
+    logo: { src: 'https://site-assets.vinkius.com/vk/vurb-logo.png', width: 160, height: 36 },
+    siteTitle: false,
     
     search: {
       provider: 'local'
@@ -139,6 +109,7 @@ export default defineConfig({
     nav: [
       { text: 'Create MCP-Server Now', link: '/quickstart-lightspeed' },
       { text: 'API Reference', link: '/api/' },
+      { text: 'Blog', link: '/blog/' },
     ],
 
     sidebar: [
@@ -225,6 +196,7 @@ export default defineConfig({
         items: [
           { text: 'Prompt Engine', link: '/prompts' },
           { text: 'Dynamic Manifest', link: '/dynamic-manifest' },
+          { text: 'Resource Subscriptions', link: '/resource-subscriptions' },
           { text: 'State Sync', link: '/state-sync' },
         ]
       },
@@ -244,6 +216,20 @@ export default defineConfig({
           { text: 'FSM State Gate', link: '/fsm-state-gate' },
           { text: 'Agent Skills', link: '/skills' },
           { text: 'Advanced Configuration', link: '/advanced-configuration' },
+        ]
+      },
+
+      // ── Security Layer ──────────────────────────────────
+      {
+        text: 'Security Layer',
+        collapsed: true,
+        items: [
+          { text: 'Overview', link: '/security/' },
+          { text: 'JudgeChain', link: '/security/judge-chain' },
+          { text: 'Prompt Firewall', link: '/security/prompt-firewall' },
+          { text: 'Input Firewall', link: '/security/input-firewall' },
+          { text: 'Rate Limiter', link: '/security/rate-limiter' },
+          { text: 'Audit Trail', link: '/security/audit-trail' },
         ]
       },
 
@@ -316,6 +302,7 @@ export default defineConfig({
               { text: 'Tracing', link: '/cookbook/tracing' },
               { text: 'Introspection', link: '/cookbook/introspection' },
               { text: 'State Sync', link: '/cookbook/state-sync' },
+              { text: 'Resource Subscriptions', link: '/cookbook/resource-subscriptions' },
               { text: 'Testing', link: '/cookbook/testing' },
             ]
           },
@@ -413,10 +400,22 @@ export default defineConfig({
           ...typedocSidebar,
         ]
       },
+
+      // ── Blog ─────────────────────────────────────────────
+      {
+        text: 'Blog',
+        collapsed: true,
+        items: [
+          { text: 'All Posts', link: '/blog/' },
+          { text: 'Introducing Vurb.ts', link: '/blog/posts/introducing-vurb-ts' },
+          { text: 'Anatomy of an AI Platform Breach', link: '/blog/posts/anatomy-of-an-ai-platform-breach' },
+          { text: 'MVA Pattern Deep Dive', link: '/blog/posts/mva-pattern-deep-dive' },
+        ]
+      },
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vinkius-labs/mcp-fusion' }
+      { icon: 'github', link: 'https://github.com/vinkius-labs/vurb.ts' }
     ]
   }
 })
