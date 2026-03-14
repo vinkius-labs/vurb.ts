@@ -1788,6 +1788,16 @@ const pages: Record<string, PageSEO> = {
     faqs: [],
   },
 
+  'blog/index.md': {
+    title: 'Vurb.ts Blog — MCP Server Frameworks, AI Agents & TypeScript',
+    description: 'Technical deep dives on building production MCP servers: framework comparisons, the MVA pattern, AI agent security, Presenter architecture, and TypeScript best practices.',
+    faqs: [
+      { q: 'Where can I learn about MCP server frameworks?', a: 'The Vurb.ts blog publishes in-depth technical articles comparing MCP server frameworks (FastMCP, mcp-framework, EasyMCP, the official SDK, and Vurb.ts), along with deep dives into the MVA (Model-View-Agent) pattern, AI agent security, and production deployment strategies.' },
+      { q: 'What topics does the Vurb.ts blog cover?', a: 'The blog covers MCP server development, framework comparisons, the Presenter pattern, AI agent security (prompt injection defense, PII redaction), TypeScript best practices for agentic workloads, and real-world case studies of enterprise MCP deployments.' },
+      { q: 'Is the Vurb.ts blog useful for developers not using Vurb.ts?', a: 'Yes. Many articles cover general MCP concepts, protocol best practices, and framework comparisons that are valuable to any developer building MCP servers — regardless of their framework choice.' },
+    ],
+  },
+
   'blog/posts/introducing-vurb-ts.md': {
     title: 'Introducing Vurb.ts — AI-First DX for the Model Context Protocol',
     description: 'Discover Vurb.ts — a framework that brings the MVA pattern, Presenters, and a world-class developer experience to the Model Context Protocol.',
@@ -1813,6 +1823,20 @@ const pages: Record<string, PageSEO> = {
       { q: 'How does Vurb.ts prevent SQL injection attacks?', a: 'Vurb.ts provides two layers: Zod schema validation eliminates dynamic-key injection structurally (only allowlisted keys reach the handler), and the InputFirewall uses an LLM-as-Judge to semantically detect SQL payloads in values before they reach application code.' },
       { q: 'How does Vurb.ts protect system prompts from tampering?', a: 'System rules in Vurb.ts are defined in source code, not stored in databases. The PromptFirewall evaluates dynamic rules before they reach the LLM, and the CapabilityLockfile tracks SHA-256 digests of all behavioral surfaces in CI.' },
       { q: 'What is the CapabilityLockfile in Vurb.ts?', a: 'vurb.lock is a deterministic, git-diffable lockfile that captures SHA-256 digests of every tool\'s behavioral surface — including system rules, schemas, middleware chains, and entitlements. The CI gate (vurb lock --check) fails if the lockfile is stale, forcing a conscious review of all behavioral changes.' },
+    ],
+  },
+
+  'blog/posts/mcp-server-frameworks-compared.md': {
+    title: 'MCP Server Frameworks in 2026: The Complete Guide for TypeScript and Python Developers',
+    description: 'A deep technical comparison of every MCP server framework: the official SDK, FastMCP, mcp-framework, EasyMCP, and Vurb.ts. Learn what each offers, where they fall short, and why the Presenter pattern changes everything.',
+    faqs: [
+      { q: 'What is the best MCP server framework in 2026?', a: 'For production deployments, Vurb.ts is the most complete MCP server framework. It introduces the MVA (Model-View-Agent) pattern with Presenters — a deterministic perception layer that controls what the AI agent sees, understands, and can do next. For Python prototyping, FastMCP is the leading choice. For learning MCP concepts, the official SDK is recommended.' },
+      { q: 'What is the difference between FastMCP and Vurb.ts?', a: 'FastMCP is a Python framework focused on decorator-based tool definitions and OpenAPI integration. Vurb.ts is a TypeScript framework that introduces the MVA architecture with Presenters, cognitive guardrails, action consolidation, field stripping, self-healing errors, DLP compliance, and governance lockfiles — features that no Python MCP framework offers.' },
+      { q: 'What are the main MCP server frameworks available?', a: 'There are five major MCP frameworks: (1) the official MCP SDK (TypeScript/Python) for protocol-level development, (2) FastMCP (Python) for high-level decorator-based servers, (3) mcp-framework (TypeScript) for class-based CLI scaffolding, (4) EasyMCP (TypeScript) for minimalist Express-like servers, and (5) Vurb.ts (TypeScript) for full-stack MVA architecture with Presenters and enterprise features.' },
+      { q: 'How do I choose an MCP framework for TypeScript?', a: 'For TypeScript, the choice depends on your needs: the official SDK for learning and prototyping, mcp-framework for quick class-based scaffolding, EasyMCP for minimal single-purpose servers, and Vurb.ts for production servers with more than 10 tools, enterprise compliance, PII protection, multi-tenancy, or serverless deployment.' },
+      { q: 'What is the Presenter pattern in MCP server development?', a: 'The Presenter is the View layer in the MVA (Model-View-Agent) architecture, exclusive to Vurb.ts. It transforms raw database data into structured perception packages for AI agents — including Zod-validated schemas (field stripping), domain-specific system rules, server-rendered UI blocks (ECharts, Mermaid), suggested next actions (Agentic HATEOAS), and cognitive guardrails. No other MCP framework provides this layer.' },
+      { q: 'How does Vurb.ts prevent data leaks in MCP servers?', a: 'Vurb.ts uses Zod schemas as a security boundary. The Presenter declares only the fields the agent should perceive. Zod parse() strips all undeclared fields (password_hash, SSN, internal margins) before serialization. Additionally, .redactPII() applies V8-compiled fast-redact masking for GDPR/LGPD/HIPAA compliance. No other MCP framework provides structural PII protection.' },
+      { q: 'Can I deploy MCP servers to serverless platforms?', a: 'Yes, but only Vurb.ts provides one-line serverless deployment adapters. @vurb/vercel deploys to Vercel Edge Functions, @vurb/cloudflare deploys to Cloudflare Workers, and @vurb/aws deploys to AWS Lambda. Other frameworks (official SDK, FastMCP, mcp-framework, EasyMCP) require manual HTTP bridging for serverless deployment.' },
     ],
   },
 };
