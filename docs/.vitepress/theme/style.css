@@ -293,43 +293,124 @@ html:not(.dark) .nav-badge-opensource {
   position: relative !important;
 }
 
-/* Nebula Grid Background */
+/* Hero Buttons — Dark theme override */
+.VPHero .VPButton.brand {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-family: var(--vp-font-family-mono) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  border-radius: 6px !important;
+  padding: 12px 28px !important;
+  transition: all 0.2s !important;
+}
+
+.VPHero .VPButton.brand:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.VPHero .VPButton.alt {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 13px !important;
+  font-family: var(--vp-font-family-mono) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  border-radius: 6px !important;
+  padding: 12px 28px !important;
+  transition: all 0.2s !important;
+}
+
+.VPHero .VPButton.alt:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+/* ═══ Hero Background — Vinkius Pattern (Grid + Gas + Comets) ═══ */
+
+/* Technical grid with dot intersections — animated fade-in */
 .VPHero::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   pointer-events: none;
   z-index: 0;
-  background-image: 
-    /* Nebula Core - Deep Blue */
-    radial-gradient(ellipse at 50% 50%, rgba(45, 90, 200, 0.4) 0%, transparent 60%),
-    /* Violet Cloud - bottom left */
-    radial-gradient(circle at 30% 70%, rgba(110, 50, 180, 0.25) 0%, transparent 55%),
-    /* Cyan Dust - top right */
-    radial-gradient(circle at 70% 30%, rgba(40, 150, 180, 0.2) 0%, transparent 55%),
-    /* Magenta accent - offset center */
-    radial-gradient(ellipse at 60% 60%, rgba(150, 40, 120, 0.2) 0%, transparent 45%),
-    /* The grid */
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 60px 60px, 60px 60px;
-  background-position: center;
-  /* Fade out smoothly at the edges */
-  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
-  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+  background-image:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 0%, transparent 70%);
+  opacity: 0;
+  animation: heroGridFadeIn 1.5s ease-out 0.3s forwards;
 }
 
+@keyframes heroGridFadeIn {
+  to { opacity: 1; }
+}
+
+/* Subtle gas clouds — organic breathing animation */
+.VPHero::after {
+  content: "";
+  position: absolute;
+  bottom: 5%;
+  left: 55%;
+  width: 500px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  animation: heroGas 14s ease-in-out infinite;
+}
+
+@keyframes heroGas {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  15%  { opacity: 0.5; }
+  50%  { transform: translate(-40px, -20px) scale(1.3); opacity: 0.25; }
+  100% { transform: translate(-60px, -30px) scale(1.5); opacity: 0; }
+}
+
+/* Second gas layer */
+.VPHero .container::before {
+  content: "";
+  position: absolute;
+  bottom: 2%;
+  left: 40%;
+  width: 400px;
+  height: 250px;
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.04) 40%, transparent 65%);
+  filter: blur(35px);
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  animation: heroGas2 16s ease-in-out 3s infinite;
+}
+
+@keyframes heroGas2 {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  15%  { opacity: 0.4; }
+  50%  { transform: translate(30px, -15px) scale(1.2); opacity: 0.2; }
+  100% { transform: translate(50px, -25px) scale(1.4); opacity: 0; }
+}
+
+/* Light mode — minimal grid, no gas */
 html:not(.dark) .VPHero::before {
-  background-image: 
-    radial-gradient(ellipse at 50% 50%, rgba(0, 50, 200, 0.15) 0%, transparent 60%),
-    radial-gradient(circle at 30% 70%, rgba(100, 0, 180, 0.1) 0%, transparent 55%),
-    radial-gradient(circle at 70% 30%, rgba(0, 130, 180, 0.08) 0%, transparent 55%),
-    radial-gradient(ellipse at 60% 60%, rgba(150, 0, 100, 0.08) 0%, transparent 45%),
-    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-image:
+    radial-gradient(circle at center, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+html:not(.dark) .VPHero::after {
+  display: none;
 }
 
 /* Force the VitePress container into a left-aligned layout */
@@ -491,13 +572,172 @@ html.dark .VPFeature:hover {
   display: none !important;
 }
 
+/* ═══ Editorial Container — Vinkius Pattern ═══ */
+/* Background is solid black */
+.VPContent.is-home {
+  background: #000 !important;
+}
 
-/* ═══ Manifesto Sections ═══ */
+/* VPHome does NOT get border-x — hero is full-width.
+   Each ms-* section provides its own max-width + border-x via inner container. */
+.VPContent.is-home .VPHome {
+  max-width: none;
+  margin: 0;
+  border: none;
+}
+
+/* Hero is FULL WIDTH — no side borders, no max-width constraint */
+
+/* ═══ AI Clients Grid — Vinkius Pattern ═══ */
+.ms-clients-wrapper {
+  max-width: 72rem;
+  margin: 0 auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+.ms-clients-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Animated ping dot */
+.ms-ping {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+}
+
+.ms-ping-wave {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.5);
+  opacity: 0.75;
+  animation: msPingWave 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.ms-ping-dot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.8);
+}
+
+@keyframes msPingWave {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.ms-clients-label {
+  font-size: 10px;
+  font-family: var(--vp-font-family-mono);
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin: 0;
+  padding-top: 1px;
+}
+
+.ms-clients-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+.ms-client {
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 140px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s;
+}
+
+.ms-client:last-child {
+  border-right: none;
+}
+
+.ms-client:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.ms-client-name {
+  font-size: clamp(20px, 2.5vw, 30px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+}
+
+/* Brand-specific hover colors */
+.ms-client[data-brand="claude"]:hover .ms-client-name { color: #D4A574; }
+.ms-client[data-brand="cursor"]:hover .ms-client-name { color: #00D4FF; }
+.ms-client[data-brand="codex"]:hover .ms-client-name { color: #10A37F; }
+.ms-client[data-brand="vscode"]:hover .ms-client-name { color: #007ACC; }
+.ms-client[data-brand="windsurf"]:hover .ms-client-name { color: #36B5F0; }
+.ms-client[data-brand="cline"]:hover .ms-client-name { color: rgba(255, 255, 255, 0.8); }
+
+.ms-client-sub {
+  font-size: 10px;
+  font-family: var(--vp-font-family-mono);
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+@media (max-width: 960px) {
+  .ms-clients-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .ms-client:nth-child(3) {
+    border-right: none;
+  }
+  .ms-client {
+    min-height: 100px;
+    padding: 20px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ms-clients-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ms-client:nth-child(odd) {
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .ms-client:nth-child(even) {
+    border-right: none;
+  }
+}
+
+
+/* ═══ Manifesto Sections — Vinkius Editorial System ═══ */
 .ms-section {
   display: flex;
   width: 100%;
-  margin: 80px 0 0;
-  border: 1px solid #1a1a1a;
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0;
   overflow: hidden;
   background-color: #000;
@@ -515,7 +755,7 @@ html.dark .VPFeature:hover {
 .ms-left {
   flex: 0 0 42%;
   padding: 80px 60px;
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -530,32 +770,32 @@ html.dark .VPFeature:hover {
 }
 
 .ms-label {
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--vp-font-family-mono);
-  color: #c084fc;
-  letter-spacing: 0.15em;
+  color: rgba(34, 211, 238, 0.8);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-weight: 600;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .ms-headline {
   font-size: 48px !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: #fff !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
-  letter-spacing: -0.03em !important;
+  letter-spacing: -0.04em !important;
   line-height: 1.1 !important;
 }
 
 .ms-dim {
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .ms-accent {
-  background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.9) 0%, rgba(168, 85, 247, 0.9) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -564,14 +804,14 @@ html.dark .VPFeature:hover {
 .ms-sub {
   font-size: 15px;
   line-height: 1.7;
-  color: #666;
-  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 16px;
 }
 
 .ms-body {
   font-size: 17px !important;
   line-height: 1.8 !important;
-  color: #999 !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   margin: 0 0 48px 0 !important;
 }
 
@@ -579,14 +819,14 @@ html.dark .VPFeature:hover {
 .ms-metrics {
   display: flex;
   gap: 0;
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: auto;
 }
 
 .ms-metric {
   flex: 1;
   padding: 24px 24px;
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ms-metric:last-child {
@@ -596,7 +836,7 @@ html.dark .VPFeature:hover {
 .ms-metric-label {
   font-size: 10px;
   font-family: var(--vp-font-family-mono);
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -609,11 +849,358 @@ html.dark .VPFeature:hover {
   letter-spacing: -0.02em;
 }
 
+/* ═══ Grid Section — 3-column Card Grid (LandingLayers pattern) ═══ */
+.ms-grid-section {
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+.ms-grid-header {
+  padding: 80px 60px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ms-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.ms-grid-card {
+  position: relative;
+  padding: 32px 40px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s;
+}
+
+.ms-grid-card:last-child {
+  border-right: none;
+}
+
+.ms-grid-card:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Accent line on hover — Vinkius gradient top border */
+.ms-grid-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.8), rgba(168, 85, 247, 0.8));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ms-grid-card:hover::before {
+  opacity: 1;
+}
+
+.ms-card-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-family: var(--vp-font-family-mono);
+  color: rgba(34, 211, 238, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  padding: 3px 8px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 3px;
+  margin-bottom: 16px;
+  transition: all 0.3s;
+}
+
+.ms-grid-card:hover .ms-card-tag {
+  border-color: rgba(34, 211, 238, 0.4);
+  color: rgba(34, 211, 238, 0.9);
+}
+
+.ms-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  transition: color 0.3s;
+  letter-spacing: -0.01em;
+}
+
+.ms-grid-card:hover .ms-card-title {
+  color: rgba(34, 211, 238, 0.9);
+}
+
+.ms-card-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.3s;
+}
+
+.ms-grid-card:hover .ms-card-desc {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 960px) {
+  .ms-grid-cards {
+    grid-template-columns: 1fr;
+  }
+  .ms-grid-card {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .ms-grid-card:last-child {
+    border-bottom: none;
+  }
+  .ms-grid-header {
+    padding: 40px 24px 24px;
+  }
+  .ms-grid-card {
+    padding: 24px;
+  }
+}
+
+/* ═══ Bridge Section — Vertical Label + Massive Headline (LandingMarketplaceBridge) ═══ */
+.ms-bridge-section {
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+.ms-bridge-grid {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+}
+
+.ms-bridge-vlabel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ms-bridge-vlabel span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-family: var(--vp-font-family-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.ms-bridge-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.ms-bridge-left {
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ms-bridge-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-family: var(--vp-font-family-mono);
+  color: rgba(168, 85, 247, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 24px;
+}
+
+.ms-bridge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.9);
+  flex-shrink: 0;
+}
+
+.ms-bridge-headline {
+  font-size: clamp(36px, 5vw, 64px) !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  letter-spacing: -0.04em !important;
+  line-height: 0.95 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.ms-bridge-right {
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ms-bridge-right p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 16px 0;
+  font-weight: 300;
+}
+
+.ms-bridge-right p:last-child {
+  margin-bottom: 0;
+}
+
+.ms-bridge-right strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .ms-bridge-grid {
+    grid-template-columns: 1fr;
+  }
+  .ms-bridge-vlabel {
+    display: none;
+  }
+  .ms-bridge-content {
+    grid-template-columns: 1fr;
+  }
+  .ms-bridge-left {
+    padding: 40px 24px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .ms-bridge-right {
+    padding: 24px;
+  }
+}
+
+/* ═══ Feature Section — 4-column Numbered Grid ═══ */
+.ms-feature-section {
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+.ms-feature-header {
+  padding: 80px 60px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ms-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.ms-feature-item {
+  padding: 32px 28px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s;
+  position: relative;
+}
+
+.ms-feature-item:last-child {
+  border-right: none;
+}
+
+.ms-feature-item:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Accent line on hover */
+.ms-feature-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.8), rgba(168, 85, 247, 0.8));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ms-feature-item:hover::before {
+  opacity: 1;
+}
+
+.ms-feature-num {
+  display: block;
+  font-size: 12px;
+  font-family: var(--vp-font-family-mono);
+  color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 16px;
+  transition: color 0.3s;
+}
+
+.ms-feature-item:hover .ms-feature-num {
+  color: rgba(34, 211, 238, 0.6);
+}
+
+.ms-feature-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+  transition: color 0.3s;
+}
+
+.ms-feature-item:hover .ms-feature-title {
+  color: rgba(34, 211, 238, 0.9);
+}
+
+.ms-feature-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.3s;
+}
+
+.ms-feature-item:hover .ms-feature-desc {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 960px) {
+  .ms-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ms-feature-item:nth-child(2) {
+    border-right: none;
+  }
+  .ms-feature-header {
+    padding: 40px 24px 24px;
+  }
+  .ms-feature-item {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+@media (max-width: 480px) {
+  .ms-feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .ms-feature-item {
+    border-right: none;
+  }
+}
+
 /* ── Code Section ── */
 .ms-code-section {
   margin: 0;
-  border: 1px solid #1a1a1a;
-  border-top: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: #000;
 }
 
@@ -621,9 +1208,9 @@ html.dark .VPFeature:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #111;
+  background: rgba(255, 255, 255, 0.02);
   padding: 12px 16px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ms-dots {
@@ -665,14 +1252,14 @@ html.dark .VPFeature:hover {
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
-  background: #111;
-  border-top: 1px solid #1a1a1a;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-family: var(--vp-font-family-mono);
   font-size: 13px;
 }
 
 .ms-cli-prompt {
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   user-select: none;
 }
 
@@ -681,7 +1268,7 @@ html.dark .VPFeature:hover {
 }
 
 .ms-cli-text span {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
 }
 
 /* ── Conviction Section ── */
@@ -692,7 +1279,7 @@ html.dark .VPFeature:hover {
 .ms-columns {
   display: flex;
   gap: 0;
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: auto;
 }
 
@@ -702,7 +1289,7 @@ html.dark .VPFeature:hover {
 }
 
 .ms-column:first-child {
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding-right: 24px;
 }
 
@@ -713,7 +1300,7 @@ html.dark .VPFeature:hover {
 .ms-column-label {
   font-size: 10px;
   font-family: var(--vp-font-family-mono);
-  color: #555;
+  color: rgba(34, 211, 238, 0.6);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 12px;
@@ -723,21 +1310,29 @@ html.dark .VPFeature:hover {
 .ms-column-text {
   font-size: 14px;
   line-height: 1.7;
-  color: #777;
+  color: rgba(255, 255, 255, 0.4);
   margin: 0;
 }
 
+.ms-column-text strong {
+  color: #fff;
+  font-weight: 600;
+}
+
 .ms-column-text em {
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
   font-style: italic;
 }
 
-/* ── Technical Authority ── */
+/* ── Technical Authority — Vinkius Grid Pattern ── */
 .ms-authority {
   display: flex;
   width: 100%;
-  border: 1px solid #1a1a1a;
-  border-top: none;
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   background-color: #000;
   position: relative;
   z-index: 10;
@@ -746,7 +1341,7 @@ html.dark .VPFeature:hover {
 .ms-authority-left {
   flex: 0 0 30%;
   padding: 80px 60px;
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -759,12 +1354,30 @@ html.dark .VPFeature:hover {
 }
 
 .ms-card {
-  padding: 48px 40px;
-  border-bottom: 1px solid #1a1a1a;
-  border-right: 1px solid #1a1a1a;
+  padding: 32px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  transition: background-color 0.2s;
+  transition: all 0.3s;
+  position: relative;
+}
+
+/* Accent gradient line on hover — Vinkius pattern */
+.ms-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, rgba(34, 211, 238, 0.8), rgba(168, 85, 247, 0.8));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ms-card:hover::before {
+  opacity: 1;
 }
 
 .ms-card:nth-child(even) {
@@ -776,80 +1389,98 @@ html.dark .VPFeature:hover {
 }
 
 .ms-card:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .ms-card-number {
-  font-size: 11px;
+  display: inline-block;
+  font-size: 9px;
   font-family: var(--vp-font-family-mono);
-  color: #c084fc;
-  letter-spacing: 0.1em;
+  color: rgba(34, 211, 238, 0.6);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 2px 8px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.ms-card:hover .ms-card-number {
+  border-color: rgba(34, 211, 238, 0.4);
+  color: rgba(34, 211, 238, 0.8);
 }
 
 .ms-card-title {
-  font-size: 20px !important;
-  font-weight: 600 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
   color: #fff !important;
-  margin: 0 0 16px 0 !important;
+  margin: 0 0 8px 0 !important;
   padding: 0 !important;
   border: none !important;
   letter-spacing: -0.02em !important;
+  transition: color 0.3s;
+}
+
+.ms-card:hover .ms-card-title {
+  color: rgba(34, 211, 238, 0.9) !important;
 }
 
 .ms-card-desc {
   font-size: 14px;
   line-height: 1.7;
-  color: #777;
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: auto;
+  transition: color 0.3s;
+}
+
+.ms-card:hover .ms-card-desc {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .ms-card-link {
-  margin-top: 32px;
+  margin-top: 24px;
   font-size: 10px;
   font-family: var(--vp-font-family-mono);
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   text-decoration: none !important;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: color 0.2s;
+  transition: color 0.3s;
 }
 
 .ms-card:hover .ms-card-link {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
 }
 
 /* ── CTA Section ── */
 .ms-cta {
-  margin: 0 0 80px;
+  max-width: 72rem;
+  margin: 0 auto;
   padding: 80px 60px;
   text-align: center;
-  border: 1px solid #1a1a1a;
-  border-top: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: #000;
 }
 
 .ms-cta-headline {
-  font-size: 56px !important;
-  font-weight: 800 !important;
+  font-size: 48px !important;
+  font-weight: 700 !important;
   color: #fff !important;
   margin: 0 0 24px 0 !important;
   padding: 0 !important;
   border: none !important;
   letter-spacing: -0.04em !important;
   line-height: 1.2 !important;
-  background: linear-gradient(180deg, #fff 0%, #a1a1aa 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .ms-cta-sub {
   font-size: 17px !important;
   line-height: 1.8 !important;
-  color: #777 !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   margin: 0 auto 48px !important;
   max-width: 540px;
 }
@@ -860,29 +1491,32 @@ html.dark .VPFeature:hover {
 
 .ms-cta-button {
   display: inline-block;
-  padding: 12px 32px;
+  padding: 14px 36px;
   font-size: 12px;
   font-family: var(--vp-font-family-mono);
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c084fc;
-  border: 1px solid rgba(138, 43, 226, 0.4);
-  border-radius: 8px;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: 9999px;
   text-decoration: none !important;
   transition: all 0.2s;
 }
 
 .ms-cta-button:hover {
-  background: rgba(138, 43, 226, 0.1);
-  border-color: rgba(138, 43, 226, 0.7);
-  color: #d4a5ff;
+  background: rgba(255, 255, 255, 0.85);
+  color: #000;
 }
 
-/* ── Comparison Table ── */
+/* ── Comparison Table — Vinkius Editorial ── */
 .ms-compare {
-  border: 1px solid #1a1a1a;
-  border-top: 1px solid #222;
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: #000;
   padding: 80px 60px 60px;
 }
@@ -902,14 +1536,14 @@ html.dark .VPFeature:hover {
 
 .ms-compare-table {
   width: 100%;
-  border: 1px solid #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0;
 }
 
 .ms-compare-row {
   display: grid;
   grid-template-columns: 140px 1fr 1fr;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ms-compare-row:last-child {
@@ -927,12 +1561,12 @@ html.dark .VPFeature:hover {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   padding: 16px 24px;
 }
 
 .ms-compare-head .ms-compare-after {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
 }
 
 .ms-compare-aspect {
@@ -940,9 +1574,9 @@ html.dark .VPFeature:hover {
   font-size: 11px;
   font-family: var(--vp-font-family-mono);
   font-weight: 600;
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   letter-spacing: 0.05em;
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
 }
@@ -951,19 +1585,19 @@ html.dark .VPFeature:hover {
   padding: 16px 24px;
   font-size: 13px;
   line-height: 1.6;
-  color: #666;
-  border-right: 1px solid #1a1a1a;
+  color: rgba(255, 255, 255, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ms-compare-after {
   padding: 16px 24px;
   font-size: 13px;
   line-height: 1.6;
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .ms-compare-after strong {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
   font-weight: 600;
 }
 
@@ -975,19 +1609,22 @@ html.dark .VPFeature:hover {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #555;
+  color: rgba(255, 255, 255, 0.3);
   text-decoration: none !important;
   transition: color 0.2s;
 }
 
 .ms-compare-link:hover {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
 }
 
-/* ── Three Core Problems Section ── */
+/* ── Three Core Problems — Vinkius Editorial ── */
 .ms-problems {
-  border: 1px solid #1a1a1a;
-  border-top: none;
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: #000;
   padding: 80px 60px 60px;
 }
@@ -1009,26 +1646,35 @@ html.dark .VPFeature:hover {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
-  border: 1px solid #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ms-problem-card {
   padding: 48px 40px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s;
 }
 
 .ms-problem-card:last-child {
   border-bottom: none;
 }
 
+.ms-problem-card:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
 .ms-problem-number {
-  font-size: 11px;
+  display: inline-block;
+  font-size: 9px;
   font-family: var(--vp-font-family-mono);
-  color: #c084fc;
-  letter-spacing: 0.1em;
+  color: rgba(34, 211, 238, 0.6);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-weight: 600;
   margin-bottom: 16px;
+  padding: 2px 8px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 3px;
 }
 
 .ms-problem-title {
@@ -1038,41 +1684,41 @@ html.dark .VPFeature:hover {
   margin: 0 0 20px 0 !important;
   padding: 0 !important;
   border: none !important;
-  letter-spacing: -0.02em !important;
+  letter-spacing: -0.03em !important;
 }
 
 .ms-problem-pain {
   font-size: 14px;
   line-height: 1.7;
-  color: #777;
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: 16px;
 }
 
 .ms-problem-pain strong {
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .ms-problem-solution {
   font-size: 14px;
   line-height: 1.7;
-  color: #777;
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: 24px;
 }
 
 .ms-problem-solution strong {
-  color: #c084fc;
+  color: rgba(34, 211, 238, 0.8);
 }
 
 .ms-problem-solution code {
-  color: #c084fc;
-  background: rgba(192, 132, 252, 0.1);
+  color: rgba(34, 211, 238, 0.8);
+  background: rgba(34, 211, 238, 0.08);
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 13px;
 }
 
 .ms-problem-pain code {
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
   border-radius: 3px;
@@ -1089,7 +1735,7 @@ html.dark .VPFeature:hover {
   border-radius: 6px !important;
 }
 
-/* ── Mobile ── */
+/* ── Mobile — Vinkius Editorial ── */
 @media (max-width: 960px) {
   .ms-section,
   .ms-conviction {
@@ -1098,7 +1744,7 @@ html.dark .VPFeature:hover {
   .ms-left,
   .ms-authority-left {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 40px 24px;
     flex: none;
   }
@@ -1119,7 +1765,7 @@ html.dark .VPFeature:hover {
     padding: 30px 24px;
   }
   .ms-card:nth-last-child(-n+2) {
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   .ms-card:last-child {
     border-bottom: none;
@@ -1129,7 +1775,7 @@ html.dark .VPFeature:hover {
   }
   .ms-column:first-child {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 16px 0;
   }
   .ms-column:last-child {
@@ -1140,7 +1786,7 @@ html.dark .VPFeature:hover {
   }
   .ms-metric {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 16px 0;
   }
   .ms-metric:last-child {
@@ -1160,11 +1806,11 @@ html.dark .VPFeature:hover {
   }
   .ms-compare-aspect {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   .ms-compare-before {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   .ms-compare-head {
     display: none;

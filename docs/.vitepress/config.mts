@@ -108,7 +108,7 @@ export default defineConfig({
 
     nav: [
       { text: 'Create MCP-Server Now', link: '/quickstart-lightspeed' },
-      { text: 'API Reference', link: '/api/' },
+      { text: 'Deploy MCP Servers', link: 'https://vinkius.com' },
       { text: 'Blog', link: '/blog/' },
     ],
 
