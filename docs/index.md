@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "The TypeScript Framework for MCP Servers."
   text: ""
-  tagline: "Type-safe tools, structured AI perception, and built-in security — deploy once and every AI assistant connects instantly."
+  tagline: "Type-safe tools, structured AI perception, and built-in security. Deploy once — every AI assistant connects instantly."
   actions:
     - theme: brand
       text: 30-Second Quickstart →
@@ -20,7 +20,7 @@ hero:
 <div class="ms-clients-wrapper">
 <div class="ms-clients-header">
 <span class="ms-ping"><span class="ms-ping-wave"></span><span class="ms-ping-dot"></span></span>
-<p class="ms-clients-label">Build MCP Servers and use them securely with any compatible client:</p>
+<p class="ms-clients-label">Works with every MCP-compatible AI client:</p>
 </div>
 <div class="ms-clients-grid">
 <div class="ms-client" data-brand="claude">
@@ -61,20 +61,20 @@ hero:
 <span class="ms-equation-badge">PROTOCOL</span>
 <h3 class="ms-equation-title">MCP</h3>
 <p class="ms-equation-full">Model Context Protocol</p>
-<p class="ms-equation-desc">The open standard that defines <strong>how AI agents communicate</strong> with external tools. It specifies the transport layer, message format, and tool discovery. MCP is the wire — it doesn't tell you how to build what's on the other end.</p>
+<p class="ms-equation-desc">An open standard for <strong>how AI agents talk to external tools</strong>. It handles transport, message format, and discovery. Think of MCP as the wire — it doesn't tell you how to build what's on the other end.</p>
 </div>
 <div class="ms-equation-operator">+</div>
 <div class="ms-equation-block">
 <span class="ms-equation-badge ms-equation-badge--arch">ARCHITECTURE</span>
 <h3 class="ms-equation-title">MVA</h3>
 <p class="ms-equation-full">Model — View — Agent</p>
-<p class="ms-equation-desc">The architectural pattern that defines <strong>how to structure what agents receive</strong>. The Model owns your data. The View (Presenter) shapes structured perception with domain rules and affordances. The Agent declares safe, typed actions.</p>
+<p class="ms-equation-desc">A new architectural pattern for <strong>structuring what agents actually see</strong>. The Model owns your data. The View shapes it with domain rules and affordances. The Agent declares typed, safe actions. That's the whole contract.</p>
 </div>
 </div>
 <div class="ms-equation-result">
 <span class="ms-equation-equals">=</span>
 <span class="ms-equation-product">Vurb.ts</span>
-<span class="ms-equation-tagline">The definitive TypeScript framework for production MCP servers.</span>
+<span class="ms-equation-tagline">A TypeScript framework for building production-grade MCP servers.</span>
 </div>
 </div>
 
@@ -83,23 +83,23 @@ hero:
 <div class="ms-grid-header">
 <span class="ms-label">WHY MVA</span>
 <h2 class="ms-headline">Agents write your MCP servers.<br/>MVA makes sure they get it right.</h2>
-<p class="ms-sub">Most MCP frameworks demand deep protocol knowledge. Vurb.ts was designed so AI coding agents scaffold production servers in minutes — not hours.</p>
+<p class="ms-sub">With the raw MCP SDK, you're wiring transports, writing JSON schemas by hand, and handling errors from scratch. Vurb.ts takes care of the protocol so you can focus on your business logic.</p>
 </div>
 <div class="ms-grid-cards">
 <div class="ms-grid-card">
 <span class="ms-card-tag">LEARNING CURVE</span>
-<h3 class="ms-card-title">Zero protocol knowledge required</h3>
-<p class="ms-card-desc">Agents and developers follow the same pattern every time: Model defines the data, View shapes perception, Agent declares actions. No MCP internals to learn.</p>
+<h3 class="ms-card-title">Skip the protocol deep-dive</h3>
+<p class="ms-card-desc">You follow the same pattern every time — Model defines data, View shapes what agents see, Agent declares actions. Vurb.ts handles the MCP plumbing.</p>
 </div>
 <div class="ms-grid-card">
 <span class="ms-card-tag">CONSISTENCY</span>
-<h3 class="ms-card-title">One pattern, every server</h3>
-<p class="ms-card-desc">Every Vurb.ts server follows the same architectural contract — typed schemas, domain rules, and explicit affordances. Review any MCP server in seconds.</p>
+<h3 class="ms-card-title">Same structure, every server</h3>
+<p class="ms-card-desc">Typed schemas, domain rules, explicit affordances — every Vurb.ts server follows the same contract. Pick up any project and know where everything lives.</p>
 </div>
 <div class="ms-grid-card">
 <span class="ms-card-tag">AGENT-FIRST</span>
 <h3 class="ms-card-title">Built for Cursor, Claude & Copilot</h3>
-<p class="ms-card-desc">The MVA pattern is designed to be understood by AI coding agents instantly. They generate correct, production-ready MCP servers without hallucinating protocol details.</p>
+<p class="ms-card-desc">MVA gives coding agents a clear, repeatable target. Consistent conventions mean they write better code — and you spend less time fixing it.</p>
 </div>
 </div>
 </div>
@@ -111,12 +111,12 @@ hero:
 <div class="ms-bridge-content">
 <div class="ms-bridge-left">
 <span class="ms-bridge-eyebrow"><span class="ms-bridge-dot"></span>SECURE BY DEFAULT</span>
-<h2 class="ms-bridge-headline">The MCP spec makes security optional.<br/>Vurb.ts makes it mandatory.</h2>
+<h2 class="ms-bridge-headline">The MCP spec leaves security to you.<br/>Vurb.ts ships it built-in.</h2>
 </div>
 <div class="ms-bridge-right">
-<p>Raw MCP servers ship with no authentication, no input validation, and no egress control. Every tool call is an attack surface.</p>
-<p>Vurb.ts includes <strong>Zod schema validation</strong> on every input, a built-in <strong>egress firewall</strong> that blocks unauthorized outbound calls, and a <strong>middleware pipeline</strong> for auth, rate limiting, and tenant isolation — all enabled by default.</p>
-<p>You don't configure security. You'd have to explicitly disable it.</p>
+<p>The MCP SDK handles transport and messages. Auth, validation, access control? That's on you.</p>
+<p>Vurb.ts ships with <strong>Zod schema validation</strong> on every input and a <strong>middleware pipeline</strong> for auth, rate limiting, and tenant isolation — ready to plug in, not build from scratch.</p>
+<p>Security is part of the framework, not something you bolt on later.</p>
 </div>
 </div>
 </div>
@@ -126,28 +126,28 @@ hero:
 <div class="ms-feature-section">
 <div class="ms-feature-header">
 <span class="ms-label">OBSERVABILITY</span>
-<h2 class="ms-headline">MCP servers are black boxes. Not anymore.</h2>
+<h2 class="ms-headline">Know exactly what every tool does, every time.</h2>
 </div>
 <div class="ms-feature-grid">
 <div class="ms-feature-item">
 <span class="ms-feature-num">01</span>
 <h3 class="ms-feature-title">Structured Logs</h3>
-<p class="ms-feature-desc">Every tool invocation emits JSON-structured logs with input, output, duration, and error context. Pipe to any logging backend.</p>
+<p class="ms-feature-desc">Hook into tool lifecycle events and emit structured logs — input, output, duration, error context — to whatever backend you're already using.</p>
 </div>
 <div class="ms-feature-item">
 <span class="ms-feature-num">02</span>
-<h3 class="ms-feature-title">Metrics Endpoint</h3>
-<p class="ms-feature-desc">Prometheus-compatible /metrics out of the box. Track latency, throughput, error rates, and token usage per tool.</p>
+<h3 class="ms-feature-title">Metrics</h3>
+<p class="ms-feature-desc">Track latency, throughput, and error rates per tool through the middleware pipeline. Works with Prometheus, Datadog, or whatever you're running.</p>
 </div>
 <div class="ms-feature-item">
 <span class="ms-feature-num">03</span>
 <h3 class="ms-feature-title">Audit Traces</h3>
-<p class="ms-feature-desc">Full audit trail showing which data was accessed, which rules were applied, and which actions were suggested. SOC 2 and GDPR without extra tooling.</p>
+<p class="ms-feature-desc">See exactly which data was accessed, which rules fired, and which actions were suggested. Built for teams that need audit trails.</p>
 </div>
 <div class="ms-feature-item">
 <span class="ms-feature-num">04</span>
 <h3 class="ms-feature-title">Error Recovery</h3>
-<p class="ms-feature-desc">Deterministic error boundaries per tool. When something breaks, you know exactly where and why — debug in seconds, not hours.</p>
+<p class="ms-feature-desc">Every tool gets its own error boundary. When something breaks, you know exactly where and why — no more guessing.</p>
 </div>
 </div>
 </div>
@@ -405,7 +405,7 @@ const InvoicePresenter = createPresenter('Invoice')
 <div class="ms-columns">
 <div class="ms-column">
 <div class="ms-column-label">// DEPLOY TARGETS</div>
-<p class="ms-column-text"><strong>Vercel Edge Functions</strong> — fast cold starts in a Next.js route.<br><strong>Cloudflare Workers</strong> — D1, KV, R2 bindings from 300+ edge locations.<br><strong>AWS Lambda</strong> — Step Functions connector.</p>
+<p class="ms-column-text"><strong>Vinkius Cloud</strong> — native deployment with <code>vurb deploy</code>. Zero config, edge-ready, built-in auth and observability.<br><strong>Vercel Edge Functions</strong> — fast cold starts in a Next.js route.<br><strong>Cloudflare Workers</strong> — D1, KV, R2 bindings from 300+ edge locations.<br><strong>AWS Lambda</strong> — Step Functions connector.</p>
 </div>
 <div class="ms-column">
 <div class="ms-column-label">// DATA CONNECTORS</div>
@@ -418,7 +418,7 @@ const InvoicePresenter = createPresenter('Invoice')
 <!-- ═══ Section: CTA ═══ -->
 <div class="ms-cta">
 <div class="ms-label">GET STARTED</div>
-<h2 class="ms-cta-headline">The AI doesn't guess.<br>It knows.</h2>
-<p class="ms-cta-sub">MVA is a new architectural pattern. The Presenter replaces the View with a <strong>deterministic perception layer</strong> — domain rules, rendered charts, action affordances, and cognitive guardrails. Every response is structured. Every action is explicit.</p>
+<h2 class="ms-cta-headline">Build MCP servers<br>that actually work in production.</h2>
+<p class="ms-cta-sub"><strong>Vurb.ts</strong> gives you typed schemas, structured AI perception, built-in security, and observability — all out of the box. Skip the boilerplate and ship your first MCP server in minutes.</p>
 <a href="/quickstart-lightspeed" class="ms-cta-button">BUILD YOUR FIRST MCP SERVER →</a>
 </div>

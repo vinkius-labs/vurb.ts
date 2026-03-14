@@ -1635,17 +1635,18 @@ html.dark .VPFeature:hover {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #000;
-  background: #fff;
-  border: none;
-  border-radius: 9999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
   text-decoration: none !important;
   transition: all 0.2s;
 }
 
 .ms-cta-button:hover {
-  background: rgba(255, 255, 255, 0.85);
-  color: #000;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 /* ── Comparison Table — Vinkius Editorial ── */

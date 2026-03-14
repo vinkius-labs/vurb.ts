@@ -20,11 +20,11 @@ This separation is the **MVA (Model-View-Agent)** pattern. The handler returns r
 ### Native Framework Integration
 ## Does Vurb.ts work with Vercel AI SDK and LangChain? {#frontend-integrations}
 
-Yes. **Vurb.ts is the perfect backend Server for any AI client application.** 
+Yes. **Vurb.ts is a natural backend for any AI client application.**
 
 If you are building a frontend or orchestration layer using the **Vercel AI SDK**, **LangChain**, or **LlamaIndex**, you can connect them directly to your `Vurb.ts` backend via standard `stdio` or HTTP transports. 
 
-Because Vurb.ts provides a structured perception layer, your Vercel AI SDK or LangChain agents will automatically consume and execute your **Consolidated MVA Actions** flawlessly, without hallucinating tool names or crashing on large database payloads. You get the rich frontend capabilities of those frameworks combined with the hardcore, enterprise-grade backend stability of Vurb.ts.
+Because Vurb.ts provides a structured perception layer, your Vercel AI SDK or LangChain agents get typed tool names, validated inputs, and truncated payloads out of the box. You get the rich frontend capabilities of those frameworks combined with a backend that's built for production from day one.
 
 ## How It Looks {#in-practice}
 

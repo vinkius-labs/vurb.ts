@@ -45,7 +45,7 @@ Skip the wizard with `--yes` for defaults, or pass flags directly. For example, 
 vurb create my-api --vector prisma --transport sse --yes
 ```
 
-> **Pro-Tip**: The `--vector prisma` command is the absolute fastest way to bridge **Prisma to MCP**. It leverages the MVA Presenter architecture to build an **Egress Firewall**, ensuring internal columns (like `password_hash` or `ssn`) are stripped from memory before they ever reach the LLM Context Window.
+> **Pro-Tip**: `--vector prisma` is the fastest way to bridge **Prisma to MCP**. The Presenter's schema acts as a whitelist — internal columns like `password_hash` or `ssn` are stripped before they ever reach the LLM context window.
 
 ## What you get {#structure}
 

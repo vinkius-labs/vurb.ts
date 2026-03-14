@@ -6,7 +6,7 @@ Install Vurb.ts before following this guide: `npm install @vurb/core @modelconte
 
 The Presenter separates what the agent sees from how data is fetched. Your handler returns raw data. The Presenter validates, strips, enriches, truncates, and governs the response. Define `InvoicePresenter` once — every tool and prompt that touches invoices uses the same schema, rules, and affordances. 
 
-By enforcing strict Zod structures over raw database queries, the Presenter acts as ultimate **Data Exfiltration Prevention**. Furthermore, its capability to dynamically tree-shake rules and truncate responses ensures maximum **Context Window Optimization** without relying on perfect LLM behavior.
+By enforcing strict Zod schemas on every response, the Presenter makes sure internal fields never leak to the agent. Dynamic rule tree-shaking and truncation keep token usage under control without relying on the LLM to paginate on its own.
 
 This is the **View** in the [MVA (Model-View-Agent)](/mva-pattern) pattern. Presenters can also be [auto-generated from OpenAPI response schemas](/openapi-gen) via `@vurb/openapi-gen`.
 

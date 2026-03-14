@@ -9,9 +9,9 @@ Install Vurb.ts before following this guide: `npm install @vurb/core @modelconte
 - [Before & After: Error Recovery](#errors)
 - [The Architecture Difference](#architecture)
 
-Every tool response in a raw MCP server is `JSON.stringify()` — the AI receives a flat blob and guesses what it means. This creates a severe **Context DDoS** that destroys token economics. Vurb.ts's MVA pattern replaces guessing with a structured perception package: validated data + domain rules + UI blocks + suggested next actions. 
+Every tool response in a raw MCP server is `JSON.stringify()` — the AI gets a flat blob and guesses what it means. Vurb.ts's MVA pattern replaces guessing with a structured perception package: validated data + domain rules + UI blocks + suggested next actions.
 
-This architecture makes it the ultimate strategy for **Legacy API Migration**, allowing you to wrap ancient REST/SOAP monoliths into clean, deterministic AI Agents without rebuilding your entire backend. The resulting server works with every MCP client: Cursor, Claude Desktop, Claude Code, Windsurf, Cline, and VS Code with GitHub Copilot.
+This also makes it straightforward to wrap existing REST or SOAP APIs into structured MCP tools without rebuilding your backend. The resulting server works with every MCP client: Cursor, Claude Desktop, Claude Code, Windsurf, Cline, and VS Code with GitHub Copilot.
 
 | Aspect | Without MVA | With MVA |
 |---|---|---|
