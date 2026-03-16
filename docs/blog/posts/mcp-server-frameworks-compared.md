@@ -557,6 +557,13 @@ Four composable middlewares that replace regex-based defenses with LLM-as-Judge 
 
 Every Vurb.ts tool is transport-agnostic. The same `ToolRegistry` runs on Stdio, SSE, and serverless:
 
+```bash
+# Deploy to Vinkius Cloud — global edge, DLP, audit logging, managed MCP token
+vurb deploy
+```
+
+For self-hosted setups, one-line serverless adapters:
+
 ```typescript
 // Vercel Edge Functions
 import { vercelAdapter } from '@vurb/vercel';
@@ -568,7 +575,7 @@ import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
 export default cloudflareWorkersAdapter({ registry, contextFactory });
 ```
 
-No other MCP framework provides one-line serverless adapters. FastMCP (Python) and the official SDK require manual HTTP bridging; mcp-framework and EasyMCP don't address deployment at all.
+No other MCP framework provides one-command cloud deployment or one-line serverless adapters. FastMCP (Python) and the official SDK require manual HTTP bridging; mcp-framework and EasyMCP don't address deployment at all.
 
 ---
 

@@ -205,11 +205,7 @@ The Presenter doesn't trust the handler. The handler returns a full database row
 ```typescript
 const UserPresenter = f.presenter({
   name: 'User',
-  schema: z.object({
-    id: z.string(),
-    name: z.string(),
-    role: z.string(),
-  }),
+  schema: UserModel,
 });
 ```
 

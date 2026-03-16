@@ -2,6 +2,17 @@
 
 From zero to a running MCP server in under 30 seconds. The CLI scaffolds a production-ready project with `autoDiscover()` file-based routing, typed context, Presenters, middleware, testing, and pre-configured connections for Cursor, Claude Desktop, and Claude Code — no boilerplate.
 
+::: tip Skip the scaffold — let your AI agent build it
+Vurb.ts ships a **[SKILL.md](https://agentskills.io)** — a machine-readable architectural contract your AI coding agent can ingest. Instead of following this guide manually, point your agent at the spec and prompt:
+
+```
+"Create an MCP server for invoice management with Presenters,
+ PII redaction on customer_ssn, and middleware auth."
+```
+
+The agent produces idiomatic Vurb.ts — correct file-based routing, typed Presenters, `.redactPII()` paths, middleware chains — on the first pass. Works with Cursor, Claude Code, GitHub Copilot, Windsurf, and Cline.
+:::
+
 ## Prerequisites {#prerequisites}
 
 Node.js **18+** required.
@@ -337,11 +348,36 @@ Each vector adds its dependencies to `package.json` and environment variables to
 
 ## Go Live {#go-live}
 
-Your server runs locally over Stdio. To expose it globally as a stateless HTTP endpoint, deploy to Vercel or Cloudflare Workers. Both adapters bridge the gap between MCP's long-lived process model and serverless runtimes — registry compilation is cached at cold start, warm requests execute with near-zero overhead.
+Your server runs locally over Stdio. To deploy it globally with built-in security, DLP, FinOps, and audit logging — use Vinkius Cloud.
 
-### Vercel — Next.js Edge Deployment
+### Vinkius Cloud — One Command Deploy
 
-Drops into a Next.js App Router route. Edge Runtime for ~0ms cold starts, or Node.js Runtime for `@vercel/postgres` and heavier computation:
+Deploy your MCP server to Vinkius Cloud's global edge with a single command. Your server gets DLP protection, kill switch, audit logging, and a managed MCP token — no infrastructure to manage.
+
+```bash
+vurb deploy
+```
+
+That's it. The CLI packages your server, deploys it to Vinkius Cloud, and returns a connection token. Share the token with any MCP client — Claude Desktop, Cursor, VS Code, Windsurf — and they connect instantly.
+
+```bash
+# Deploy with a custom server name
+vurb deploy --name my-weather-api
+
+# Deploy to a specific environment
+vurb deploy --env production
+```
+
+Every deployment is protected by eight layers of security out of the box: DLP redaction, V8 sandbox, rate limiting, credential vault, SSRF protection, kill switch, and full audit trail. [Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your deployed servers directly from VS Code, Cursor, or Windsurf — live connections, logs, token management, and tool toggling without leaving your IDE.
+
+### Self-Hosted Alternatives
+
+If you prefer to self-host, drop your registry into Vercel or Cloudflare Workers. Both adapters bridge MCP's long-lived process model and serverless runtimes — registry compilation is cached at cold start, warm requests execute with near-zero overhead.
+
+#### Vercel — Next.js Edge Deployment
 
 ```typescript
 // app/api/mcp/route.ts
@@ -351,9 +387,7 @@ export const POST = vercelAdapter({ registry, contextFactory });
 export const runtime = 'edge'; // optional — global edge distribution
 ```
 
-### Cloudflare Workers — D1 & KV at the Edge
-
-Your tools query D1 (SQLite at the edge) and KV with sub-millisecond latency from 300+ locations:
+#### Cloudflare Workers — D1 & KV at the Edge
 
 ```typescript
 // src/worker.ts

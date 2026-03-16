@@ -5,11 +5,11 @@
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/dt/@vurb/core" alt="Downloads"></a>
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/dw/@vurb/core" alt="Weekly Downloads"></a>
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/v/@vurb/core.svg?style=flat-square&color=0ea5e9" alt="npm version"></a>
-<a href="https://bundlephobia.com/package/vurb"><img src="https://img.shields.io/bundlephobia/minzip/vurb" alt="Package Size"></a>
+<a href="https://bundlephobia.com/package/@vurb/core"><img src="https://img.shields.io/bundlephobia/minzip/@vurb/core" alt="Package Size"></a>
 <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-blue.svg?style=flat-square&logo=typescript" alt="TypeScript"></a>
 <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Standard-purple.svg?style=flat-square" alt="MCP SDK"></a>
 <a href="https://github.com/vinkius-labs/vurb.ts/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-green.svg?style=flat-square" alt="License"></a>
-<a href="https://github.com/vinkius-labs/vurb.ts/stargazers"><img src="https://img.shields.io/github/stars/vinkius-labs/vurb?style=flat-square&color=gold" alt="GitHub Stars"></a>
+<a href="https://github.com/vinkius-labs/vurb.ts/stargazers"><img src="https://img.shields.io/github/stars/vinkius-labs/vurb.ts?style=flat-square&color=gold" alt="GitHub Stars"></a>
 <img src="https://img.shields.io/badge/Built%20with-%F0%9F%9A%80%20by%20Vinkius-%23000000" alt="Built with 🚀 by Vinkius">
 </div>
 
@@ -49,11 +49,7 @@ const f = initVurb<AppContext>();
 ```typescript
 const InvoicePresenter = f.presenter({
   name: 'Invoice',
-  schema: z.object({
-    id: z.string(),
-    amount_cents: z.number().describe('Amount in cents — divide by 100 for display'),
-    status: z.enum(['draft', 'sent', 'paid', 'overdue']),
-  }),
+  schema: InvoiceModel,
   rules: (inv) => [
     inv.status === 'overdue' ? 'invoice is overdue. Mention it to the user.' : null,
   ],
@@ -64,6 +60,9 @@ const InvoicePresenter = f.presenter({
 ```
 
 The `schema` is an allowlist. Only declared fields reach the agent. `rules` and `suggest` provide **Agentic HATEOAS** — the AI doesn't guess; it follows explicit affordances.
+
+> [!TIP]
+> In production, the schema comes from a `defineModel()` definition — the framework's standard [Model layer](/mva-convention#model). Define your entity once with `defineModel()` and feed `Model.schema` into the Presenter. See [Building Tools — Model-Driven Parameters](/building-tools#from-model) for the full workflow.
 
 ### 3. Tool (The Agentic API)
 
@@ -112,6 +111,7 @@ Node.js 18+. Works with any MCP SDK-compatible transport (Stdio, HTTP/SSE, WebSo
 | [@vurb/skills](/skills) | Progressive instruction distribution for AI agents |
 | [@vurb/testing](/testing) | Test harness — assertions, blast radius, snapshot testing |
 | [@vurb/inspector](/inspector) | Real-time TUI dashboard via Shadow Socket |
+| [Vinkius Extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) | IDE extension — manage Vinkius Cloud servers from VS Code, Cursor, or Windsurf |
 
 ## Why This Matters {#benefits}
 
@@ -131,6 +131,6 @@ Node.js 18+. Works with any MCP SDK-compatible transport (Stdio, HTTP/SSE, WebSo
 
 **Auto-generate from what you have.** `npx prisma generate` → CRUD tools with field-level security from your Prisma schema. `npx openapi-gen generate` → typed tools from any REST API. `createN8nConnector()` → n8n workflows as MCP tools.
 
-**Deploy Anywhere.** The same `ToolRegistry` runs on Stdio, SSE, and serverless runtimes without code changes. Ship to [Vercel Edge Functions](/vercel-adapter) for fast cold starts in a Next.js route, or to [Cloudflare Workers](/cloudflare-adapter) for D1/KV access from 300+ edge locations.
+**Deploy with One Command.** `vurb deploy` publishes your server to [Vinkius Cloud](https://docs.vinkius.com/getting-started) — global edge, built-in DLP, kill switch, audit logging, and a managed MCP token. No infrastructure to manage. For self-hosted setups, the same `ToolRegistry` runs on [Vercel Edge Functions](/vercel-adapter) or [Cloudflare Workers](/cloudflare-adapter) without code changes.
 
 **Audit & Governance.** `vurb.lock` captures every tool's behavioral contract — 9 modules for SOC2-auditable AI deployments. PR diffs show what changed. See [Governance](/governance/).

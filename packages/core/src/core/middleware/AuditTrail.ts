@@ -188,9 +188,13 @@ export function auditTrail(config: AuditTrailConfig): MiddlewareFn<unknown> {
                 if (r && r['isError']) {
                     const content = r['content'] as Array<{ text?: string }> | undefined;
                     const text = content?.[0]?.text ?? '';
-                    if (text.includes('RATE_LIMITED')) {
+                    // Bug #11 fix: extract the error code from the XML
+                    // attribute instead of substring matching on full text
+                    const codeMatch = text.match(/code="([^"]+)"/);
+                    const errorCode = codeMatch?.[1] ?? '';
+                    if (errorCode === 'RATE_LIMITED') {
                         status = 'rate_limited';
-                    } else if (text.includes('INPUT_REJECTED')) {
+                    } else if (errorCode === 'INPUT_REJECTED') {
                         status = 'firewall_blocked';
                     } else {
                         status = 'error';

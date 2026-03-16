@@ -29,6 +29,7 @@ import { StateSyncLayer } from '../state-sync/StateSyncLayer.js';
 import { type StateSyncConfig, type SyncPolicy } from '../state-sync/types.js';
 import { type IntrospectionConfig } from '../introspection/types.js';
 import { registerIntrospectionResource } from '../introspection/IntrospectionResource.js';
+import { compileManifest, cloneManifest } from '../introspection/ManifestCompiler.js';
 import { type ZeroTrustConfig, AttestationError } from '../introspection/CryptoAttestation.js';
 import { type SelfHealingConfig, enrichValidationError } from '../introspection/ContractAwareSelfHealing.js';
 import { compileContracts } from '../introspection/ToolContract.js';
@@ -819,8 +820,16 @@ function registerResourceHandlers<TContext>(
     server: unknown,
     resources: ResourceRegistry<TContext>,
     contextFactory?: (extra: unknown) => TContext | Promise<TContext>,
+    introspection?: {
+        config: IntrospectionConfig<TContext>;
+        serverName: string;
+        builders: { values: () => Iterable<ToolBuilder<TContext>> };
+    },
 ): void {
     const resourceServer = resolved as unknown as McpServerWithResourceSubscriptions;
+
+    // Bug #4 fix: Pre-compute introspection manifest URI for merge.
+    const manifestUri = introspection?.config.uri ?? 'vurb://manifest.json';
 
     // Wire notification sink for `notifications/resources/updated`
     const serverAny = server as Record<string, unknown>;
@@ -846,18 +855,45 @@ function registerResourceHandlers<TContext>(
         resources.setListChangedSink(() => { (sendListChanged as Function).call(server); });
     }
 
-    // resources/list — merge with introspection resources if present
+    // resources/list — merge with introspection resources if present (Bug #4 fix)
     resourceServer.setRequestHandler(ListResourcesRequestSchema, (() => {
-        return {
-            resources: resources.listResources(),
-        };
+        const list = resources.listResources();
+        if (introspection) {
+            list.push({
+                uri: manifestUri,
+                name: 'Vurb Manifest',
+                description: 'Dynamic introspection manifest exposing all registered tools, actions, and presenters. RBAC-filtered per session context.',
+                mimeType: 'application/json',
+            });
+        }
+        return { resources: list };
     }) as (...args: never[]) => unknown);
 
-    // resources/read
+    // resources/read — with introspection manifest delegation (Bug #4 fix)
     resourceServer.setRequestHandler(ReadResourceRequestSchema, (async (
         request: { params: { uri: string } },
         extra: unknown,
     ) => {
+        // Bug #4 fix: Handle introspection manifest URI before ResourceRegistry
+        if (introspection && request.params.uri === manifestUri) {
+            const fullManifest = compileManifest(
+                introspection.serverName,
+                introspection.builders.values(),
+            );
+            let manifest = fullManifest;
+            if (introspection.config.filter && contextFactory) {
+                const ctx = await contextFactory(extra);
+                manifest = introspection.config.filter(cloneManifest(fullManifest), ctx);
+            }
+            return {
+                contents: [{
+                    uri: manifestUri,
+                    mimeType: 'application/json',
+                    text: JSON.stringify(manifest, null, 2),
+                }],
+            };
+        }
+
         const ctx = contextFactory
             ? await contextFactory(extra)
             : _missingContextProxy as TContext;
@@ -943,7 +979,9 @@ export async function attachToServer<TContext>(
     const syncLayer = mergedSyncConfig ? new StateSyncLayer(mergedSyncConfig) : undefined;
 
     // 3. Register introspection resource (zero overhead when disabled)
-    if (introspection?.enabled) {
+    //    Bug #4 fix: When `resources` is also configured, introspection is merged
+    //    into registerResourceHandlers to avoid setRequestHandler overwrite.
+    if (introspection?.enabled && !options.resources) {
         registerIntrospectionResource(
             resolved,
             introspection,
@@ -1049,7 +1087,16 @@ export async function attachToServer<TContext>(
     // 7. Register resource handlers (zero overhead when omitted)
     const { resources } = options;
     if (resources) {
-        registerResourceHandlers(resolved, server, resources, contextFactory);
+        // Bug #4 fix: pass introspection config so manifest resource is merged
+        // into ResourceRegistry handlers instead of being overwritten.
+        registerResourceHandlers(
+            resolved, server, resources, contextFactory,
+            introspection?.enabled ? {
+                config: introspection,
+                serverName: serverName ?? 'vurb-server',
+                builders: { values: () => registry.getBuilders() },
+            } : undefined,
+        );
     }
 
     // 8. Return detach function
@@ -1335,8 +1382,13 @@ function autoBindFsmFromBuilders<TContext>(
             const actions = (builder as unknown as Record<string, unknown>)['getActions'];
             if (typeof actions === 'function') {
                 const actionList = actions.call(builder) as Array<{ key: string }>;
+                const isSingleAction = actionList.length === 1;
                 for (const action of actionList) {
-                    const flatName = `${toolName}${separator}${action.key}`;
+                    // Bug #9 fix: single-action default tools use bare name
+                    // (matching ExpositionCompiler.compileFlat behavior)
+                    const flatName = (isSingleAction && action.key === 'default')
+                        ? toolName
+                        : `${toolName}${separator}${action.key}`;
                     gate.bindTool(flatName, binding.states, binding.transition);
                 }
             } else {

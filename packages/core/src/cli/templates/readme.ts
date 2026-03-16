@@ -48,6 +48,8 @@ src/
 │   └── system/
 │       ├── health.ts  # Health check with Presenter
 │       └── echo.ts    # Echo for connectivity testing
+├── models/            # MVA Model Layer (defineModel)
+│   └── SystemModel.ts
 ├── presenters/        # MVA View Layer (Egress Firewall)
 │   └── SystemPresenter.ts
 ├── prompts/           # MCP Prompt Engine

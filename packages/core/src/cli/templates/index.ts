@@ -14,6 +14,9 @@ export { vurbTs, contextTs, serverTs } from './core.js';
 // Tools
 export { healthToolTs, echoToolTs } from './tools.js';
 
+// Model
+export { systemModelTs } from './model.js';
+
 // Presenter
 export { systemPresenterTs } from './presenter.js';
 

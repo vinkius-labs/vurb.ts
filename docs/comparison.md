@@ -57,16 +57,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 ```typescript
 import { createPresenter, suggest, ui } from '@vurb/core';
 import { initVurb } from '@vurb/core';
-import { z } from 'zod';
+import { InvoiceModel } from './models/InvoiceModel.js';
 
 const f = initVurb<AppContext>();
 
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(z.object({
-        id: z.string(),
-        amount_cents: z.number().describe('Amount in cents — divide by 100 for display'),
-        status: z.enum(['paid', 'pending', 'overdue']),
-    }))
+    .schema(InvoiceModel)
     .rules([
         'CRITICAL: amount_cents is in CENTS. Divide by 100 for display.',
         'Always show currency as USD.',
@@ -105,7 +101,7 @@ case 'list_users':
 
 ```typescript
 const UserPresenter = createPresenter('User')
-    .schema(z.object({ id: z.string(), name: z.string(), role: z.string() }))
+    .schema(UserModel)
     .limit(50)
     .suggest(() => [
         suggest('users.search', 'Search by name or role for specific users'),

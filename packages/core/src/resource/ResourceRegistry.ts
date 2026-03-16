@@ -258,10 +258,16 @@ export class ResourceRegistry<TContext = void> {
      * Check if a URI matches a template pattern.
      *
      * Template: `stock://prices/{symbol}` matches `stock://prices/AAPL`
+     *
+     * Bug #5 fix: Escapes regex metacharacters in static segments
+     * to prevent `.`, `+`, `*` etc. from being interpreted as regex syntax.
      */
     private _matchesTemplate(template: string, uri: string): boolean {
-        // Convert template to regex: replace {placeholder} with (.+)
-        const regexStr = template.replace(/\{[^}]+\}/g, '([^/]+)');
+        // Split at {placeholder} boundaries, escape each static segment,
+        // then rejoin with capture groups.
+        const segments = template.split(/\{[^}]+\}/);
+        const escaped = segments.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regexStr = escaped.join('([^/]+)');
         const regex = new RegExp(`^${regexStr}$`);
         return regex.test(uri);
     }

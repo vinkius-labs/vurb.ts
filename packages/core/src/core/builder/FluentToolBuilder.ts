@@ -26,35 +26,19 @@
  * @module
  */
 import { z, type ZodType, type ZodObject, type ZodRawShape } from 'zod';
+import { type Model, compileFieldForInput } from '../../model/defineModel.js';
 import { GroupedToolBuilder } from './GroupedToolBuilder.js';
 import { type ToolResponse, type MiddlewareFn } from '../types.js';
-import { success, TOOL_RESPONSE_BRAND } from '../response.js';
 import { type Presenter } from '../../presenter/Presenter.js';
 import { type ConcurrencyConfig } from '../execution/ConcurrencyGuard.js';
 import { type SandboxConfig } from '../../sandbox/SandboxEngine.js';
-import { SANDBOX_SYSTEM_INSTRUCTION } from '../../sandbox/index.js';
 import { type MiddlewareDefinition } from '../middleware/ContextDerivation.js';
+import { type SemanticDefaults } from './SemanticDefaults.js';
+import { createProxyHandler } from './ProxyHandler.js';
+import { buildToolFromFluent } from './BuildPipeline.js';
 
-// ── Semantic Verb Defaults ───────────────────────────────
-
-/**
- * Semantic defaults applied by each verb.
- * @internal
- */
-export interface SemanticDefaults {
-    readonly readOnly?: boolean;
-    readonly destructive?: boolean;
-    readonly idempotent?: boolean;
-}
-
-/** Defaults for `f.query()` — read-only, no side effects */
-export const QUERY_DEFAULTS: SemanticDefaults = { readOnly: true };
-
-/** Defaults for `f.mutation()` — destructive, irreversible */
-export const MUTATION_DEFAULTS: SemanticDefaults = { destructive: true };
-
-/** Defaults for `f.action()` — neutral, no assumptions */
-export const ACTION_DEFAULTS: SemanticDefaults = {};
+// Re-export SemanticDefaults for backward compatibility
+export { type SemanticDefaults, QUERY_DEFAULTS, MUTATION_DEFAULTS, ACTION_DEFAULTS } from './SemanticDefaults.js';
 
 // ── Array Item Type Resolution ───────────────────────────
 
@@ -78,7 +62,8 @@ function resolveArrayItemType(itemType: 'string' | 'number' | 'boolean'): ZodTyp
  */
 export class FluentToolBuilder<
     TContext,
-    TInput = void,
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- sentinel for "no params defined yet"
+    TInput = Record<string, never>,
     TCtx = TContext,
 > {
     /** @internal */ readonly _name: string;
@@ -87,6 +72,7 @@ export class FluentToolBuilder<
     /** @internal */ _inputSchema?: ZodObject<ZodRawShape>;
     /** @internal */ _withParams: Record<string, ZodType> = {};
     /** @internal */ _tags: string[] = [];
+    /** @internal */ _modelRef?: Model;
 
     /**
      * @internal Bug #118 fix: reject duplicate parameter names.
@@ -99,7 +85,7 @@ export class FluentToolBuilder<
                 `Each parameter must have a non-empty name.`,
             );
         }
-        if (name in this._withParams) {
+        if (Object.prototype.hasOwnProperty.call(this._withParams, name)) {
             throw new Error(
                 `Duplicate parameter name "${name}" on tool "${this._name}". ` +
                 `Each parameter must have a unique name.`,
@@ -639,6 +625,65 @@ export class FluentToolBuilder<
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: (I extends 'string' ? string : I extends 'number' ? number : boolean)[] | undefined }, TCtx>;
     }
 
+    // ── Model Integration ─────────────────────────────────
+
+    /**
+     * Derive tool input parameters from a Model's fillable profile.
+     *
+     * Reads the specified operation from `model.input` (fillable profiles),
+     * then adds each field as a parameter using the type and description from
+     * the Model's casts. For `create`, fields respect their schema optionality.
+     * For `update` and `filter`, all fields become optional.
+     *
+     * @param model - A `Model` from `defineModel()`
+     * @param operation - The fillable profile name (e.g. `'create'`, `'update'`, `'filter'`)
+     * @returns Builder with additional parameters from the Model
+     *
+     * @example
+     * ```typescript
+     * f.mutation('task.create')
+     *   .fromModel(TaskModel, 'create')
+     *   .withStrings({ company_slug: '...', project_slug: '...' })
+     *   .handle(async (input, ctx) => { ... });
+     * ```
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Model fields are runtime-defined; `any` avoids forced casting
+    fromModel<M extends Model>(
+        model: M,
+        operation: string,
+    ): FluentToolBuilder<TContext, TInput & Record<string, any>, TCtx> {
+        const fieldNames = model.input[operation];
+        if (!fieldNames) {
+            throw new Error(
+                `Model "${model.name}" has no fillable profile "${operation}". ` +
+                `Available: ${Object.keys(model.input).join(', ') || 'none'}`,
+            );
+        }
+
+        // Determine if all fields should be forced optional (update/filter semantics)
+        const forceOptional = operation !== 'create';
+
+        for (const fieldName of fieldNames) {
+            const fieldDef = model.fields[fieldName];
+            if (!fieldDef) {
+                throw new Error(
+                    `Model "${model.name}" fillable profile "${operation}" references ` +
+                    `field "${fieldName}" which is not defined in casts.`,
+                );
+            }
+
+            // Compile FieldDef → Zod schema for input context
+            const schema = compileFieldForInput(fieldDef, forceOptional);
+            this._addParam(fieldName, schema);
+        }
+
+        // Store Model reference for .proxy() alias resolution
+        this._modelRef = model;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return this as unknown as FluentToolBuilder<TContext, TInput & Record<string, any>, TCtx>;
+    }
+
     // ── Middleware ────────────────────────────────────────
 
     /**
@@ -720,7 +765,8 @@ export class FluentToolBuilder<
      * @param presenter - A Presenter instance
      * @returns `this` for chaining
      */
-    returns(presenter: Presenter<unknown>): FluentToolBuilder<TContext, TInput, TCtx> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- covariant: accept any Presenter subtype
+    returns(presenter: Presenter<any>): FluentToolBuilder<TContext, TInput, TCtx> {
         this._returns = presenter;
         return this;
     }
@@ -931,11 +977,62 @@ export class FluentToolBuilder<
      */
     handle(
         handler: (
-            input: TInput extends void ? Record<string, unknown> : TInput,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            input: [TInput] extends [Record<string, never>] ? Record<string, any> : TInput,
             ctx: TCtx,
         ) => Promise<ToolResponse | unknown>,
     ): GroupedToolBuilder<TContext> {
         return this._build(handler);
+    }
+
+    // ── Terminal: proxy() ────────────────────────────────
+
+    /**
+     * Auto-generate a handler that proxies to `ctx.client` HTTP methods.
+     *
+     * Eliminates boilerplate by deriving the HTTP method from the semantic
+     * verb (`query` → GET, `mutation` → POST) and passing model input
+     * directly as query params or request body.
+     *
+     * For tools with non-trivial logic (data transformation, multi-step
+     * calls, conditional behavior), use `.handle()` instead.
+     *
+     * @param endpoint - API path (e.g. `'companies/standup/summary'`)
+     * @param options - Optional overrides
+     * @param options.method - Force HTTP method (`'GET'`, `'POST'`, `'PUT'`, `'DELETE'`)
+     * @param options.unwrap - Auto-unwrap `response.data` (default: `true`)
+     * @returns A `GroupedToolBuilder` ready for registration
+     *
+     * @example
+     * ```typescript
+     * const pulse = analytics.query('pulse')
+     *     .fromModel(AnalyticsModel, 'query')
+     *     .proxy('companies/manager-dashboard/pulse');
+     *
+     * const create = note.mutation('create')
+     *     .fromModel(NoteModel, 'create')
+     *     .proxy('notes');
+     *
+     * const update = note.mutation('update')
+     *     .fromModel(NoteModel, 'update')
+     *     .proxy('notes/:uuid', { method: 'PUT' });
+     * ```
+     */
+    proxy(
+        endpoint: string,
+        options?: {
+            method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+            unwrap?: boolean;
+        },
+    ): GroupedToolBuilder<TContext> {
+        const httpMethod = options?.method
+            ?? (this._semanticDefaults.readOnly ? 'GET' : 'POST');
+        const shouldUnwrap = options?.unwrap ?? true;
+
+        const handler = createProxyHandler(endpoint, httpMethod, shouldUnwrap, this._modelRef);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return this._build(handler as any);
     }
 
     /**
@@ -944,7 +1041,8 @@ export class FluentToolBuilder<
      */
     resolve(
         handler: (
-            args: { input: TInput extends void ? Record<string, unknown> : TInput; ctx: TCtx },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            args: { input: [TInput] extends [Record<string, never>] ? Record<string, any> : TInput; ctx: TCtx },
         ) => Promise<ToolResponse | unknown>,
     ): GroupedToolBuilder<TContext> {
         // Adapt { input, ctx } signature to (input, ctx)
@@ -956,7 +1054,8 @@ export class FluentToolBuilder<
     /** @internal */
     private _build(
         handler: (
-            input: TInput extends void ? Record<string, unknown> : TInput,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            input: [TInput] extends [Record<string, never>] ? Record<string, any> : TInput,
             ctx: TCtx,
         ) => Promise<ToolResponse | unknown>,
     ): GroupedToolBuilder<TContext> {
@@ -969,127 +1068,28 @@ export class FluentToolBuilder<
         }
         this._handlerSet = true;
 
-        // Build accumulated with* params into ZodObject
-        if (Object.keys(this._withParams).length > 0) {
-            this._inputSchema = z.object(this._withParams as ZodRawShape);
-        }
-
-        // Parse name: 'domain.action' → tool='domain', action='action'
-        const dotIndex = this._name.indexOf('.');
-        // Bug #109 fix: reject multi-dot names early with a clear error.
-        if (dotIndex > 0 && this._name.indexOf('.', dotIndex + 1) !== -1) {
-            throw new Error(
-                `Tool name '${this._name}' has too many dot-separated segments. ` +
-                `Only one dot is allowed (e.g. 'group.action'). Use f.router() for nested prefixes.`,
-            );
-        }
-        const toolName = dotIndex > 0 ? this._name.slice(0, dotIndex) : this._name;
-        const actionName = dotIndex > 0 ? this._name.slice(dotIndex + 1) : 'default';
-
-        // Compile description: instructions + description
-        const descParts: string[] = [];
-        if (this._instructions) {
-            descParts.push(`[INSTRUCTIONS] ${this._instructions}`);
-        }
-        if (this._description) {
-            descParts.push(this._description);
-        }
-        // HATEOAS Auto-Prompting: teach the LLM about sandbox capability
-        if (this._sandboxConfig) {
-            descParts.push(SANDBOX_SYSTEM_INSTRUCTION.trim());
-        }
-        const compiledDescription = descParts.length > 0 ? descParts.join('\n\n') : undefined;
-
-        // Resolve semantic defaults + overrides
-        const readOnly = this._readOnly ?? this._semanticDefaults.readOnly;
-        const destructive = this._destructive ?? this._semanticDefaults.destructive;
-        const idempotent = this._idempotent ?? this._semanticDefaults.idempotent;
-
-        // Wrap handler: (input, ctx) → (ctx, args)
-        const resolvedHandler = handler;
-        const wrappedHandler = async (ctx: TContext, args: Record<string, unknown>): Promise<ToolResponse> => {
-            const result = await resolvedHandler(args as never, ctx as never);
-
-            // Guard: void/null handlers → safe fallback (Bug #41)
-            if (result === undefined || result === null) {
-                return success('OK');
-            }
-
-            // Auto-wrap non-ToolResponse results (implicit success)
-            // Primary: check brand symbol stamped by success()/error()/toolError() helpers.
-            // Fallback: shape-based heuristic for manually constructed ToolResponse objects.
-            if (typeof result === 'object' && result !== null) {
-                // Brand check — reliable, no false positives (Bug #127)
-                if (TOOL_RESPONSE_BRAND in result) {
-                    return result as unknown as ToolResponse;
-                }
-                // Shape heuristic — backward compat for manually constructed ToolResponse
-                if (
-                    'content' in result &&
-                    Array.isArray((result as { content: unknown }).content) &&
-                    (result as { content: Array<{ type?: unknown }> }).content.length > 0 &&
-                    (result as { content: Array<{ type?: unknown }> }).content[0]?.type === 'text' &&
-                    typeof (result as { content: Array<{ text?: unknown }> }).content[0]?.text === 'string' &&
-                    Object.keys(result).every(k => k === 'content' || k === 'isError')
-                ) {
-                    return result as ToolResponse;
-                }
-            }
-
-            // Implicit success() — the dev just returns raw data!
-            return success(result as string | object);
-        };
-
-        // Build via GroupedToolBuilder for consistency with existing pipeline
-        const builder = new GroupedToolBuilder<TContext>(toolName);
-
-        if (compiledDescription) builder.description(compiledDescription);
-        if (this._tags.length > 0) builder.tags(...this._tags);
-        if (this._toonMode) builder.toonDescription();
-        if (this._annotations) builder.annotations(this._annotations);
-
-        // Propagate state sync hints
-        if (this._invalidatesPatterns.length > 0) {
-            builder.invalidates(...this._invalidatesPatterns);
-        }
-        if (this._cacheControl) {
-            this._cacheControl === 'immutable' ? builder.cached() : builder.stale();
-        }
-
-        // Propagate runtime guards
-        if (this._concurrency) {
-            builder.concurrency(this._concurrency);
-        }
-        if (this._egressMaxBytes !== undefined) {
-            builder.maxPayloadBytes(this._egressMaxBytes);
-        }
-
-        // Propagate sandbox config
-        if (this._sandboxConfig) {
-            builder.sandbox(this._sandboxConfig);
-        }
-
-        // Propagate FSM state gate
-        if (this._fsmStates) {
-            builder.bindState(this._fsmStates, this._fsmTransition);
-        }
-
-        // Apply middleware
-        for (const mw of this._middlewares) {
-            builder.use(mw);
-        }
-
-        // Register the single action
-        builder.action({
-            name: actionName,
-            handler: wrappedHandler,
-            ...(this._inputSchema ? { schema: this._inputSchema } : {}),
-            ...(readOnly !== undefined ? { readOnly } : {}),
-            ...(destructive !== undefined ? { destructive } : {}),
-            ...(idempotent !== undefined ? { idempotent } : {}),
-            ...(this._returns ? { returns: this._returns } : {}),
+        return buildToolFromFluent({
+            name: this._name,
+            description: this._description,
+            instructions: this._instructions,
+            withParams: this._withParams,
+            tags: this._tags,
+            middlewares: this._middlewares,
+            returns: this._returns,
+            semanticDefaults: this._semanticDefaults,
+            readOnly: this._readOnly,
+            destructive: this._destructive,
+            idempotent: this._idempotent,
+            toonMode: this._toonMode,
+            annotations: this._annotations,
+            invalidatesPatterns: this._invalidatesPatterns,
+            cacheControl: this._cacheControl,
+            concurrency: this._concurrency,
+            egressMaxBytes: this._egressMaxBytes,
+            sandboxConfig: this._sandboxConfig,
+            fsmStates: this._fsmStates,
+            fsmTransition: this._fsmTransition,
+            handler: handler as (input: Record<string, unknown>, ctx: TCtx) => Promise<ToolResponse | unknown>,
         });
-
-        return builder;
     }
 }

@@ -5,6 +5,7 @@ Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcont
 :::
 
 - [Introduction](#introduction)
+- [Vinkius Cloud — Recommended](#vinkius-cloud)
 - [Stdio Transport](#stdio)
 - [HTTP/SSE Transport](#sse)
 - [Cloudflare Workers](#cloudflare)
@@ -13,7 +14,30 @@ Install Vurb.ts before following this recipe: `npm install @vurb/core @modelcont
 
 ## Introduction {#introduction}
 
-Vurb.ts tools are transport-agnostic — the same `ToolRegistry` runs on Stdio (local development), HTTP/SSE (persistent servers), and serverless edge runtimes. For edge deployment, the [Vercel Adapter](/vercel-adapter) turns your registry into a Next.js App Router route with Edge Runtime support (~0ms cold starts), while the [Cloudflare Workers Adapter](/cloudflare-adapter) gives your tool handlers direct access to D1, KV, and R2 from 300+ edge locations. For AWS infrastructure, the [@vurb/aws](/aws-connector) connector integrates with Lambda and Step Functions. All adapters cache registry compilation at cold start and handle warm requests as stateless JSON-RPC — no SSE sessions, no streaming state, no infrastructure to manage.
+Vurb.ts tools are transport-agnostic — the same `ToolRegistry` runs on Stdio (local development), HTTP/SSE (persistent servers), Vinkius Cloud (managed edge), and serverless runtimes. The recommended path to production is **Vinkius Cloud** — one command, zero infrastructure. For self-hosted deployments, the [Vercel Adapter](/vercel-adapter) and [Cloudflare Workers Adapter](/cloudflare-adapter) provide serverless edge options, while the [@vurb/aws](/aws-connector) connector integrates with Lambda and Step Functions.
+
+## Vinkius Cloud — Recommended {#vinkius-cloud}
+
+The fastest path to production. `vurb deploy` publishes your server to Vinkius Cloud's global edge with built-in DLP, kill switch, audit logging, and a managed MCP token:
+
+```bash
+vurb deploy
+```
+
+That's it. No Dockerfile, no CI/CD pipeline, no infrastructure to manage. Share the connection token with any MCP client — Cursor, Claude Desktop, Claude Code, Windsurf, Cline, VS Code + Copilot — and they connect instantly.
+
+```bash
+# Deploy with a custom name
+vurb deploy --name my-production-api
+
+# Deploy to a specific environment
+vurb deploy --env production
+```
+
+[Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to manage your servers directly from VS Code, Cursor, or Windsurf. Every server shows up in the sidebar with a full dashboard — live connections, requests, P95 latency, DLP intercepts, token management, tool toggling, logs, and deployment history.
 
 ## Stdio Transport {#stdio}
 

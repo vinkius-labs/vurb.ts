@@ -60,7 +60,7 @@ executePipeline()          makeAsync()
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((inv) => [`Status: ${inv.description}`])
     .promptFirewall({
         adapter: { name: 'gpt-4o-mini', evaluate: (p) => openai.chat(p) },
@@ -80,7 +80,7 @@ const chain = createJudgeChain({
 });
 
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((inv) => [`Status: ${inv.description}`])
     .promptFirewall({ chain });
 ```
@@ -198,11 +198,7 @@ The firewall is configured on the Presenter and runs inside `makeAsync()`:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(z.object({
-        id: z.string(),
-        description: z.string(),
-        amount_cents: z.number(),
-    }))
+    .schema(InvoiceModel)
     .systemRules((inv) => [
         `Invoice #${inv.id}`,
         `Description: ${inv.description}`,      // ← user-controlled, needs firewall

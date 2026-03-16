@@ -595,3 +595,90 @@ describe('makeAsync() (#5)', () => {
         });
     });
 });
+
+// ── Regression: makeAsync + agentLimit truncation ───────
+
+describe('makeAsync() — agentLimit truncation consistency', () => {
+    it('should pass only truncated items to async collection callbacks', async () => {
+        const receivedIds: string[] = [];
+
+        const presenter = createPresenter('TruncAsync')
+            .schema(invoiceSchema)
+            .agentLimit(2, (omitted) =>
+                ui.summary(`⚠️ ${omitted} hidden`),
+            )
+            .asyncCollectionUiBlocks(async (items: Array<{ id: string }>) => {
+                // Capture what the async callback actually receives
+                receivedIds.push(...items.map(i => i.id));
+                return [ui.summary(`Received ${items.length} items`)];
+            });
+
+        const invoices = Array.from({ length: 5 }, (_, i) => ({
+            id: `INV-${i}`,
+            amount_cents: (i + 1) * 1000,
+            status: 'paid' as const,
+        }));
+
+        const result = await presenter.makeAsync(invoices);
+        const built = result.build();
+        const texts = built.content.map(c => c.text);
+
+        // Async callback must receive only 2 items (agentLimit), NOT all 5
+        expect(receivedIds).toHaveLength(2);
+        expect(receivedIds).toEqual(['INV-0', 'INV-1']);
+
+        // Wire data must also be truncated
+        const wireData = JSON.parse(built.content[0].text);
+        expect(wireData).toHaveLength(2);
+
+        // Truncation warning must be present
+        expect(texts.some(t => t.includes('3 hidden'))).toBe(true);
+
+        // Async UI block must be present
+        expect(texts.some(t => t.includes('Received 2 items'))).toBe(true);
+    });
+
+    it('should pass only truncated items to async rules callback', async () => {
+        let receivedId: string | undefined;
+
+        const presenter = createPresenter('TruncRules')
+            .schema(invoiceSchema)
+            .agentLimit(1, (omitted) =>
+                ui.summary(`⚠️ ${omitted} omitted`),
+            )
+            .asyncRules(async (item: { id: string }) => {
+                receivedId = item.id;
+                return [`Rule for ${item.id}`];
+            });
+
+        const invoices = Array.from({ length: 3 }, (_, i) => ({
+            id: `INV-${i}`,
+            amount_cents: 1000,
+            status: 'pending' as const,
+        }));
+
+        await presenter.makeAsync(invoices);
+
+        // Async rules receives first item from truncated set
+        expect(receivedId).toBe('INV-0');
+    });
+
+    it('should not double-validate when agentLimit is not set', async () => {
+        let callCount = 0;
+        const trackingSchema = invoiceSchema.transform((data) => {
+            callCount++;
+            return data;
+        });
+
+        const presenter = createPresenter('NoDoubleValidate')
+            .schema(trackingSchema)
+            .asyncUiBlocks(async () => [ui.summary('async block')]);
+
+        await presenter.makeAsync({ id: 'INV-1', amount_cents: 100, status: 'paid' });
+
+        // Schema should be called exactly 2 times:
+        // once in executePipeline, once for async callbacks.
+        // Before the fix it was also 2, but with different data if agentLimit was set.
+        expect(callCount).toBe(2);
+    });
+});

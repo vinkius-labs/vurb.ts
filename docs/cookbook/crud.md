@@ -191,16 +191,26 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
-The same registry deploys to serverless with zero tool code changes:
+The same registry deploys to production with zero tool code changes:
 
-### Vercel — CRUD API as a Route Handler
+### Vinkius Cloud — One Command Deploy
+
+```bash
+vurb deploy
+```
+
+No infrastructure to manage. Built-in DLP, kill switch, audit logging, and managed MCP token. [Learn more →](https://docs.vinkius.com/getting-started)
+
+### Self-Hosted Alternatives
+
+#### Vercel — CRUD API as a Route Handler
 
 ```typescript
 import { vercelAdapter } from '@vurb/vercel';
 export const POST = vercelAdapter({ registry, contextFactory });
 ```
 
-### Cloudflare Workers — CRUD at the Edge
+#### Cloudflare Workers — CRUD at the Edge
 
 ```typescript
 import { cloudflareWorkersAdapter } from '@vurb/cloudflare';

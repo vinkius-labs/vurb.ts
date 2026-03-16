@@ -67,7 +67,7 @@ MVA's `.systemRules()` attaches domain rules to the **Presenter**, not to the sy
 ```typescript
 // Invoice rules — sent ONLY when the agent receives invoice data
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules([
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
         'Use currency format: $XX,XXX.00',
@@ -124,7 +124,7 @@ Static rules handle most cases, but some rules depend on who's asking and what t
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((invoice, ctx) => [
         // Always present
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',

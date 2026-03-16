@@ -9,7 +9,7 @@ import { CORE_VERSION, TESTING_VERSION, MCP_SDK_VERSION, ZOD_VERSION } from './c
 export function packageJson(config: ProjectConfig): string {
     const deps: Record<string, string> = {
         '@modelcontextprotocol/sdk': MCP_SDK_VERSION,
-        'vurb': CORE_VERSION,
+        '@vurb/core': CORE_VERSION,
         'zod': ZOD_VERSION,
     };
 

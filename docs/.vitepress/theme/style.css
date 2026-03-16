@@ -1,3 +1,11 @@
+/* ── Navbar Logo ── */
+.VPNavBarTitle .VPImage.logo {
+  height: 28px !important;
+  width: auto !important;
+  max-height: none !important;
+  min-height: 28px !important;
+}
+
 /* Vercel-like sleek aesthetics */
 :root {
   --vp-c-brand-1: #000000;
@@ -66,37 +74,111 @@ html.dark .vp-doc pre {
 /* Vercel-like Sidebar */
 .VPSidebar {
   background-color: var(--vp-c-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
+/* Smooth collapse/expand transition */
+.VPSidebarItem.level-0 > .items {
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
+}
+
+.VPSidebarItem.level-0.collapsed > .items {
+  opacity: 0;
+}
+
+.VPSidebarItem.level-0:not(.collapsed) > .items {
+  opacity: 1;
+}
+
+/* Chevron rotation */
+.VPSidebarItem.level-0 > .item .caret svg {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Section headers (level-0) — Linear-style ── */
 .VPSidebarItem.level-0 > .item > .text {
-  font-weight: 600;
-  color: var(--vp-c-text-1);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.15s ease;
 }
 
-.VPSidebarItem.is-active > .item > .text {
-  color: var(--vp-c-brand-1);
+.VPSidebarItem.level-0 > .item:hover > .text {
+  color: rgba(255, 255, 255, 0.85);
 }
 
-/* Compact sidebar spacing — override VitePress defaults */
+.VPSidebarItem.level-0.has-active > .item > .text,
+.VPSidebarItem.level-0.is-active > .item > .text {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
 .VPSidebarItem.level-0 > .item {
-  padding: 2px 0 !important;
+  padding: 4px 0 !important;
   margin: 0 !important;
 }
 
+/* Chevron — matches text color */
+.VPSidebarItem.level-0 > .item .caret {
+  color: rgba(255, 255, 255, 0.2) !important;
+  transition: color 0.15s ease;
+}
+
+.VPSidebarItem.level-0 > .item:hover .caret {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Compact sidebar spacing — override VitePress defaults */
 .VPSidebarItem.level-0 {
   padding: 0 !important;
 }
 
+/* Tight group spacing */
 .VPSidebarItem.level-0 + .VPSidebarItem.level-0 {
   border-top: none !important;
-  margin-top: 0 !important;
+  margin-top: 2px !important;
   padding-top: 0 !important;
 }
 
+/* ── Items (level-1) ── */
 .VPSidebarItem.level-1 > .item {
-  padding: 1px 0 !important;
+  padding: 3px 8px 3px 12px !important;
+  margin: 0 !important;
+  border-radius: 6px;
+  transition: all 0.12s ease;
+  position: relative;
 }
 
+.VPSidebarItem.level-1 > .item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.VPSidebarItem.level-1 > .item > .text {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.12s ease;
+}
+
+.VPSidebarItem.level-1 > .item:hover > .text {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Active item */
+.VPSidebarItem.level-1.is-active > .item {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.VPSidebarItem.level-1.is-active > .item > .text {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+/* ── Group spacing ── */
 .VPSidebar .group + .group {
   padding-top: 0 !important;
   margin-top: 0 !important;

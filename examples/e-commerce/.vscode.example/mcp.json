@@ -1,9 +1,0 @@
-{
-    "servers": {
-        "e-commerce": {
-            "type": "stdio",
-            "command": "npx.cmd",
-            "args": ["tsx", "src/server.ts"]
-        }
-    }
-}

@@ -10,7 +10,7 @@ AI agents can do none of this. When an agent receives `{ "amount_cents": 45000 }
 
 | Layer | Role | Implemented As |
 |---|---|---|
-| **Model** | Defines the shape and constraints of domain data. Acts as a security boundary when using `.strict()` — only declared fields pass through. | `z.object({ ... }).strict()` |
+| **Model** | Defines the shape and constraints of domain data. Acts as a security boundary — only declared fields pass through. Configures fillable input profiles, hidden fields, guarded fields, and defaults. | `defineModel('Entity', m => { ... })` |
 | **View (Presenter)** | Transforms raw data into a **Structured Perception Package** — data + rules + UI blocks + affordances + guardrails. Domain-level, not tool-level. | `definePresenter()` / `createPresenter()` |
 | **Agent** | The autonomous consumer. Receives the perception package and acts deterministically based on the structured context it was given. | Any MCP-compatible LLM (Claude, GPT, Gemini series, or open-weight models) |
 
@@ -42,20 +42,28 @@ When all five are present, the agent perceives the domain consistently. Hallucin
 ## Quick Reference: MVA in Code
 
 ```typescript
-import { createPresenter, ui, defineTool } from '@vurb/core';
-import { z } from 'zod';
+import { defineModel, createPresenter, ui, initVurb } from '@vurb/core';
 
-// ── MODEL: Security boundary via Zod schema ──
-const invoiceSchema = z.object({
-    id: z.string(),
-    amount_cents: z.number(),
-    status: z.enum(['paid', 'pending', 'overdue']),
-    // internal_margin, password_hash → rejected by .strict()
-}).strict();  // explicit security boundary
+// ── MODEL: Single source of truth via defineModel() ──
+const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string('Invoice identifier'),
+        amount_cents: m.number('Amount in cents'),
+        status:       m.enum('Payment status', ['paid', 'pending', 'overdue']),
+        // internal_margin, password_hash → not declared → never reaches the agent
+    });
+
+    m.hidden(['tenant_id']);       // excluded from output
+    m.guarded(['id']);             // never mass-assignable
+    m.fillable({
+        create: ['amount_cents', 'status'],
+        update: ['status'],
+    });
+});
 
 // ── VIEW: The Presenter — agent-centric perception layer ──
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)                                // Model
+    .schema(InvoiceModel)                          // Model
     .systemRules([                                        // Interpretation
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
     ])
@@ -71,16 +79,21 @@ const InvoicePresenter = createPresenter('Invoice')
             : []
     );
 
-// ── AGENT: Receives a Structured Perception Package ──
-const billing = defineTool<AppContext>('billing', {
-    actions: {
-        get_invoice: {
-            returns: InvoicePresenter,  // ← One line. Zero boilerplate.
-            params: { id: 'string' },
-            handler: async (ctx, args) => ctx.db.invoices.findUnique(args.id),
-        },
-    },
-});
+// ── AGENT: Tools use .fromModel() for input params ──
+const f = initVurb<AppContext>();
+
+const getInvoice = f.query('billing.get_invoice')
+    .describe('Get an invoice by ID')
+    .withString('id', 'Invoice ID')
+    .returns(InvoicePresenter)
+    .handle(async (input, ctx) => ctx.db.invoices.findUnique(input.id));
+
+const updateInvoice = f.action('billing.update_invoice')
+    .describe('Update an invoice')
+    .fromModel(InvoiceModel, 'update')  // ← derives input params from Model
+    .withString('id', 'Invoice ID')     // ← extra params outside the Model
+    .returns(InvoicePresenter)
+    .handle(async (input, ctx) => ctx.db.invoices.update(input.id, input));
 ```
 
 The handler returns **raw data**. The Presenter intercepts it in the execution pipeline, validates through Zod, strips undeclared fields, attaches domain rules, renders charts, applies truncation, and suggests next actions — all automatically. The agent never sees raw JSON. It sees a **structured perception package**.

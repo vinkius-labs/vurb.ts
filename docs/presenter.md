@@ -26,16 +26,11 @@ export const UserPresenter = createPresenter('User')
 ```
 ```typescript [Declarative]
 import { definePresenter } from '@vurb/core';
-import { z } from 'zod';
+import { UserModel } from '../models/UserModel.js';
 
 export const UserPresenter = definePresenter({
   name: 'User',
-  schema: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string().email(),
-    role: z.enum(['admin', 'member', 'guest']),
-  }),
+  schema: UserModel,
 });
 ```
 :::
@@ -81,8 +76,8 @@ Need regex, transforms, or unions? Use `t.zod` for direct Zod access:
 ```
 :::
 
-::: info Backward compatible
-Raw Zod schemas still work — `.schema(z.object({...}))` is fully supported.
+::: info Model-driven schemas
+In production, schemas come from `defineModel()` — the framework's standard [Model layer](/mva-convention#model). The `t` namespace and raw `z.object()` remain fully supported for quick prototyping.
 :::
 
 ## Auto-Extracted Rules {#auto-rules}
@@ -126,7 +121,7 @@ const InvoicePresenter = createPresenter('Invoice')
 ```typescript [Full control — .systemRules()]
 // Identical behavior, longer name
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .systemRules((invoice, ctx) => [
     'CRITICAL: amount_cents is in CENTS. Divide by 100.',
     ctx?.user?.role !== 'admin'
@@ -155,7 +150,7 @@ const InvoicePresenter = createPresenter('Invoice')
 ```
 ```typescript [Full control — .uiBlocks()]
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .uiBlocks((invoice) => [
     ui.echarts({
       series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
@@ -202,7 +197,7 @@ const InvoicePresenter = createPresenter('Invoice')
 ```
 ```typescript [Full control — .agentLimit()]
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .agentLimit(50, (omitted) =>
     ui.summary(
       `⚠️ Showing 50 of ${50 + omitted} results. ` +
@@ -233,7 +228,7 @@ const InvoicePresenter = createPresenter('Invoice')
 ```
 ```typescript [Full control — .suggestActions()]
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .suggestActions((invoice) => {
     if (invoice.status === 'pending') {
       return [
@@ -257,15 +252,11 @@ When data has nested objects, each entity gets its own Presenter. Rules, UI bloc
 
 ```typescript
 const ClientPresenter = createPresenter('Client')
-  .schema(z.object({
-    id: z.string(),
-    company: z.string(),
-    contact_email: z.string().email(),
-  }))
+  .schema(ClientModel)
   .rules(['Display company name prominently.']);
 
 export const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .embed('client', ClientPresenter)
   .embed('line_items', LineItemPresenter);
 ```
@@ -336,7 +327,7 @@ The fluent `createPresenter()` is the recommended API. Both shorthand aliases an
 
 | Shorthand | Full control | Purpose |
 |---|---|---|
-| `.schema({ id: t.string })` | `.schema(z.object({ ... }))` | Define the validation schema |
+| `.schema({ id: t.string })` | `.schema(InvoiceModel)` | Define the validation schema |
 | `.rules([...])` | `.systemRules([...])` | JIT system rules |
 | `.ui((item) => [...])` | `.uiBlocks((item) => [...])` | Per-item UI blocks |
 | `.limit(50)` | `.agentLimit(50, onTruncate)` | Cognitive guardrail |
@@ -426,7 +417,7 @@ const LineItemPresenter = createPresenter('LineItem')
   .limit(20);
 
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .embed('client', ClientPresenter)
   .embed('line_items', LineItemPresenter);
 ```

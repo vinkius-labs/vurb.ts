@@ -83,7 +83,7 @@ When a Presenter uses `.embed()`, the child Presenter's rules and UI blocks are 
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules(['amount_cents is in CENTS.'])
     .embed('client', ClientPresenter);  // ClientPresenter has its own rules
 ```

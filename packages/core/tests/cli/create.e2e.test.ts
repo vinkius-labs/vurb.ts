@@ -135,13 +135,14 @@ describe('E2E: Full Pipeline (args → config → scaffold → verify)', () => {
         expect(existsSync(join(projectDir, 'src', 'server.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'tools', 'system', 'health.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'tools', 'system', 'echo.ts'))).toBe(true);
+        expect(existsSync(join(projectDir, 'src', 'models', 'SystemModel.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'presenters', 'SystemPresenter.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'prompts', 'greet.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'middleware', 'auth.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'tests', 'setup.ts'))).toBe(true);
         expect(existsSync(join(projectDir, 'tests', 'system.test.ts'))).toBe(true);
 
-        expect(files.length).toBe(18); // 15 base + 3 testing
+        expect(files.length).toBe(19); // 16 base + 3 testing
     });
 
     it('E2E: parseArgs feeds collectConfig correctly', async () => {
@@ -267,6 +268,7 @@ describe('E2E: Import graph — every local import resolves to an existing file'
         'src/server.ts',
         'src/tools/system/health.ts',
         'src/tools/system/echo.ts',
+        'src/models/SystemModel.ts',
         'src/presenters/SystemPresenter.ts',
         'src/prompts/greet.ts',
         'src/middleware/auth.ts',
@@ -857,12 +859,18 @@ describe('E2E: Egress Firewall — security design contract', () => {
         expect(health).toContain('tenant:');
 
         // Presenter schema does NOT include tenant → it gets stripped
-        expect(presenter).toContain('z.object({');
-        expect(presenter).toContain('status:');
-        expect(presenter).toContain('uptime:');
-        expect(presenter).toContain('version:');
-        expect(presenter).toContain('timestamp:');
-        expect(presenter).not.toContain('tenant:');
+        // Presenter uses Model schema (not raw z.object)
+        expect(presenter).toContain('SystemModel');
+        expect(presenter).toContain("from '../models/SystemModel.js'");
+        expect(presenter).not.toContain('z.object(');
+
+        // Model file has the fields — Presenter references the Model
+        const model = readProjectFile(projectDir, 'src/models/SystemModel.ts');
+        expect(model).toContain('status');
+        expect(model).toContain('uptime');
+        expect(model).toContain('version');
+        expect(model).toContain('timestamp');
+        expect(model).not.toContain('tenant');
     });
 
     it('prisma schema marks password with @vurb.hide', async () => {

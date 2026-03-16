@@ -77,6 +77,8 @@ export interface PresenterSnapshot<T> {
     readonly compiledStringify?: StringifyFn | undefined;
     /** Mutable: may be lazily compiled */
     compiledRedactor?: RedactFn | undefined;
+    /** Write-back callback to persist lazy-compiled redactor to the Presenter instance */
+    readonly writeBackRedactor?: (fn: RedactFn) => void;
 }
 
 // ── Step Functions ──────────────────────────────────────
@@ -147,6 +149,10 @@ export function stepRedact<T>(
     // Lazy recompilation: if redactPII was called before fast-redact loaded
     if (!snapshot.compiledRedactor && snapshot.redactConfig) {
         snapshot.compiledRedactor = compileRedactor(snapshot.redactConfig);
+        // Propagate back to Presenter so subsequent make() calls reuse it
+        if (snapshot.compiledRedactor && snapshot.writeBackRedactor) {
+            snapshot.writeBackRedactor(snapshot.compiledRedactor);
+        }
         if (!snapshot.compiledRedactor) {
             console.warn(
                 `[vurb] Presenter "${snapshot.name}": PII redaction configured but fast-redact is not available. ` +

@@ -133,7 +133,7 @@ For output-side protection, add the PromptFirewall to your Presenter:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((inv) => [`Status: ${inv.description}`])
     .promptFirewall({
         adapter: judge,

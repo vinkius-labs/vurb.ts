@@ -13,7 +13,8 @@ export type {
 
 // ── Fluent API ───────────────────────────────────────────
 export { FluentToolBuilder } from './FluentToolBuilder.js';
-export type { SemanticDefaults } from './FluentToolBuilder.js';
+export type { SemanticDefaults } from './SemanticDefaults.js';
+export { QUERY_DEFAULTS, MUTATION_DEFAULTS, ACTION_DEFAULTS } from './SemanticDefaults.js';
 export { FluentRouter } from './FluentRouter.js';
 export { ErrorBuilder } from './ErrorBuilder.js';
 

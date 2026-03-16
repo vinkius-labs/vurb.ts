@@ -390,3 +390,78 @@ describe('SubscriptionManager', () => {
         expect(manager.size).toBe(0);
     });
 });
+
+// ============================================================================
+// Bug #5 Regression — _matchesTemplate must escape regex metacharacters
+//
+// Without escaping, dots/plus/asterisks in URI templates are interpreted
+// as regex syntax, causing false matches (e.g. `data.api.com` matching
+// `dataXapiYcom`).
+// ============================================================================
+
+describe('ResourceRegistry: Template matching with metacharacters (Bug #5)', () => {
+    it('should NOT match when dots in URI are treated as wildcards', async () => {
+        const registry = new ResourceRegistry<void>();
+        const res = defineResource('api_data', {
+            uri: 'https://data.api.com/users/{id}',
+            handler: async () => ({ text: '{}' }),
+        });
+        registry.register(res);
+
+        // Exact match should work
+        const valid = await registry.readResource('https://data.api.com/users/42', undefined as never);
+        expect(valid.contents).toHaveLength(1);
+
+        // Dots should NOT match arbitrary chars
+        const invalid = await registry.readResource('https://dataXapiYcom/users/42', undefined as never);
+        expect(invalid.contents).toHaveLength(0);
+    });
+
+    it('should escape plus signs in URI templates', async () => {
+        const registry = new ResourceRegistry<void>();
+        const res = defineResource('cpp_docs', {
+            uri: 'docs://c++/reference/{topic}',
+            handler: async () => ({ text: '{}' }),
+        });
+        registry.register(res);
+
+        const valid = await registry.readResource('docs://c++/reference/vectors', undefined as never);
+        expect(valid.contents).toHaveLength(1);
+
+        // + should not mean "one or more of previous char"
+        const invalid = await registry.readResource('docs://ccc/reference/vectors', undefined as never);
+        expect(invalid.contents).toHaveLength(0);
+    });
+
+    it('should escape question marks in URI templates', async () => {
+        const registry = new ResourceRegistry<void>();
+        const res = defineResource('query_data', {
+            uri: 'api://search?q={term}',
+            handler: async () => ({ text: '{}' }),
+        });
+        registry.register(res);
+
+        const valid = await registry.readResource('api://search?q=hello', undefined as never);
+        expect(valid.contents).toHaveLength(1);
+
+        // ? should not make previous char optional
+        const invalid = await registry.readResource('api://searchq=hello', undefined as never);
+        expect(invalid.contents).toHaveLength(0);
+    });
+
+    it('should escape brackets and pipes in URI templates', async () => {
+        const registry = new ResourceRegistry<void>();
+        const res = defineResource('bracket_data', {
+            uri: 'proto://data[v1]/items/{id}',
+            handler: async () => ({ text: '{}' }),
+        });
+        registry.register(res);
+
+        const valid = await registry.readResource('proto://data[v1]/items/99', undefined as never);
+        expect(valid.contents).toHaveLength(1);
+
+        // [ should not be interpreted as character class
+        const invalid = await registry.readResource('proto://datav/items/99', undefined as never);
+        expect(invalid.contents).toHaveLength(0);
+    });
+});

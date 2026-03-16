@@ -117,11 +117,7 @@ import { z } from 'zod';
 
 export const EmployeePresenter = definePresenter({
     name: 'Employee',
-    schema: z.object({
-        name: z.string(),
-        ssn: z.string(),
-        salary: z.number(),
-    }),
+    schema: EmployeeModel,
     redactPII: {
         paths: ['ssn', 'salary'],
         censor: '***',

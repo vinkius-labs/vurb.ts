@@ -149,7 +149,11 @@ registry.attachToServer(server, {
 
 `extra` is the MCP SDK's `RequestHandlerExtra` — it carries `session` (from HTTP/SSE/WebSocket transports) and `signal` (the cancellation `AbortSignal`). The factory is async and runs per-request, so you can resolve dynamically renewing tokens, rotated credentials, or per-request config.
 
-On serverless, `contextFactory` receives the HTTP request instead:
+On serverless, `contextFactory` receives the HTTP request instead.
+
+::: tip Vinkius Cloud — One Command Deploy
+`vurb deploy` publishes your server to Vinkius Cloud's global edge with built-in DLP, kill switch, and audit logging — no infrastructure changes needed. [Learn more →](https://docs.vinkius.com/getting-started)
+:::
 
 ### Vercel — Extract Token from Headers
 

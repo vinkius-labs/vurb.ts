@@ -253,15 +253,11 @@ const adminTool = f.mutation('admin.reset')
 Presenters enforce field-level data protection, inject domain rules, and provide cognitive affordances — exactly as they do on Node.js:
 
 ```typescript
-import { z } from 'zod'; // Presenters require Zod schemas for runtime validation
+import { ProjectModel } from './models/ProjectModel.js';
 
 const ProjectPresenter = f.presenter({
   name: 'Project',
-  schema: z.object({
-    id: z.string(),
-    name: z.string(),
-    status: z.enum(['active', 'archived']),
-  }),
+  schema: ProjectModel,
   rules: (project) => [
     project.status === 'archived'
       ? 'This project is archived. It cannot be modified unless reactivated.'

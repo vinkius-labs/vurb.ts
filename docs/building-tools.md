@@ -190,6 +190,70 @@ const filterTasks = f.query('tasks.filter')
 > [!TIP]
 > Mix singular and bulk methods freely. Use singular for one-off required fields and bulk for groups of optional filters.
 
+### Model-Driven Parameters <Badge type="tip" text="v3.6.0" /> {#from-model}
+
+When a tool's input fields map to a domain entity, use `.fromModel()` instead of listing parameters manually. The method reads the Model's `fillable` profile and generates the correct Zod schema — required fields for `create`, all-optional for `update`, optional for `filter`:
+
+```typescript
+import { defineModel, initVurb } from '@vurb/core';
+
+const TaskModel = defineModel('Task', m => {
+  m.casts({
+    uuid:              m.uuid('Task unique identifier'),
+    title:             m.string('Task title'),
+    description:       m.text('Task description in markdown'),
+    status:            m.string('Task status'),
+    due_date:          m.date('Due date'),
+    estimated_minutes: m.number('Time estimate in minutes'),
+    is_blocker:        m.boolean('Blocker flag'),
+  });
+
+  m.fillable({
+    create: ['title', 'description', 'status', 'due_date', 'estimated_minutes', 'is_blocker'],
+    update: ['title', 'description', 'status', 'due_date', 'estimated_minutes', 'is_blocker'],
+    filter: ['status', 'is_blocker'],
+  });
+});
+
+const f = initVurb<AppContext>();
+
+// Create — all fillable('create') fields are required
+export const createTask = f.action('tasks.create')
+  .describe('Create a new task')
+  .fromModel(TaskModel, 'create')
+  .returns(TaskPresenter)
+  .handle(async (input, ctx) => {
+    return ctx.db.tasks.create({ data: input });
+  });
+
+// Update — all fillable('update') fields are optional
+export const updateTask = f.action('tasks.update')
+  .describe('Update an existing task')
+  .fromModel(TaskModel, 'update')
+  .withString('task_uuid', 'Task identifier')   // ← extra params outside the Model
+  .returns(TaskPresenter)
+  .handle(async (input, ctx) => {
+    return ctx.db.tasks.update(input.task_uuid, input);
+  });
+
+// Filter — all fillable('filter') fields are optional
+export const listTasks = f.query('tasks.list')
+  .describe('List tasks with optional filters')
+  .fromModel(TaskModel, 'filter')
+  .returns(TaskPresenter)
+  .handle(async (input, ctx) => {
+    return ctx.db.tasks.findMany({ where: input });
+  });
+```
+
+| Operation | Field Optionality | Use Case |
+|---|---|---|
+| `'create'` | All fields **required** | Creating a new entity |
+| `'update'` | All fields **optional** | Partial updates |
+| `'filter'` | All fields **optional** | Search / list filters |
+
+`.fromModel()` and `with*()` methods can be combined freely — use `.fromModel()` for entity fields and `with*()` for extra parameters like identifiers, pagination, or sort options.
+
 ## AI Instructions {#instructions}
 
 `.instructions()` injects system-level guidance directly into the tool description. This is **Prompt Engineering embedded in the framework** — the LLM reads it before deciding whether and how to use the tool:
@@ -460,20 +524,31 @@ await server.connect(transport);
 
 ## Deploy Your Tools {#deploy}
 
-Every tool you built above is transport-agnostic. The Fluent API compiles tool metadata — Zod schemas, Presenter bindings, middleware chains — into a `ToolRegistry` that works identically on Stdio, SSE, and serverless runtimes. Moving from local development to production at the edge requires no tool code changes.
+Every tool you built above is transport-agnostic. The Fluent API compiles tool metadata — Zod schemas, Presenter bindings, middleware chains — into a `ToolRegistry` that works identically on Stdio, SSE, and serverless runtimes. Moving from local development to production requires no tool code changes.
 
-### Vercel — App Router Endpoint
+### Vinkius Cloud — One Command Deploy
 
-Export the registry as a Next.js POST handler. Edge Runtime compiles tools once at cold start; subsequent requests execute the pipeline without re-reflection:
+The fastest path to production. `vurb deploy` publishes your server to Vinkius Cloud's global edge with built-in DLP, kill switch, audit logging, and a managed MCP token:
+
+```bash
+vurb deploy
+```
+
+No infrastructure to manage. Share the connection token with any MCP client and they connect instantly. [Learn more →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your deployed servers directly from VS Code, Cursor, or Windsurf.
+
+### Self-Hosted Alternatives
+
+#### Vercel — App Router Endpoint
 
 ```typescript
 import { vercelAdapter } from '@vurb/vercel';
 export const POST = vercelAdapter({ registry, contextFactory });
 ```
 
-### Cloudflare Workers — Edge-Native SQL & KV
-
-The adapter receives `(req, env, executionCtx)`, giving your tool handlers access to D1 for edge-native SQL, KV for sub-millisecond reads, and `waitUntil()` for background telemetry:
+#### Cloudflare Workers — Edge-Native SQL & KV
 
 ```typescript
 import { cloudflareWorkersAdapter } from '@vurb/cloudflare';

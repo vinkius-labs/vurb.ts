@@ -496,4 +496,23 @@ describe('Bug #37 — redactPII lazy recompilation', () => {
         const data = JSON.parse(result.content[0].text);
         expect(data.card).toBe('****-9999');
     });
+
+    it('should persist lazy-compiled redactor across multiple make() calls (write-back)', async () => {
+        await initRedactEngine();
+
+        const presenter = createPresenter<{ name: string; ssn: string }>('WriteBack')
+            .schema({ name: t.string, ssn: t.string })
+            .redactPII(['ssn']);
+
+        // First make() — triggers lazy compilation
+        const result1 = presenter.make({ name: 'Alice', ssn: '111-11-1111' }).build();
+        const data1 = JSON.parse(result1.content[0].text);
+        expect(data1.ssn).toBe('[REDACTED]');
+
+        // Second make() — should reuse the compiled redactor (no recompilation)
+        const result2 = presenter.make({ name: 'Bob', ssn: '222-22-2222' }).build();
+        const data2 = JSON.parse(result2.content[0].text);
+        expect(data2.ssn).toBe('[REDACTED]');
+        expect(data2.name).toBe('Bob');
+    });
 });

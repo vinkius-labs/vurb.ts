@@ -4,6 +4,17 @@ A production-grade MCP server with JWT authentication, tenant isolation, field-l
 
 By the end, unauthenticated requests are rejected before any handler runs. A `viewer`-role agent receives user records _without_ email addresses. An `admin`-role agent sees everything — same tool, same handler, different perception.
 
+::: tip Let your AI agent scaffold this entire pipeline
+Vurb.ts ships a **[SKILL.md](https://agentskills.io)** — a machine-readable architectural contract. Instead of following these steps manually, point your agent at the spec and prompt:
+
+```
+"Build an MCP server with JWT auth, tenant isolation, role-based
+ Presenters that strip PII for viewers, and OAuth Device Flow."
+```
+
+The agent produces the full pipeline — middleware, Presenters with `.redactPII()`, typed context with tenant scope, error recovery with `f.error()` — on the first pass. Works with Cursor, Claude Code, GitHub Copilot, Windsurf, and Cline.
+:::
+
 If you don't need authentication yet, start with the [Lightspeed Quickstart](/quickstart-lightspeed). Every layer below is additive.
 
 ## The Pipeline
@@ -220,6 +231,31 @@ Same JSON format — add to `~/.codeium/windsurf/mcp_config.json` (Windsurf), `c
 
 ## Step 7 — Deploy to Production {#step-7-deploy}
 
+### Vinkius Cloud — One Command Deploy
+
+Deploy your enterprise MCP server to Vinkius Cloud's global edge with built-in DLP, kill switch, audit logging, FinOps controls, and a managed MCP token:
+
+```bash
+vurb deploy
+```
+
+The CLI packages your server, deploys it, and returns a connection token. Every deployment is protected by eight layers of security out of the box. Share the token with any MCP client and they connect instantly — no infrastructure to manage.
+
+```bash
+# Deploy with a custom server name
+vurb deploy --name secure-api
+
+# Deploy to a specific environment
+vurb deploy --env production
+```
+
+[Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your deployed servers directly from VS Code, Cursor, or Windsurf — live connections, logs, DLP events, token management, and tool toggling without leaving your IDE.
+
+### Self-Hosted Alternatives
+
 MCP servers were designed for long-lived processes with stateful transports — SSE sessions stored in-memory, persistent WebSocket connections, streaming notifications. Serverless runtimes break every one of those assumptions: stateless isolates, no filesystem, cold starts that re-run Zod reflection on every invocation.
 
 The adapters solve this by splitting work into two phases. Registry compilation — Zod reflection, Presenter compilation, schema generation, middleware resolution — happens **once** at cold start and is cached at module scope. Warm requests only instantiate an ephemeral `McpServer` + `WebStandardStreamableHTTPServerTransport`, route the JSON-RPC call, and return. No reflection, no re-compilation.
@@ -247,9 +283,7 @@ The adapters solve this by splitting work into two phases. Registry compilation 
 
 Both adapters use `enableJsonResponse: true` — pure JSON-RPC request/response over the MCP SDK's native `WebStandardStreamableHTTPServerTransport`. No SSE sessions to lose, no streaming state to manage, no session leaks across isolates.
 
-### Vercel — Next.js App Router
-
-The Vercel adapter turns your MCP server into a standard Next.js route handler. Edge Runtime for ~0ms cold starts and global distribution, or Node.js Runtime for full API access and heavier computation.
+#### Vercel — Next.js App Router
 
 ```bash
 npm install @vurb/vercel
@@ -272,13 +306,9 @@ export const POST = vercelAdapter<AppContext>({
 export const runtime = 'edge';
 ```
 
-`contextFactory` receives the Web Standard `Request` — full access to headers, cookies, and `process.env`. Use Vercel Postgres (`@vercel/postgres`), KV (`@vercel/kv`), or Blob (`@vercel/blob`) directly inside your tool handlers. Deploy with `git push` or `vercel deploy --prod`.
+See [Vercel Adapter](/vercel-adapter) for Edge vs Node.js runtime comparison and full configuration reference.
 
-See [Vercel Adapter](/vercel-adapter) for Edge vs Node.js runtime comparison, Vercel services integration, and full configuration reference.
-
-### Cloudflare Workers — Global Edge with D1 & KV
-
-The Cloudflare adapter exposes the `env` parameter — your gateway to D1 (SQLite at the edge), KV (global key-value), R2 (object storage), Queues, and secrets. Your tools query D1 with sub-millisecond latency from 300+ edge locations.
+#### Cloudflare Workers — Global Edge with D1 & KV
 
 ```bash
 npm install @vurb/cloudflare
@@ -300,9 +330,7 @@ export default cloudflareWorkersAdapter<Env, AppContext>({
 });
 ```
 
-`contextFactory` receives `(req, env, executionCtx)` — the Cloudflare trifecta. Use `env.DB` for D1 queries that execute at the edge, `env.CACHE` for KV reads in ~1ms, and `executionCtx.waitUntil()` for background audit logging that doesn't block the response. Deploy with `npx wrangler deploy`.
-
-See [Cloudflare Adapter](/cloudflare-adapter) for wrangler configuration, D1/KV integration examples, and full API reference.
+See [Cloudflare Adapter](/cloudflare-adapter) for wrangler configuration and full API reference.
 
 ## Next Steps {#next}
 

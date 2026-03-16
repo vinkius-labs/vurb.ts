@@ -112,7 +112,7 @@ When different plans need fundamentally different shapes (not just hidden fields
 ```typescript
 const FreeOrderPresenter = f.presenter({
   name: 'Order',
-  schema: z.object({ id: z.string(), total: z.number(), status: z.string() }),
+  schema: OrderModel,
   rules: () => ['Upgrade to Pro for shipping cost data.'],
 });
 ```
@@ -120,10 +120,7 @@ const FreeOrderPresenter = f.presenter({
 ```typescript
 const EnterpriseOrderPresenter = f.presenter({
   name: 'Order',
-  schema: z.object({
-    id: z.string(), total: z.number(), status: z.string(),
-    shippingCost: z.number(), internalCost: z.number(), profitMargin: z.number(),
-  }),
+  schema: EnterpriseOrderModel,
   rules: () => ['All monetary values are in cents.'],
 });
 ```

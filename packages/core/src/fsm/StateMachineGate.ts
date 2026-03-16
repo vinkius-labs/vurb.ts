@@ -214,6 +214,7 @@ export class StateMachineGate {
     private _actor: import('xstate').Actor | null = null;
     private _currentState: string;
     private _initialized = false;
+    private _initPromise: Promise<boolean> | null = null;
 
     /**
      * @param config - FSM definition (states, transitions, initial state)
@@ -236,6 +237,17 @@ export class StateMachineGate {
     async init(): Promise<boolean> {
         if (this._initialized) return this._actor !== null;
 
+        // Bug #6 fix: Serialize concurrent init() calls via a shared promise.
+        // Without this, two concurrent transition() calls can both enter init(),
+        // creating two XState actors — the first is leaked (never stopped).
+        if (this._initPromise) return this._initPromise;
+
+        this._initPromise = this._doInit();
+        return this._initPromise;
+    }
+
+    /** @internal */
+    private async _doInit(): Promise<boolean> {
         const xstate = await loadXState();
         if (!xstate) {
             this._initialized = true;
@@ -465,6 +477,7 @@ export class StateMachineGate {
                 this._actor.stop();
                 this._actor = null;
                 this._initialized = false;
+                this._initPromise = null;
             }
         }
     }

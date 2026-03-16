@@ -265,11 +265,7 @@ Presenters enforce field-level data protection, inject domain rules, and provide
 ```typescript
 const ProjectPresenter = f.presenter({
   name: 'Project',
-  schema: z.object({
-    id: z.string(),
-    name: z.string(),
-    status: z.enum(['active', 'archived']),
-  }),
+  schema: ProjectModel,
   rules: (project) => [
     project.status === 'archived'
       ? 'This project is archived. It cannot be modified unless reactivated.'

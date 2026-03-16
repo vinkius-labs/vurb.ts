@@ -136,9 +136,13 @@ export function validateSandboxCode(code: string): GuardResult {
  * @internal
  */
 function stripStringLiterals(code: string): string {
-    // Match single-quoted, double-quoted, and back-tick strings
-    // (respects escape sequences: \' \" \` don't close the string)
-    return code.replace(/(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/gs, '""');
+    // Strip line comments, block comments, and string literals to avoid
+    // false positives when scanning for keywords like `async`.
+    // Order matters: comments first (they can contain quotes), then strings.
+    return code.replace(
+        /\/\/[^\n]*|\/\*[\s\S]*?\*\/|(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/g,
+        '',
+    );
 }
 
 /**
@@ -147,5 +151,7 @@ function stripStringLiterals(code: string): string {
  * @internal
  */
 function containsAsyncKeyword(code: string): boolean {
-    return /\basync\b/.test(stripStringLiterals(code));
+    // Bug #12 fix: negative lookbehind excludes property access (d.async)
+    // Only matches `async` as a keyword (not preceded by a dot)
+    return /(?<!\.)\basync\b/.test(stripStringLiterals(code));
 }

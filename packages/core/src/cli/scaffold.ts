@@ -77,6 +77,9 @@ function buildFileList(config: ProjectConfig): ScaffoldFile[] {
     files.push({ path: 'src/tools/system/health.ts', content: tpl.healthToolTs() });
     files.push({ path: 'src/tools/system/echo.ts', content: tpl.echoToolTs() });
 
+    // ── Model ─────────────────────────────────────────────
+    files.push({ path: 'src/models/SystemModel.ts', content: tpl.systemModelTs() });
+
     // ── Presenter ────────────────────────────────────────
     files.push({ path: 'src/presenters/SystemPresenter.ts', content: tpl.systemPresenterTs() });
 

@@ -160,7 +160,7 @@ const f = initVurb<Ctx>();
 // This Presenter is shared across EVERY tool that returns invoices
 const InvoicePresenter = definePresenter({
     name: 'Invoice',
-    schema: invoiceSchema,
+    schema: InvoiceModel,
     systemRules: ['amount_cents is in CENTS. Divide by 100.'],
     suggestActions: (inv) => inv.status === 'pending'
         ? [{ tool: 'billing.pay', reason: 'Pay' }]

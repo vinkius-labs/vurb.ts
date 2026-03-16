@@ -64,12 +64,7 @@ Here is a complete example with Presenter and tool definition:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(z.object({
-        id: z.string(),
-        status: z.enum(['paid', 'pending', 'overdue']),
-        amount_cents: z.number(),
-        client: z.object({ name: z.string(), email: z.string() }),
-    }));
+    .schema(InvoiceModel);
 
 const billing = createTool<AppContext>('billing')
     .enableSelect()

@@ -283,14 +283,23 @@ export function definePresenter(
 export function definePresenter(config: PresenterConfig<unknown>): Presenter<unknown> {
     const presenter = new Presenter<unknown>(config.name);
 
+    // Resolve the Zod schema (supports both raw ZodType and Model objects)
+    let resolvedSchema: ZodType | undefined;
     if (config.schema) {
-        presenter.schema(config.schema);
+        // Support passing a Model object directly (duck-type detection)
+        const schemaVal = config.schema as any;
+        if (schemaVal && typeof schemaVal === 'object' && 'fields' in schemaVal && 'schema' in schemaVal) {
+            resolvedSchema = schemaVal.schema;
+        } else {
+            resolvedSchema = config.schema;
+        }
+        presenter.schema(resolvedSchema!);
     }
 
     // ── Zod-Driven Prompts: auto-extract .describe() annotations ──
     const autoRules = config.autoRules !== false; // default: true
-    const zodDescriptions = (autoRules && config.schema)
-        ? extractZodDescriptions(config.schema)
+    const zodDescriptions = (autoRules && resolvedSchema)
+        ? extractZodDescriptions(resolvedSchema)
         : [];
 
     if (config.rules) {

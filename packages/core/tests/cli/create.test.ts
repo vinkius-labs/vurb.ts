@@ -339,7 +339,7 @@ describe('Template output — core files', () => {
 
         it('includes core dependencies', () => {
             const pkg = JSON.parse(tpl.packageJson(baseConfig));
-            expect(pkg.dependencies['vurb']).toBeDefined();
+            expect(pkg.dependencies['@vurb/core']).toBeDefined();
             expect(pkg.dependencies['@modelcontextprotocol/sdk']).toBeDefined();
             expect(pkg.dependencies['zod']).toBeDefined();
         });
@@ -593,16 +593,18 @@ describe('Template output — source files', () => {
     // ── systemPresenterTs ────────────────────────────────────
 
     describe('systemPresenterTs', () => {
-        it('uses definePresenter with Zod schema', () => {
+        it('uses definePresenter with Model schema reference', () => {
             const content = tpl.systemPresenterTs();
             expect(content).toContain('definePresenter');
-            expect(content).toContain('z.object');
+            expect(content).toContain('SystemModel');
+            expect(content).toContain("from '../models/SystemModel.js'");
         });
 
-        it('includes .describe() annotations for auto-rules', () => {
+        it('does not use raw z.object (schema comes from Model)', () => {
             const content = tpl.systemPresenterTs();
-            expect(content).toContain(".describe('Server operational status')");
-            expect(content).toContain(".describe('Uptime in seconds");
+            // Check for actual z.object() usage (with paren) not just mention in comments
+            expect(content).not.toContain('z.object(');
+            expect(content).not.toContain("from 'zod'");
         });
 
         it('includes ui.markdown block', () => {
@@ -615,6 +617,22 @@ describe('Template output — source files', () => {
             const content = tpl.systemPresenterTs();
             expect(content).toContain('suggestActions');
             expect(content).toContain("'system.health'");
+        });
+    });
+
+    // ── systemModelTs ──────────────────────────────────────
+
+    describe('systemModelTs', () => {
+        it('uses defineModel with field definitions', () => {
+            const content = tpl.systemModelTs();
+            expect(content).toContain('defineModel');
+            expect(content).toContain("'SystemHealth'");
+        });
+
+        it('includes .describe()-equivalent field descriptions', () => {
+            const content = tpl.systemModelTs();
+            expect(content).toContain('Server operational status');
+            expect(content).toContain('Uptime in seconds');
         });
     });
 
@@ -1221,7 +1239,8 @@ describe('Template integrity — no broken output', () => {
             tpl.packageJson(config), tpl.tsconfig(), tpl.vitestConfig(),
             tpl.gitignore(), tpl.envExample(config), tpl.vurbTs(),
             tpl.contextTs(), tpl.serverTs(config), tpl.healthToolTs(),
-            tpl.echoToolTs(), tpl.systemPresenterTs(), tpl.greetPromptTs(),
+            tpl.echoToolTs(), tpl.systemModelTs(), tpl.systemPresenterTs(),
+            tpl.greetPromptTs(),
             tpl.authMiddlewareTs(), tpl.cursorMcpJson(config), tpl.readme(config),
             tpl.testSetupTs(), tpl.systemTestTs(),
             tpl.prismaSchema(), tpl.dbUsersToolTs(), tpl.n8nConnectorTs(),
@@ -1450,14 +1469,15 @@ describe('Scaffold — file count invariants', () => {
     // .cursor/mcp.json, .vscode/mcp.json,
     // src/vurb.ts, src/context.ts, src/server.ts,
     // src/tools/system/health.ts, src/tools/system/echo.ts,
+    // src/models/SystemModel.ts,
     // src/presenters/SystemPresenter.ts,
     // src/prompts/greet.ts,
     // src/middleware/auth.ts
-    // = 15 files
+    // = 16 files
 
-    const BASE_COUNT = 15;
+    const BASE_COUNT = 16;
 
-    it('blank + no testing = exactly 15 files', () => {
+    it('blank + no testing = exactly 16 files', () => {
         const projectDir = join(tmpDir, 'count-base');
         const files = scaffold(projectDir, { name: 'count-base', transport: 'stdio', vector: 'vanilla', testing: false });
         expect(files.length).toBe(BASE_COUNT);
@@ -1569,6 +1589,7 @@ describe('Scaffold — filesystem integrity', () => {
         // Verify deep nested directories exist
         expect(existsSync(join(projectDir, 'src', 'tools', 'system'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'tools', 'db'))).toBe(true);
+        expect(existsSync(join(projectDir, 'src', 'models'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'presenters'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'prompts'))).toBe(true);
         expect(existsSync(join(projectDir, 'src', 'middleware'))).toBe(true);

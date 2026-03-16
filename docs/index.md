@@ -242,13 +242,9 @@ hero:
 
 ```typescript
 const UserPresenter = createPresenter('User')
-    .schema(z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string(),
-        // password_hash, tenant_id, internal_flags
-        // → physically absent. Not filtered. GONE.
-    }));
+    .schema(UserModel);
+    // password_hash, tenant_id, internal_flags
+    // → not declared in defineModel() → physically absent. GONE.
 ```
 
 <a href="/presenter" class="ms-card-link">EXPLORE THE PRESENTER →</a>
@@ -263,7 +259,7 @@ const UserPresenter = createPresenter('User')
 ```typescript
 // Invoice rules — sent ONLY when invoice data is returned
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .rules((invoice, ctx) => [
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
         ctx?.user?.role !== 'admin'
@@ -283,7 +279,7 @@ const InvoicePresenter = createPresenter('Invoice')
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .ui((invoice) => [
         ui.echarts({
             series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
@@ -313,7 +309,7 @@ const InvoicePresenter = createPresenter('Invoice')
 <div class="ms-columns">
 <div class="ms-column">
 <div class="ms-column-label">// MODEL</div>
-<p class="ms-column-text">Zod schema validates and filters data. Unknown fields rejected with actionable errors. The LLM cannot inject parameters your schema does not declare.</p>
+<p class="ms-column-text">defineModel() declares field types, hidden fields, guarded fields, and fillable profiles. The compiled Zod schema validates and filters data. Unknown fields are rejected with actionable errors. The LLM cannot inject parameters your schema does not declare.</p>
 </div>
 <div class="ms-column">
 <div class="ms-column-label">// PRESENTER</div>

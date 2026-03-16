@@ -174,3 +174,54 @@ describe('SandboxGuard: Suspicious Patterns', () => {
         expect(result.violation).toContain('eval()');
     });
 });
+
+// ============================================================================
+// Regression: async keyword in comments/strings
+// ============================================================================
+
+describe('SandboxGuard: async in comments and strings', () => {
+    it('should accept code with "async" in a line comment', () => {
+        const code = `(data) => {
+            // This is an async operation description
+            return data.length;
+        }`;
+        const result = validateSandboxCode(code);
+        expect(result.ok).toBe(true);
+    });
+
+    it('should accept code with "async" in a block comment', () => {
+        const code = `(data) => {
+            /* async processing note */
+            return data.filter(d => d.active);
+        }`;
+        const result = validateSandboxCode(code);
+        expect(result.ok).toBe(true);
+    });
+
+    it('should accept code with "async" in a string literal', () => {
+        const code = `(data) => data.filter(d => d.type !== "async")`;
+        const result = validateSandboxCode(code);
+        expect(result.ok).toBe(true);
+    });
+
+    it('should accept code with "async" in a template literal', () => {
+        const code = '(data) => `mode: async, count: ${data.length}`';
+        const result = validateSandboxCode(code);
+        expect(result.ok).toBe(true);
+    });
+
+    it('should still reject actual async arrow function', () => {
+        const code = 'async (data) => data.length';
+        const result = validateSandboxCode(code);
+        expect(result.ok).toBe(false);
+        expect(result.violation).toContain('Async');
+    });
+
+    it('should still reject async function with comment on different line', () => {
+        const code = `// just a comment
+        async (data) => data.length`;
+        const result = validateSandboxCode(code);
+        // Rejected: comment on separate line breaks function-shape detection
+        expect(result.ok).toBe(false);
+    });
+});

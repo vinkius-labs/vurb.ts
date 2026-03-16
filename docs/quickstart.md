@@ -6,6 +6,10 @@ Manual setup for when you need full control over every file.
 [Quickstart — Lightspeed](/quickstart-lightspeed) scaffolds a complete project with one command: `vurb create my-server`
 :::
 
+::: info Or let your AI agent build it
+Vurb.ts ships a **[SKILL.md](https://agentskills.io)** — a machine-readable architectural contract. Point your AI coding agent (Cursor, Claude Code, Copilot, Windsurf, Cline) at the spec and describe what you need. The agent produces correct Vurb.ts code — Presenters, middleware, file-based routing — without you learning the API first.
+:::
+
 ## Install {#install}
 
 ```bash
@@ -146,20 +150,35 @@ Ask: *"What's the weather in San Francisco?"* — the agent calls `weather_get` 
 
 ## Take It to Production {#production}
 
-The registry you built above works with any transport — Stdio, SSE, HTTP, or serverless. To deploy as a global HTTP endpoint without changing your tool code:
+The registry you built above works with any transport — Stdio, SSE, HTTP, or serverless.
 
-### Vercel — Serverless MCP Endpoint
+### Vinkius Cloud — One Command Deploy
 
-One function turns your registry into a Next.js route handler. Zod reflection and schema compilation happen once at cold start; warm invocations route and execute in microseconds:
+Deploy your MCP server to Vinkius Cloud's global edge with built-in DLP, kill switch, audit logging, and a managed MCP token:
+
+```bash
+vurb deploy
+```
+
+The CLI packages your server, deploys it, and returns a connection token. Share it with any MCP client and they connect instantly — no infrastructure to manage.
+
+[Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your servers directly from VS Code, Cursor, or Windsurf — live dashboard, logs, and token management without leaving your IDE.
+
+### Self-Hosted Alternatives
+
+To deploy as a global HTTP endpoint without Vinkius Cloud:
+
+#### Vercel — Serverless MCP Endpoint
 
 ```typescript
 import { vercelAdapter } from '@vurb/vercel';
 export const POST = vercelAdapter({ registry, contextFactory });
 ```
 
-### Cloudflare Workers — Global Edge Distribution
-
-The same registry runs on 300+ edge locations with direct access to D1, KV, and R2 via Cloudflare's `env` bindings:
+#### Cloudflare Workers — Global Edge Distribution
 
 ```typescript
 import { cloudflareWorkersAdapter } from '@vurb/cloudflare';

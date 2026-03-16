@@ -9,21 +9,24 @@ Vurb.ts is a TypeScript framework for the Model Context Protocol (MCP) that intr
 ## Core Architecture: MVA (Model-View-Agent)
 
 ```
-Model (Zod Schema) → View (Presenter) → Agent (LLM)
+Model (defineModel) → View (Presenter) → Agent (LLM)
    validates            perceives          acts
 ```
+
+The Model is the single source of truth for every domain entity. The Presenter receives the Model and adds perception logic. NEVER use raw `z.object()` for Presenter schemas — always `defineModel()` first, then pass the Model to the Presenter.
 
 The Presenter replaces the human-centric View with an agent-centric perception layer. Every tool response becomes a **structured perception package** — not raw JSON.
 
 ## Core Concepts
 
 - **MVA Pattern**: Model-View-Agent — the architectural foundation where Presenters replace Views
+- **defineModel()**: Eloquent-inspired Model factory — `m.casts()`, `m.timestamps()`, `m.hidden()`, `m.guarded()`, `m.fillable()`. Produces a `Model` with `.schema` (Zod), `.fields`, `.hidden`, `.guarded`, `.input`, `.toApi()`. The `.toApi()` method strips undefined values and renames aliased fields — used automatically by `.proxy()` and explicitly in custom `.handle()` handlers. Pass directly to Presenter `.schema()`.
 - **Presenter**: **THE core differentiator** — domain-level Egress Firewall. Schema validation, JIT system rules, server-rendered UI, action affordances, cognitive guardrails, relational composition. Define once, reuse across every tool and prompt.
-- **definePresenter()**: Declarative object-config API — auto-rules from Zod `.describe()`, embeds, agentLimit, suggestActions
-- **createPresenter()**: Fluent builder for domain-level Presenters — `.schema()`, `.systemRules()`, `.uiBlocks()`, `.embed()`
+- **definePresenter()**: Declarative object-config API — `schema: InvoiceModel`, auto-rules from Model `.describe()`, embeds, agentLimit, suggestActions
+- **createPresenter()**: Fluent builder for domain-level Presenters — `.schema(InvoiceModel)`, `.systemRules()`, `.uiBlocks()`, `.embed()`
 - **initVurb()**: tRPC-style context initialization — define context once, every `f.query()`, `f.mutation()`, `f.action()`, `f.prompt()`, `f.router()`, `f.presenter()` inherits it
 - **Fluent API (Recommended)**: The primary API surface — Semantic Verbs (`f.query()`, `f.mutation()`, `f.action()`) return a `FluentToolBuilder` with type-chaining `with*()` methods. Each method narrows the TypeScript generic so `input` and `ctx` are fully typed inside `.handle()` — zero manual interface declarations.
-- **FluentToolBuilder**: Type-chaining builder behind semantic verbs. 12 parameter methods (`.withString()`, `.withOptionalString()`, `.withNumber()`, `.withOptionalNumber()`, `.withBoolean()`, `.withOptionalBoolean()`, `.withEnum()`, `.withOptionalEnum()`, `.withArray()`, `.withOptionalArray()`), plus `.describe()`, `.instructions()`, `.use()`, `.returns()`, `.tags()`, `.readOnly()`, `.destructive()`, `.idempotent()`, `.invalidates()`, `.cached()`, `.stale()`, `.concurrency()`, `.egress()`, `.annotations()`, `.toonDescription()`, `.handle()` (terminal).
+- **FluentToolBuilder**: Type-chaining builder behind semantic verbs. 12 parameter methods (`.withString()`, `.withOptionalString()`, `.withNumber()`, `.withOptionalNumber()`, `.withBoolean()`, `.withOptionalBoolean()`, `.withEnum()`, `.withOptionalEnum()`, `.withArray()`, `.withOptionalArray()`), plus `.describe()`, `.instructions()`, `.use()`, `.returns()`, `.tags()`, `.readOnly()`, `.destructive()`, `.idempotent()`, `.invalidates()`, `.cached()`, `.stale()`, `.concurrency()`, `.egress()`, `.annotations()`, `.toonDescription()`, `.fromModel()`, `.handle()` (terminal), `.proxy()` (terminal).
 - **FluentRouter**: Prefix grouping — shares prefix, middleware, and tags across child tools. `f.router('users').use(authMw)` → `users.query('list')`, `users.mutation('delete')`. Eliminates repetitive `'users.'` prefixes.
 - **FluentPromptBuilder**: Chainable prompt builder — `.describe()`, `.input()`, `.tags()`, `.use()`, `.timeout()`, `.handler()`. Accepts Zod or fluent param descriptors.
 - **ErrorBuilder**: Fluent self-healing errors via `f.error(code, message)` — `.suggest()`, `.actions()`, `.critical()`, `.warning()`, `.details()`, `.retryAfter()`. Returned directly from handlers.
@@ -89,26 +92,140 @@ Vurb.ts dbg           # = Vurb.ts debug
 | `Vurb.ts inspect` | Real-time TUI dashboard — tool calls, latency, errors, Presenter events |
 | `Vurb.ts insp --demo` | Launch Inspector with built-in simulator (no running server needed) |
 
-## Quick Start — Fluent API with Semantic Verbs (Recommended)
+## defineModel() — Domain Model (the "M" in MVA)
+
+Every entity in your domain starts with `defineModel()`. It produces a `Model` object with a compiled Zod `.schema` that Presenters accept directly — no manual `z.object()` needed.
 
 ```typescript
-import { initVurb, definePresenter, ui, PromptMessage } from 'Vurb.ts';
-import { z } from 'zod';
+import { defineModel } from 'Vurb.ts';
+
+export const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string(),
+        amount_cents: m.number('CRITICAL: in CENTS. Divide by 100 for display.'),
+        status:       m.enum('Status', ['paid', 'pending', 'overdue']),
+        client_name:  m.string('Client name'),
+    });
+});
+
+export const UserModel = defineModel('User', m => {
+    m.casts({
+        id:    m.string(),
+        name:  m.string('Full name'),
+        email: m.string('Email address'),
+        role:  m.enum('Role', ['admin', 'member', 'guest']),
+    });
+    m.hidden(['password_hash', 'stripe_token']);
+    m.timestamps();
+    m.fillable({
+        create: ['name', 'email', 'role'],
+        update: ['name', 'email'],
+    });
+});
+```
+
+### ModelBuilder Type Helpers
+
+| Method | Produces | Semantics |
+|---|---|---|
+| `m.string(label?)` | `z.string()` | General-purpose text |
+| `m.text(label?)` | `z.string()` | Markdown, multiline, long content |
+| `m.number(label?)` | `z.number()` | Numeric field |
+| `m.boolean(label?)` | `z.boolean()` | Boolean flag |
+| `m.date(label?)` | `z.string()` | Auto-hints YYYY-MM-DD |
+| `m.timestamp(label?)` | `z.string()` | ISO datetime |
+| `m.uuid(label?)` | `z.string()` | UUID semantics |
+| `m.id(label?)` | `z.number()` | Always required |
+| `m.enum(label, values)` | `z.enum()` | Tells AI valid values |
+| `m.object(label, shape)` | `z.object()` | Nested object |
+| `m.list(label, shape)` | `z.array(z.object())` | Array of objects |
+
+### ModelBuilder Configuration
+
+| Method | Inspired By | What It Does |
+|---|---|---|
+| `m.casts({ ... })` | Laravel `$casts` | Define field types and labels |
+| `m.timestamps()` | Laravel `timestamps()` | Add `created_at` + `updated_at` |
+| `m.hidden([...])` | Spring `@JsonIgnore` | Fields never shown in output |
+| `m.guarded([...])` | Rails `attr_protected` | Fields never accepted as input |
+| `m.fillable({ profile: [...] })` | Laravel `$fillable` | Input profiles per operation |
+
+### FieldDef Chaining
+
+```typescript
+m.enum('Status', ['open', 'done']).default('open')  // Prisma @default()
+m.string('Display name').alias('displayName')        // Pydantic Field(alias=)
+m.number('Score').examples([85, 92, 100])            // Pydantic Field(examples=)
+```
+
+### Model.toApi() — Runtime Alias Resolution
+
+Every compiled Model exposes a `.toApi(data)` method that **strips undefined values** and **renames aliased fields** (agent-facing keys → API-facing keys). This is equivalent to Pydantic's `model_dump(by_alias=True)`:
+
+```typescript
+const ProposalModel = defineModel('Proposal', m => {
+    m.casts({
+        title:   m.string('Proposal title'),
+        content: m.text('Proposal body').alias('description'),  // agent says 'content', API expects 'description'
+    });
+});
+
+ProposalModel.toApi({ title: 'X', content: 'Y', extra: undefined });
+// → { title: 'X', description: 'Y' }  (alias applied, undefined stripped)
+```
+
+`.proxy()` calls `toApi()` automatically. In custom `.handle()` handlers, call it explicitly. See "Model.toApi() — Clean Payloads in Custom Handlers" below.
+
+## MVA Project Structure
+
+```text
+src/
+├── models/               ← M — defineModel() declarations
+│   ├── InvoiceModel.ts
+│   └── UserModel.ts
+├── views/                ← V — Presenters
+│   ├── invoice.presenter.ts
+│   └── user.presenter.ts
+├── agents/               ← A — Tool definitions
+│   ├── billing.tool.ts
+│   └── users.tool.ts
+├── index.ts              ← ToolRegistry + registerAll()
+└── server.ts             ← attachToServer() bootstrap
+```
+
+**Rules:**
+1. Each layer imports ONLY from the layer above: `agents/` → `views/` → `models/` → `@vurb/core`
+2. One file per entity: `{Entity}Model.ts`, `{entity}.presenter.ts`, `{entity}.tool.ts`
+3. Models are the single source of truth — Presenters receive Models, not raw `z.object()`
+4. Presenters are reused across tools and prompts — define once in `views/`
+5. `autoDiscover()` scans `agents/` and auto-registers tool builders
+
+## Quick Start — Fluent API with Semantic Verbs
+
+```typescript
+import { initVurb, defineModel, definePresenter, ui, PromptMessage } from 'Vurb.ts';
 
 interface AppContext { db: PrismaClient; user: { id: string; role: string } }
 export const f = initVurb<AppContext>();
 
 // ═══════════════════════════════════════════════════════════
-// STEP 1: THE PRESENTER — Egress Firewall & Perception Layer
+// STEP 1: THE MODEL — Domain Data Definition
+// ═══════════════════════════════════════════════════════════
+export const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string(),
+        amount_cents: m.number('CRITICAL: in CENTS. Divide by 100 for display.'),
+        status:       m.enum('Status', ['paid', 'pending', 'overdue']),
+        client_name:  m.string('Client name'),
+    });
+});
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2: THE PRESENTER — Egress Firewall & Perception Layer
 // ═══════════════════════════════════════════════════════════
 export const InvoicePresenter = definePresenter({
     name: 'Invoice',
-    schema: z.object({
-        id: z.string(),
-        amount_cents: z.number().describe('CRITICAL: in CENTS. Divide by 100 for display.'),
-        status: z.enum(['paid', 'pending', 'overdue']),
-        client_name: z.string(),
-    }),
+    schema: InvoiceModel,
     ui: (inv) => [ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] })],
     agentLimit: { max: 50, onTruncate: (n) => ui.summary({ omitted: n, hint: 'Use filters.' }) },
     suggestActions: (inv) => inv.status === 'pending'
@@ -118,7 +235,7 @@ export const InvoicePresenter = definePresenter({
 });
 
 // ═══════════════════════════════════════════════════════════
-// STEP 2: TOOLS — Fluent API with Type-Chaining
+// STEP 3: TOOLS — Fluent API with Type-Chaining
 // f.query() = readOnly, f.mutation() = destructive, f.action() = neutral
 // with*() methods accumulate TypeScript generics — input is fully typed
 // .handle() auto-wraps raw data with success() — no boilerplate
@@ -146,7 +263,7 @@ const createInvoice = f.mutation('billing.create_invoice')
     });
 
 // ═══════════════════════════════════════════════════════════
-// STEP 3: PROMPTS — Fluent Builder or Config-Bag
+// STEP 4: PROMPTS — Fluent Builder or Config-Bag
 // ═══════════════════════════════════════════════════════════
 const AuditPrompt = f.prompt('financial_audit')
     .describe('Perform a financial audit on an invoice')
@@ -178,7 +295,7 @@ The Fluent API is the primary tool definition surface. Three semantic verbs set 
 | `f.mutation(name)` | `destructive: true` | Write operations — irreversible |
 | `f.action(name)` | *neutral* | Updates, syncs — no assumptions |
 
-Every verb returns a `FluentToolBuilder` with type-chaining `.with*()` methods:
+Every verb returns a `FluentToolBuilder` with type-chaining `.with*()` methods for **tool input parameters** (filters, IDs, pagination). For **domain entity schemas** (the data your tools return), always use `defineModel()` + Presenter — never inline `z.object()`:
 
 ```typescript
 const listUsers = f.query('users.list')
@@ -288,7 +405,9 @@ All bulk methods preserve full TypeScript type-chaining — `input` is correctly
 | `.concurrency(config)` | Runtime guard: semaphore + queue |
 | `.egress(bytes)` | Runtime guard: max payload size |
 | `.bindState(states, event?)` | FSM State Gate: tool visibility by FSM state + auto-transition |
+| `.fromModel(Model, profile)` | Import input parameters from a Model's fillable profile — zero manual `.with*()` calls |
 | `.handle(handler)` | **Terminal** — sets handler, builds GroupedToolBuilder |
+| `.proxy(endpoint, opts?)` | **Terminal** — auto-generates handler that proxies to `ctx.client.get/post/put/delete(endpoint)`. Infers HTTP method from semantic verb, passes input as query params (GET) or body (POST/PUT), auto-unwraps `{ data }` envelopes, resolves `:param` path placeholders. Eliminates both client wrapper methods and handler boilerplate. |
 
 ### Implicit success() Wrapping
 
@@ -305,6 +424,121 @@ All bulk methods preserve full TypeScript type-chaining — `input` is correctly
     return await ctx.db.users.findMany();  // ← raw data, framework wraps
 });
 ```
+
+### .proxy() — Zero-Boilerplate API Proxying
+
+`.proxy(endpoint)` is a **terminal** method (alternative to `.handle()`) that auto-generates a handler to proxy the call directly to `ctx.client`. It eliminates both the handler boilerplate AND the need for dedicated client wrapper methods:
+
+```typescript
+// BEFORE — 2 things to maintain: tool handler + client method
+// Tool:
+f.query('analytics.pulse')
+    .fromModel(AnalyticsModel, 'query')
+    .handle(async (input, ctx) => {
+        return await ctx.client.getManagerPulse(input.company_slug);
+    });
+// Client:
+async getManagerPulse(companySlug: string) {
+    const params = { company_slug: companySlug };
+    const response = await this.get('companies/manager-dashboard/pulse', params);
+    return response.data;
+}
+
+// AFTER — 1 line, zero client method needed:
+f.query('analytics.pulse')
+    .fromModel(AnalyticsModel, 'query')
+    .proxy('companies/manager-dashboard/pulse');
+```
+
+**How it works:**
+1. HTTP method inferred from semantic verb: `query` → GET, `mutation` → POST, `action` → PUT
+2. All input fields passed as query params (GET) or request body (POST/PUT)
+3. Auto-unwraps `{ data: ... }` response envelopes (disable with `{ unwrap: false }`)
+4. Resolves `:param` path placeholders from input: `.proxy('users/:id')` consumes `input.id`
+5. Consumed path params are automatically excluded from query params/body
+
+```typescript
+// Path params example:
+f.query('user.get')
+    .withString('id', 'User UUID')
+    .proxy('users/:id');  // → GET users/abc-123
+
+// Disable auto-unwrap for raw API responses:
+f.query('legacy.data')
+    .proxy('legacy/endpoint', { unwrap: false });
+```
+
+**When to use `.proxy()` vs `.handle()`:**
+- Use `.proxy()` when the tool is a simple pass-through to the API (no transformation, no business logic)
+- Use `.handle()` when you need business logic, error handling, multi-step calls, or data transformation
+- When using `.handle()` with a Model, call `Model.toApi(data)` to strip undefined values and apply field aliases — never build partial objects with manual `if` checks
+
+### .fromModel() — Model-Driven Input
+
+`.fromModel(Model, profile)` imports all fillable fields from a Model's profile as input parameters — zero manual `.with*()` calls. The Model's `m.fillable()` configuration controls which fields are accepted per operation:
+
+```typescript
+// Model defines the schema AND the input profiles:
+const TaskModel = defineModel('Task', m => {
+    m.casts({
+        title:       m.string('Task title'),
+        description: m.text('Task description').alias('body'),  // ← 'body' sent to API
+        status:      m.enum('Status', ['open', 'done']),
+        priority:    m.number('Priority level'),
+    });
+    m.fillable({
+        create: ['title', 'description', 'status'],    // only these on create
+        update: ['title', 'description', 'priority'],  // only these on update
+    });
+});
+
+// Tool gets its input from the Model — no .withString()/.withNumber() needed:
+const createTask = f.mutation('tasks.create')
+    .fromModel(TaskModel, 'create')  // ← imports title, description, status
+    .proxy('tasks');                  // ← simple pass-through
+
+const updateTask = f.action('tasks.update')
+    .fromModel(TaskModel, 'update')  // ← imports title, description, priority
+    .handle(async (input, ctx) => {
+        // input.title?: string, input.description?: string, input.priority?: number
+        const data = TaskModel.toApi(input);
+        // → { title: '...', body: '...' }  (alias applied, undefined stripped)
+        await ctx.client.put(`tasks/${input.id}`, data);
+    });
+```
+
+### Model.toApi() — Clean Payloads in Custom Handlers
+
+`Model.toApi(data)` applies two operations automatically:
+1. **Strips undefined values** — no need for `if (input.x) data.x = input.x`
+2. **Renames aliased fields** — agent-facing names → API-facing names (e.g., `content` → `description`)
+
+This is the same function `.proxy()` uses internally. When your handler has custom logic (validation, transformation, multi-step calls), you call `toApi()` explicitly instead of relying on `.proxy()`:
+
+```typescript
+// ❌ WRONG — manual if-checks (redundant, error-prone):
+.handle(async (input, ctx) => {
+    const data: Record<string, unknown> = {};
+    if (input.title) data.title = input.title;
+    if (input.color) data.color = normalizeColor(input.color);
+    if (input.status !== undefined) data.status = input.status;
+    await ctx.client.updateItem(input.id, data);
+});
+
+// ✅ CORRECT — toApi() strips undefined, applies aliases:
+.handle(async (input, ctx) => {
+    const data = ItemModel.toApi({
+        title: input.title,
+        color: input.color ? normalizeColor(input.color) : undefined,
+        status: input.status,
+    });
+    await ctx.client.updateItem(input.id, data);
+});
+```
+
+**Decision tree:**
+- **Simple CRUD, no logic** → `.fromModel()` + `.proxy()` — zero code
+- **Custom logic needed** → `.fromModel()` + `.handle()` + `Model.toApi()` — Model still handles cleanup
 
 ### AI-First Instructions
 
@@ -436,191 +670,25 @@ const processInvoice = f.mutation('billing.process')
     .handle(async (input, ctx) => ctx.stripe.charges.create(input));
 ```
 
-## Quick Start — f.tool() Config-Bag API (Alternative)
-
-```typescript
-import { initVurb, definePresenter, ui, PromptMessage } from 'Vurb.ts';
-import { z } from 'zod';
-
-interface AppContext { db: PrismaClient; user: { id: string; role: string } }
-export const f = initVurb<AppContext>();
-
-// Config-bag style — pass a config object to f.tool()
-const getInvoice = f.tool({
-    name: 'billing.get_invoice',
-    input: { id: 'string' },              // ← JSON descriptor, no Zod import
-    readOnly: true,
-    returns: InvoicePresenter,
-    handler: async ({ input, ctx }) => {
-        return await ctx.db.invoices.findUnique({ where: { id: input.id } });
-    },
-});
-
-// Config-bag prompt — pass config as second argument
-const AuditPrompt = f.prompt('financial_audit', {
-    args: {
-        invoiceId: 'string',
-        depth: { enum: ['quick', 'thorough'] as const },
-    } as const,
-    handler: async (ctx, { invoiceId, depth }) => {
-        const invoice = await ctx.db.invoices.get(invoiceId);
-        return {
-            messages: [
-                PromptMessage.system('You are a Senior Financial Auditor.'),
-                ...PromptMessage.fromView(InvoicePresenter.make(invoice, ctx)),
-                PromptMessage.user(`Perform a ${depth} audit on this invoice.`),
-            ],
-        };
-    },
-});
-```
-
-## JSON Param Descriptors (No-Zod API)
-
-Works everywhere — `f.tool()`, `defineTool()`, `f.prompt()`, `definePrompt()`:
-
-| Descriptor | Generates |
-|---|---|
-| `'string'` | `z.string()` |
-| `'number'` | `z.number()` |
-| `'boolean'` | `z.boolean()` |
-| `{ type: 'string', min: 1, max: 100 }` | `z.string().min(1).max(100)` |
-| `{ type: 'number', min: 0 }` | `z.number().min(0)` |
-| `{ type: 'string', optional: true }` | `z.string().optional()` |
-| `{ type: 'string', regex: '^\\d+$' }` | `z.string().regex()` |
-| `{ enum: ['a', 'b'] as const }` | `z.enum(['a', 'b'])` |
-| `{ type: 'string', description: '...' }` | `z.string().describe('...')` |
-
-## Quick Start — MVA with Presenter (Classic Builder)
-
-```typescript
-import { createPresenter, ui, defineTool, success } from 'Vurb.ts';
-import { z } from 'zod';
-
-// 1. Define the Presenter — the MVA View Layer (builder API)
-export const InvoicePresenter = createPresenter('Invoice')
-    .schema(z.object({
-        id: z.string(),
-        amount_cents: z.number(),
-        status: z.enum(['paid', 'pending', 'overdue']),
-    }))
-    .systemRules(['CRITICAL: amount_cents is in CENTS. Divide by 100.'])
-    .systemRules((inv, ctx) => ctx?.user?.role !== 'admin' ? ['Mask exact totals.'] : [])
-    .uiBlocks((inv) => [
-        ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] }),
-    ])
-    .agentLimit(50, (omitted) => ui.summary({ omitted, hint: 'Use filters.' }))
-    .suggestActions((inv) =>
-        inv.status === 'pending'
-            ? [{ tool: 'billing.pay', reason: 'Process payment' }]
-            : []
-    )
-    .embed('client', ClientPresenter);
-
-// 2. Attach to any tool — handler returns raw data, Presenter does the rest
-const billing = defineTool<AppContext>('billing', {
-    actions: {
-        get_invoice: {
-            returns: InvoicePresenter,
-            params: { id: 'string' },
-            handler: async (ctx, args) => await ctx.db.invoices.findUnique(args.id),
-        },
-    },
-});
-
-const registry = new ToolRegistry<AppContext>();
-registry.register(billing);
-registry.attachToServer(server, {
-    contextFactory: (extra) => createAppContext(extra),
-});
-```
-
-## Quick Start — defineTool() (No Zod Required)
-
-```typescript
-import { defineTool, ToolRegistry, success, error } from 'Vurb.ts';
-
-const projects = defineTool<AppContext>('projects', {
-    description: 'Manage workspace projects',
-    shared: { workspace_id: 'string' },
-    actions: {
-        list: {
-            readOnly: true,
-            params: { status: { enum: ['active', 'archived'] as const, optional: true } },
-            handler: async (ctx, args) => success(await ctx.db.projects.findMany()),
-        },
-        create: {
-            params: {
-                name: { type: 'string', min: 1, max: 100 },
-                email: { type: 'string', regex: '^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$' },
-            },
-            handler: async (ctx, args) => success(await ctx.db.projects.create(args)),
-        },
-        delete: {
-            destructive: true,
-            params: { project_id: 'string' },
-            handler: async (ctx, args) => {
-                await ctx.db.projects.delete(args.project_id);
-                return success('Project deleted');
-            },
-        },
-    },
-});
-```
-
-## Quick Start — createTool() (Full Zod Power)
-
-```typescript
-import { createTool, ToolRegistry, success, error } from 'Vurb.ts';
-import { z } from 'zod';
-
-const projects = createTool<AppContext>('projects')
-    .description('Manage workspace projects')
-    .commonSchema(z.object({
-        workspace_id: z.string().describe('Workspace identifier'),
-    }))
-    .action({
-        name: 'list',
-        readOnly: true,
-        schema: z.object({ status: z.enum(['active', 'archived']).optional() }),
-        handler: async (ctx, args) => success(await ctx.db.projects.findMany({ where: args })),
-    })
-    .action({
-        name: 'create',
-        schema: z.object({ name: z.string() }),
-        handler: async (ctx, args) => success(await ctx.db.projects.create({ data: args })),
-    })
-    .action({
-        name: 'delete',
-        destructive: true,
-        schema: z.object({ project_id: z.string() }),
-        handler: async (ctx, args) => {
-            await ctx.db.projects.delete({ where: { id: args.project_id } });
-            return success('Deleted');
-        },
-    });
-```
 
 ## Presenter API — Egress Firewall & Perception Layer
 
 The Presenter is the domain-level egress contract between your handler and the wire. It solves the fundamental problem of every MCP server: the handler owns the response shape, so validation, formatting, and security are ad-hoc, duplicated, and invisible to audits.
 
+Presenter schemas MUST come from `defineModel()`. Never pass `z.object()` directly to `.schema()` — always define a Model first, then pass the Model to the Presenter.
+
 BEFORE: Handler formats its own response. Fields chosen ad-hoc. password_hash leaks. Rules live in global prompt. 10,000 rows crash the agent. Response format drifts between tools.
-AFTER: Handler returns raw data. Presenter validates through Zod (stripping undeclared fields in RAM), injects JIT domain rules, renders UI server-side, truncates with guidance, and suggests next actions. One Presenter per entity, reused everywhere.
+AFTER: Handler returns raw data. Presenter validates through Model schema (stripping undeclared fields in RAM), injects JIT domain rules, renders UI server-side, truncates with guidance, and suggests next actions. One Model + one Presenter per entity, reused everywhere.
 
 ### definePresenter() — Object Config (Recommended)
 
 ```typescript
-import { definePresenter, ui } from 'Vurb.ts';
+import { defineModel, definePresenter, ui } from 'Vurb.ts';
 
 const InvoicePresenter = definePresenter({
     name: 'Invoice',
-    schema: z.object({
-        id: z.string(),
-        amount_cents: z.number().describe('CRITICAL: in CENTS. Divide by 100.'),
-        status: z.enum(['paid', 'pending', 'overdue']),
-    }),
-    // autoRules: true (default) — Zod .describe() annotations auto-extracted as system rules
+    schema: InvoiceModel,
+    // autoRules: true (default) — Model .describe() annotations auto-extracted as system rules
     ui: (inv) => [ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] })],
     collectionUi: (items) => [ui.summary({ total: items.length, showing: Math.min(items.length, 50) })],
     agentLimit: { max: 50, onTruncate: (n) => ui.summary({ omitted: n, hint: 'Use filters.' }) },
@@ -636,7 +704,7 @@ const InvoicePresenter = definePresenter({
 import { createPresenter, ui } from 'Vurb.ts';
 
 const UserPresenter = createPresenter('User')
-    .schema(z.object({ id: z.string(), name: z.string(), role: z.string() }))
+    .schema(UserModel)
     .systemRules(['Display name in bold'])
     .systemRules((user, ctx) => ctx.isAdmin ? ['Show internal fields'] : ['Hide internal fields'])
     .uiBlocks((user) => [ui.summary({ total: 1, showing: 1 })])
@@ -663,7 +731,7 @@ const UserPresenter = createPresenter('User')
 
 ```typescript
 const OrderPresenter = createPresenter('Order')
-    .schema(OrderSchema)
+    .schema(OrderModel)
     .embed('customer', CustomerPresenter)
     .embed('items', LineItemPresenter);
 // Child Presenters' rules, UI blocks, and suggestions are automatically merged.
@@ -679,15 +747,9 @@ Opt-in feature that injects a `_select` parameter into the input schema, allowin
 
 ```typescript
 import { createTool, createPresenter } from 'Vurb.ts';
-import { z } from 'zod';
 
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(z.object({
-        id: z.string(),
-        status: z.enum(['paid', 'pending', 'overdue']),
-        amount_cents: z.number(),
-        client: z.object({ name: z.string(), email: z.string() }),
-    }));
+    .schema(InvoiceModel);
 
 const billing = createTool<AppContext>('billing')
     .enableSelect()  // ← opt-in: inject _select into input schema
@@ -709,18 +771,6 @@ const billing = createTool<AppContext>('billing')
 
 **Security**: Enum whitelist from Presenter schema keys (AI cannot request arbitrary fields). `Object.hasOwn()` in pickFields blocks prototype pollution. Subtractive-only design (can only remove fields, never add data). Disabled by default.
 
-## ResponseBuilder (Manual Composition)
-
-```typescript
-import { ResponseBuilder } from 'Vurb.ts';
-
-const response = ResponseBuilder.create(data)
-    .systemRules(['Format currency in USD'])
-    .uiBlock(ui.echarts({ /* chart config */ }))
-    .llmHint('This invoice is overdue')
-    .suggestActions([{ tool: 'billing.pay', reason: 'Pay now' }])
-    .build();
-```
 
 ## DX Shortcuts
 
@@ -737,17 +787,14 @@ ui.summary({ total: 100, showing: 10 });           // Collection summary
 ## Hierarchical Groups
 
 ```typescript
-const platform = createTool<AppContext>('platform')
-    .tags('core')
-    .group('users', 'User management', g => {
-        g.use(requireAdmin)
-         .action({ name: 'list', readOnly: true, handler: listUsers })
-         .action({ name: 'ban', destructive: true, schema: banSchema, handler: banUser });
-    })
-    .group('billing', 'Billing operations', g => {
-        g.action({ name: 'refund', destructive: true, schema: refundSchema, handler: issueRefund });
-    });
-// Discriminator values: "users.list" | "users.ban" | "billing.refund"
+const users = f.router('users')
+    .use(requireAdmin)
+    .query('list', b => b.handle(listUsers))
+    .mutation('ban', b => b.withString('userId', 'User to ban').handle(banUser));
+
+const billing = f.router('billing')
+    .mutation('refund', b => b.withString('chargeId', 'Charge ID').handle(issueRefund));
+// Tool names: "users.list", "users.ban", "billing.refund"
 ```
 
 ## Middleware
@@ -759,140 +806,42 @@ const requireAuth: MiddlewareFn<AppContext> = async (ctx, args, next) => {
 };
 
 // tRPC-style context derivation
-const withDb = defineMiddleware(async (ctx) => ({
+const withDb = f.middleware(async (ctx) => ({
     ...ctx,
     db: await createDbConnection(ctx.tenantId),
 }));
 
-createTool<AppContext>('projects')
+const listProjects = f.query('projects.list')
     .use(requireAuth)
     .use(withDb)
-    .action({ name: 'list', handler: async (ctx, args) => success(await ctx.db.query()) });
+    .handle(async (input, ctx) => ctx.db.query());
 ```
 
-## Self-Healing Errors
 
-```typescript
-import { toolError } from 'Vurb.ts';
-
-return toolError('INVALID_DATE_RANGE', {
-    message: 'Start date must be before end date',
-    suggestion: 'Swap the date values and retry.',
-    availableActions: ['calendar.list'],
-    severity: 'error',             // 'warning' | 'error' | 'critical'
-    details: { start: args.start, end: args.end },
-    retryAfter: 0,                 // retry immediately (seconds)
-});
-```
-
-### ErrorCode Union (15 canonical codes + custom strings)
-
-`NOT_FOUND`, `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `TIMEOUT`, `INTERNAL_ERROR`, `DEPRECATED`, `MISSING_REQUIRED_FIELD`, `UNKNOWN_ACTION`, `MISSING_DISCRIMINATOR`, `UNKNOWN_TOOL`, `SERVER_BUSY`, `AUTH_REQUIRED`, or any custom string.
-
-### Severity Levels
-
-| Severity | `isError` | Use Case |
-|---|---|---|
-| `warning` | `false` | Non-fatal advisories (deprecation, soft limits) |
-| `error` | `true` | Standard recoverable errors (default) |
-| `critical` | `true` | System-level failures requiring escalation |
-
-### XML Output Format
-
-```xml
-<tool_error code="NOT_FOUND" severity="error">
-<message>Invoice not found.</message>
-<recovery>Call billing.list first.</recovery>
-<available_actions>
-  <action>billing.list</action>
-</available_actions>
-<details>
-  <detail key="entity_id">inv_123</detail>
-  <detail key="entity_type">invoice</detail>
-</details>
-<retry_after>5 seconds</retry_after>
-</tool_error>
-```
-
-Error XML output escapes `&` and `<` in element content; `>` is intentionally preserved for LLM readability. Detail keys are rendered as XML attributes (safe for any string). Pipeline errors use structured codes: `MISSING_DISCRIMINATOR`, `UNKNOWN_ACTION`, `UNKNOWN_TOOL`, `MISSING_REQUIRED_FIELD`.
-
-## State Sync
-
-```typescript
-registry.attachToServer(server, {
-    contextFactory: (extra) => createAppContext(extra),
-    stateSync: {
-        defaults: { cacheControl: 'no-store' },
-        policies: [
-            { match: 'sprints.update', invalidates: ['sprints.*'] },
-            { match: 'tasks.update',   invalidates: ['tasks.*', 'sprints.*'] },
-            { match: 'countries.*',    cacheControl: 'immutable' },
-        ],
-        onInvalidation: (event) => {
-            // event: { causedBy: string, patterns: string[], timestamp: number }
-            metrics.increment('cache.invalidations', { tool: event.causedBy });
-        },
-        notificationSink: (notification) => {
-            // notification: { method: 'notifications/resources/updated', params: { uri: 'Vurb.ts://stale/sprints.*' } }
-            server.notification(notification);
-        },
-    },
-});
-```
-
-### Policy Overlap Detection
-
-```typescript
-import { detectOverlaps } from 'Vurb.ts';
-
-const warnings = detectOverlaps([
-    { match: 'sprints.*', cacheControl: 'no-store' },
-    { match: 'sprints.update', invalidates: ['sprints.*'] },  // shadowed by index 0
-]);
-// warnings[0]: { shadowingIndex: 0, shadowedIndex: 1, message: '...' }
-```
-
-Static analysis utility — call at server startup to catch first-match-wins ordering bugs.
 
 ## Runtime Guards
 
 Built-in concurrency control and payload size limiting. Fulfills the MCP spec requirement: "Servers MUST rate limit tool invocations."
 
 ```typescript
-// Concurrency Limiter — limit simultaneous executions per tool
-const billing = createTool<AppContext>('billing')
+// Concurrency Limiter
+const processInvoice = f.mutation('billing.process_invoice')
     .concurrency({ maxActive: 5, maxQueue: 20 })
-    .action({
-        name: 'process_invoice',
-        handler: async (ctx, args) => success(await ctx.stripe.charges.create(args)),
-    });
+    .withString('chargeId', 'Stripe charge ID')
+    .handle(async (input, ctx) => ctx.stripe.charges.create(input));
 // 5 concurrent, 20 queued, rest rejected with SERVER_BUSY
 
-// Egress Guard — truncate oversized responses
-const logs = createTool<AppContext>('logs')
-    .maxPayloadBytes(2 * 1024 * 1024) // 2MB
-    .action({
-        name: 'search',
-        handler: async (ctx, args) => success(await ctx.db.logs.findMany(args)),
-    });
-// Responses > 2MB are truncated + system intervention injected
+// Egress Guard
+const searchLogs = f.query('logs.search')
+    .egress({ maxPayloadBytes: 2 * 1024 * 1024 })
+    .withString('query', 'Search query')
+    .handle(async (input, ctx) => ctx.db.logs.findMany(input));
+// Responses > 2MB truncated + system intervention injected
 
-// Both combined
-const analytics = createTool<AppContext>('analytics')
-    .concurrency({ maxActive: 3, maxQueue: 10 })
-    .maxPayloadBytes(2 * 1024 * 1024)
-    .action({
-        name: 'query',
-        handler: async (ctx, args) => success(await ctx.db.$queryRaw(args.sql)),
-    });
-
-// Intent Mutex — anti-race condition guard
-const users = createTool<AppContext>('users')
-    .action({
-        name: 'delete',
-        destructive: true, // Automatically serializes concurrent calls to this action key
-        handler: async (ctx, args) => success(await ctx.db.users.delete(args.id)),
-    });
+// Intent Mutex — destructive tools automatically serialize concurrent calls
+const deleteUser = f.mutation('users.delete')
+    .withString('userId', 'User to delete')
+    .handle(async (input, ctx) => ctx.db.users.delete(input.userId));
 ```
 
 Load shedding returns `toolError('SERVER_BUSY')` — a self-healing error that causes the LLM to reduce its cadence. Egress truncation injects `[SYSTEM INTERVENTION: Payload truncated. You MUST use pagination.]`. Intent Mutex prevents LLM double-firing hallucinations. Zero overhead when not configured.
@@ -1084,16 +1033,18 @@ registry.configurePagination({ pageSize: 50 }); // enable pagination
 
 ## Important Rules
 
-1. `.action()` and `.group()` are MUTUALLY EXCLUSIVE on the same builder
-2. Action names must NOT contain dots (dots are reserved for group.action keys)
-3. After `buildToolDefinition()`, the builder is FROZEN — no more modifications
-4. `execute()` auto-calls `buildToolDefinition()` if not already called
-5. `commonSchema` fields are marked `(always required)` in auto-generated descriptions
-6. Zod `.merge().strip()` is used at runtime — unknown fields are silently stripped
-7. Middleware chains are pre-compiled at build time — zero runtime allocation
-8. Tool names must be unique across a ToolRegistry
-9. Presenters are immutable after creation — define once, reuse across tools
-10. `.agentLimit()` automatically truncates and injects guidance blocks
+1. **ALWAYS use `defineModel()` for domain entity schemas** — never `z.object()` directly. Models go in `models/`, Presenters receive Models via `.schema(MyModel)`
+2. `with*()` methods (`.withString()`, `.withNumber()`, etc.) are for **tool input parameters only** (filters, IDs, pagination) — NOT for domain entity schemas
+3. `.action()` and `.group()` are MUTUALLY EXCLUSIVE on the same builder
+4. Action names must NOT contain dots (dots are reserved for group.action keys)
+5. After `buildToolDefinition()`, the builder is FROZEN — no more modifications
+6. `execute()` auto-calls `buildToolDefinition()` if not already called
+7. `commonSchema` fields are marked `(always required)` in auto-generated descriptions
+8. Zod `.merge().strip()` is used at runtime — unknown fields are silently stripped
+9. Middleware chains are pre-compiled at build time — zero runtime allocation
+10. Tool names must be unique across a ToolRegistry
+11. Presenters are immutable after creation — define once, reuse across tools
+12. `.agentLimit()` automatically truncates and injects guidance blocks
 
 ## Public API (all from 'Vurb.ts')
 
@@ -1114,6 +1065,13 @@ registry.configurePagination({ pageSize: 50 }); // enable pagination
 - `f.tool(config)` → GroupedToolBuilder — config-bag alternative, handler receives `{ input, ctx }`
 - `f.defineTool(name, config)` → GroupedToolBuilder — full ToolConfig power
 - `VurbToolConfig<TContext, TInput>` — { name, description?, input?, tags?, annotations?, readOnly?, destructive?, idempotent?, middleware?, returns?, handler }
+
+### Model (MVA Domain Layer)
+- `defineModel(name, configure)` → Model — Eloquent-inspired model factory
+- `Model` — { name, schema (ZodObject), fields, hidden, guarded, input, defaults, infer }
+- `FieldDef` — chainable field descriptor: `.default(value)`, `.alias(name)`, `.examples(values)`
+- `ModelBuilder` type helpers — `.string()`, `.text()`, `.number()`, `.boolean()`, `.date()`, `.timestamp()`, `.uuid()`, `.id()`, `.enum(label, values)`, `.object(label, shape)`, `.list(label, shape)`
+- `ModelBuilder` config — `.casts(fields)`, `.timestamps()`, `.hidden(fields)`, `.guarded(fields)`, `.fillable(profiles)`
 
 ### FluentToolBuilder — Type-Chaining Tool Builder
 - `FluentToolBuilder<TContext, TInput, TCtx>` — accumulated generics narrow at each step
@@ -1749,7 +1707,7 @@ Late Guillotine: `structuredClone(wireData)` → redact clone → ResponseBuilde
 ```typescript
 // Fluent API
 const PatientPresenter = createPresenter('Patient')
-    .schema(z.object({ name: z.string(), ssn: z.string(), diagnosis: z.string() }))
+    .schema(PatientModel)
     .redactPII(['ssn', 'diagnosis'])
     .uiBlocks((p) => [ui.markdown(`Patient: **${p.name}**`)]);
 // Wire: { name: "John", ssn: "[REDACTED]", diagnosis: "[REDACTED]" }
@@ -1758,7 +1716,7 @@ const PatientPresenter = createPresenter('Patient')
 // Declarative API
 const EmployeePresenter = definePresenter({
     name: 'Employee',
-    schema: z.object({ name: z.string(), ssn: z.string() }),
+    schema: EmployeeModel,
     redactPII: { paths: ['ssn'], censor: '***-**-****' },
 });
 ```

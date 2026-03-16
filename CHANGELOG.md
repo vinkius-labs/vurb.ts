@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-03-16
+
+### Added
+
+- **Model Layer — `defineModel()` API** — Declarative domain model definition with type-safe casts, fillable profiles, and API alias mapping. Models compile to Zod schemas and serve as the single source of truth for tool parameters, Presenter validation, and API field aliasing:
+  - `defineModel({ name, casts, input, output })` — define fields with types, descriptions, and optionality
+  - `FieldDef` factory (`FieldDef.string()`, `.number()`, `.boolean()`, `.enum()`, `.date()`, `.array()`) with `.optional()`, `.describe()`, `.default()` chaining
+  - `ModelBuilder` — fluent model definition with `.field()`, `.casts()`, `.fillable()`, `.visible()`
+  - Fillable profiles for `create`, `update`, `filter` — control which fields are accepted per operation
+  - `.toApi()` output alias mapping — maps internal field names to external API field names
+- **`.fromModel(model, operation)`** on `FluentToolBuilder` — derive tool input parameters from a Model's fillable profile, eliminating manual `.withString()` / `.withNumber()` duplication
+- **`.proxy(endpoint, options?)`** on `FluentToolBuilder` — auto-generate HTTP proxy handlers that derive method from semantic verb (`query` → GET, `mutation` → POST), pass model input as query params or body, and unwrap `response.data` by default. Supports path params (`:uuid`), forced method override, and unwrap toggle
+- **`Presenter.schema(model)`** — accepts a `defineModel()` Model directly, extracting its compiled Zod schema without the redundant `.schema(Model.schema)` pattern
+- **`definePresenter({ schema: Model })`** — declarative API also accepts Model objects with automatic Zod schema extraction and `.describe()` auto-rules
+- **E-commerce example** — full-stack MCP server example with 4 tool domains (product, order, user, system), 4 Presenters, JWT auth middleware, in-memory DB, prompts, and tests
+
+### Changed
+
+- **`FluentToolBuilder` decomposed** — extracted `BuildPipeline.ts` (tool compilation), `ProxyHandler.ts` (HTTP proxy logic), and `SemanticDefaults.ts` (verb defaults) from the 1100-line monolith. Zero public API changes — all re-exports preserved for backward compatibility
+- **`FluentToolBuilder._addParam()` safety** — duplicate check now uses `Object.prototype.hasOwnProperty.call()` instead of `in` operator, preventing prototype pollution false positives
+- **`FluentToolBuilder` type sentinel** — `TInput` default changed from `void` to `Record<string, never>` for correct conditional type resolution in `.handle()` and `.resolve()`
+- **`.returns()` covariance** — accepts `Presenter<any>` instead of `Presenter<unknown>`, eliminating forced casting when the Presenter type differs from the tool's context type
+- **Scaffold templates updated** — generated projects now use `@vurb/core` (correct npm package name) instead of `vurb`, include `models/` directory with `SystemModel.ts`, and Presenter templates reference Model schemas
+- **Documentation overhaul** — homepage redesign with new hero, theme, and navigation; MCP server frameworks comparison blog post; copy edits across introduction, quickstart, MVA pattern, building tools, presenter, middleware, and comparison pages
+- **`Presenter.makeAsync()` truncation fix** — async callbacks now operate on the same truncated dataset the sync pipeline used, preventing inconsistent data when `agentLimit` is active
+
+### Fixed
+
+- **`AuditTrail` error code extraction (Bug #11)** — status detection now parses the `code` XML attribute (`code="RATE_LIMITED"`) instead of substring-matching the full error text, preventing false positives when error messages contain `RATE_LIMITED` or `INPUT_REJECTED` as substrings
+- **`RateLimiter` empty window `resetMs` (Bug #8)** — when all timestamps are pruned from the window, `resetMs` is now `0` (window already reset) instead of the full `windowMs` duration, giving accurate retry-after headers
+- **`StateMachineGate.init()` race condition (Bug #6)** — concurrent `init()` calls now serialize via a shared `_initPromise`, preventing duplicate XState actor creation and leaked actors
+- **`ResourceRegistry._matchesTemplate()` regex injection (Bug #5)** — static URI segments are now escaped before regex compilation, preventing `.`, `+`, `*` in URIs from being interpreted as regex metacharacters
+- **`SandboxGuard` false positive on `.async` property access (Bug #12)** — `containsAsyncKeyword()` now uses a negative lookbehind (`(?<!\.)\basync\b`) to exclude `data.async` or `obj.async` from triggering the async keyword rejection
+- **`SandboxGuard.stripStringLiterals()` comment stripping** — now also strips `//` line comments and `/* */` block comments before scanning for keywords, preventing comment content from triggering false positives
+- **`ServerAttachment` introspection + resources overwrite (Bug #4)** — when both `introspection` and `resources` are configured, the introspection manifest is now merged into `registerResourceHandlers` instead of registering a separate `setRequestHandler` that overwrites the resource handler
+- **`ServerAttachment` FSM auto-bind flat name (Bug #9)** — single-action default tools now use the bare tool name (matching `ExpositionCompiler.compileFlat` behavior) instead of appending `_default`
+- **`TelemetryBus` socket chmod race** — `chmodSync(0o600)` now runs inside the `server.listen()` callback, eliminating the window where the socket is world-readable between bind and permission change
+- **`PresenterPipeline` redactor write-back** — lazy-compiled redactors are now propagated back to the Presenter instance via `writeBackRedactor()`, preventing redundant recompilation on subsequent `make()` calls
+- **Scaffold `package.json` package name** — generated dependency now correctly references `@vurb/core` instead of `vurb`
+
+### Test Suite
+
+- Updated `create.e2e.test.ts` and `create.test.ts` for Model-aware scaffold output (file count, assertions)
+- Updated `PresenterBatch2.test.ts` for truncation-aware `makeAsync()` behavior
+- Updated `RedactEngine.test.ts` for write-back redactor propagation
+- Updated `ResourceSubscription.test.ts` for escaped template matching
+- Updated `SandboxGuard.test.ts` for comment-aware stripping and property access exclusion
+- Updated `IntrospectionIntegration.test.ts` for merged resource + introspection handlers
+
 ## [3.5.0] - 2026-03-14
 
 ### Added

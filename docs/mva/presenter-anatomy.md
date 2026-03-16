@@ -17,22 +17,30 @@ The schema defines the shape of data the agent sees. When you use Zod's `.strict
 The Presenter validates with whatever Zod schema you provide. If you want strict field filtering, you must call `.strict()` on your schema explicitly. The framework auto-applies `.strict()` on **input** validation (tool parameters), but the Presenter's output schema is yours to define.
 
 ```typescript
-import { definePresenter } from '@vurb/core';
-import { z } from 'zod';
+import { definePresenter, defineModel } from '@vurb/core';
 
-const invoiceSchema = z.object({
-    id: z.string(),
-    amount_cents: z.number(),
-    status: z.enum(['paid', 'pending', 'overdue']),
-    client_name: z.string(),
-    // These fields exist in the database but are NOT declared:
-    // internal_margin, customer_ssn, tenant_id, password_hash
-    // → rejected IF using .strict()
-}).strict(); // ← explicit .strict() for output security
+const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:          m.string('Invoice identifier'),
+        amount_cents: m.number('Amount in cents'),
+        status:      m.enum('Payment status', ['paid', 'pending', 'overdue']),
+        client_name: m.string('Client display name'),
+        // These fields exist in the database but are NOT declared:
+        // internal_margin, customer_ssn, tenant_id, password_hash
+        // → never reach the agent
+    });
+
+    m.hidden(['tenant_id']);
+    m.guarded(['id']);
+    m.fillable({
+        create: ['amount_cents', 'status', 'client_name'],
+        update: ['status'],
+    });
+});
 
 const InvoicePresenter = definePresenter({
     name: 'Invoice',
-    schema: invoiceSchema,
+    schema: InvoiceModel,
 });
 ```
 
@@ -62,7 +70,7 @@ System rules are the interpretive layer. They tell the agent what the data **mea
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules([
         'CRITICAL: amount_cents is in CENTS. Always divide by 100 before display.',
         'Use currency format: $XX,XXX.00 (USD).',
@@ -75,7 +83,7 @@ const InvoicePresenter = createPresenter('Invoice')
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((invoice, ctx) => [
         'CRITICAL: amount_cents is in CENTS. Divide by 100.',
         ctx?.user?.role !== 'admin'
@@ -102,7 +110,7 @@ Presenters generate deterministic visual blocks that the agent renders directly.
 import { createPresenter, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .uiBlocks((invoice) => [
         ui.echarts({
             series: [{
@@ -185,7 +193,7 @@ After receiving data, the agent must decide what to do next. Without guidance, i
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .suggestActions((invoice) => {
         if (invoice.status === 'pending') {
             return [
@@ -233,7 +241,7 @@ const PaymentMethodPresenter = createPresenter('PaymentMethod')
     .systemRules(['RESTRICTED: Show only last 4 digits of card numbers.']);
 
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules(['amount_cents is in CENTS. Divide by 100.'])
     .embed('client', ClientPresenter)                     // ← nested composition
     .embed('payment_method', PaymentMethodPresenter);     // ← multiple embeds
@@ -241,7 +249,7 @@ const InvoicePresenter = createPresenter('Invoice')
 
 When the handler returns `{ ...invoice, client: { ... }, payment_method: { ... } }`, the Presenter:
 
-1. Validates the invoice through `invoiceSchema`
+1. Validates the invoice through `InvoiceModel`
 2. Finds the `client` key and processes it through `ClientPresenter`
 3. Finds the `payment_method` key and processes it through `PaymentMethodPresenter`
 4. Merges all rules: invoice rules + client rules + payment method rules
@@ -281,7 +289,7 @@ All configuration methods return `this` for fluent chaining. The order of method
 
 ```typescript
 const P = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules([...])
     .uiBlocks(fn)
     .agentLimit(50, onTruncate)
@@ -345,7 +353,7 @@ Dynamic rules adapt to the user's role, tenant, locale, and permissions:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules((invoice, ctx) => [
         'amount_cents is in CENTS. Divide by 100.',
         // Tenant-specific currency
@@ -372,7 +380,7 @@ Not every entity needs all six responsibilities. Use only what you need:
 ```typescript
 // A minimal Presenter — schema + rules only
 const CountryPresenter = createPresenter('Country')
-    .schema(z.object({ code: z.string(), name: z.string() }))
+    .schema(CountryModel)
     .systemRules(['Country codes follow ISO 3166-1 alpha-2.']);
 ```
 

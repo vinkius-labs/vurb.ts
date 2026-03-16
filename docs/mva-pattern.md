@@ -26,12 +26,12 @@ When a tool returns `{ "amount_cents": 45000, "status": "pending" }`, the agent 
 Model              View              Agent
 ─────              ────              ─────
 Domain Data   →   Presenter    →   LLM/AI
-(Zod Schema)      (Rules +          (Claude,
+(defineModel)      (Rules +          (Claude,
                    UI Blocks +       GPT, etc.)
                    Affordances)
 ```
 
-The Presenter is **domain-level, not tool-level.** Define `InvoicePresenter` once — every tool that returns invoices uses the same Presenter. The agent always perceives invoices identically. Tools can be hand-written with the Fluent API, or auto-generated from an OpenAPI spec ([@vurb/openapi-gen](/openapi-gen)) or a Prisma schema ([@vurb/prisma-gen](/prisma-gen)) — the Presenter layer works identically regardless of how the Model layer is authored.
+The Presenter is **domain-level, not tool-level.** Define `InvoicePresenter` once — every tool that returns invoices uses the same Presenter. The agent always perceives invoices identically. The **Model** is defined with `defineModel()` — a single closure that declares field types, defaults, fillable input profiles, hidden and guarded fields. Tools can use `.fromModel()` to derive input parameters directly from the Model, or hand-write parameters with the Fluent API. The Presenter layer works identically regardless of how tools are authored.
 
 ## The Presenter {#presenter-responsibilities}
 
@@ -39,20 +39,40 @@ Three APIs produce the same result: `createPresenter('Name').schema(s).rules(r)`
 
 ### Schema Validation {#schema-validation}
 
-The Zod schema is a security boundary. Only declared fields pass through:
+The Zod schema is a security boundary. Only declared fields pass through. In production projects, schemas come from `defineModel()` — the framework's standard Model definition:
 
 ```typescript
-import { createPresenter, t } from '@vurb/core';
+import { defineModel } from '@vurb/core';
 
-export const InvoicePresenter = createPresenter('Invoice')
-  .schema({
-    id:           t.string,
-    amount_cents: t.number.describe('Amount in cents — divide by 100 for display'),
-    status:       t.enum('paid', 'pending', 'overdue'),
+export const InvoiceModel = defineModel('Invoice', m => {
+  m.casts({
+    id:           m.string('Invoice identifier'),
+    amount_cents: m.number('Amount in cents — divide by 100 for display'),
+    status:       m.enum('Payment status', ['paid', 'pending', 'overdue']),
   });
+
+  m.hidden(['tenant_id']);         // never reaches the agent
+  m.guarded(['id']);               // never mass-assignable
+  m.fillable({
+    create: ['amount_cents', 'status'],
+    update: ['status'],
+  });
+});
+
+export const InvoiceSchema = InvoiceModel.schema;
 ```
 
-`.describe()` annotations auto-extract as system rules. Fields like `password_hash` or `tenant_id` are never in the schema, so they never reach the agent.
+`.describe()` annotations auto-extract as system rules. Fields like `password_hash` or `tenant_id` — not declared in `m.casts()` or excluded via `m.hidden()` — never reach the agent.
+
+The Presenter then references the Model's compiled schema:
+
+```typescript
+import { createPresenter } from '@vurb/core';
+import { InvoiceSchema } from '../models/InvoiceModel.js';
+
+export const InvoicePresenter = createPresenter('Invoice')
+  .schema(InvoiceSchema);
+```
 
 ### System Rules {#system-rules}
 
@@ -61,7 +81,7 @@ Rules travel with the data, not in a global system prompt:
 ```typescript
 export const InvoicePresenter = definePresenter({
   name: 'Invoice',
-  schema: invoiceSchema,
+  schema: InvoiceModel,
   rules: [
     'CRITICAL: amount_cents is in CENTS. Always divide by 100 before display.',
     'Use currency format: $XX,XXX.00',
@@ -78,7 +98,7 @@ Rules receive data and request context. Return `null` to exclude conditionally:
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .rules((invoice, ctx) => [
     'CRITICAL: amount_cents is in CENTS. Divide by 100.',
     ctx?.user?.role !== 'admin'
@@ -97,7 +117,7 @@ import { definePresenter, ui } from '@vurb/core';
 
 export const InvoicePresenter = definePresenter({
   name: 'Invoice',
-  schema: invoiceSchema,
+  schema: InvoiceModel,
   ui: (invoice) => [
     ui.echarts({
       series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
@@ -124,12 +144,12 @@ export const InvoicePresenter = definePresenter({
 ```typescript
 // Shorthand — auto-generated truncation message
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .limit(50);
 
 // Full control — custom truncation message
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .agentLimit(50, (omitted) =>
     ui.summary(
       `⚠️ Dataset truncated. Showing 50 of ${50 + omitted} invoices. ` +
@@ -148,7 +168,7 @@ Without this, 10,000 rows dump into the context window. With it, the agent recei
 import { createPresenter, suggest } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .suggest((invoice) => [
     suggest('billing.pay', 'Process immediate payment'),
     invoice.status === 'pending'
@@ -172,7 +192,7 @@ const ClientPresenter = createPresenter('Client')
   .rules(['Display company name prominently.']);
 
 const InvoicePresenter = createPresenter('Invoice')
-  .schema(invoiceSchema)
+  .schema(InvoiceModel)
   .rules(['amount_cents is in CENTS.'])
   .embed('client', ClientPresenter);
 ```

@@ -114,13 +114,26 @@ Structured error responses let the LLM self-correct without retry loops. Every v
 
 ## Scale Beyond a Single Process {#serverless}
 
-Token compression and tool grouping reduce cognitive load — but your MCP server still runs as a single Node.js process. To scale horizontally without managing infrastructure, deploy to serverless runtimes where each invocation runs in its own isolate.
+Token compression and tool grouping reduce cognitive load — but your MCP server still runs as a single Node.js process. To scale horizontally, deploy to Vinkius Cloud or a serverless runtime.
+
+### Vinkius Cloud — One Command Scale
+
+The fastest path to horizontal scaling. `vurb deploy` publishes your server to Vinkius Cloud's global edge — auto-scaling, built-in DLP, kill switch, audit logging, and a managed MCP token. No infrastructure to manage:
+
+```bash
+vurb deploy
+```
+
+[Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+
+> [!TIP]
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor connections, latency, and token spend directly from your IDE.
+
+### Self-Hosted Alternatives
 
 Vurb.ts's adapters cache registry compilation at module scope — Zod reflection, Presenter compilation, schema generation — and execute warm requests as stateless JSON-RPC calls. No shared memory, no session affinity, no connection pooling.
 
-### Vercel — Auto-Scaling MCP Functions
-
-Each invocation compiles tools once at cold start and reuses the cached registry for subsequent calls. Edge Runtime distributes your MCP server globally with ~0ms cold starts:
+#### Vercel — Auto-Scaling MCP Functions
 
 ```typescript
 import { vercelAdapter } from '@vurb/vercel';
@@ -128,9 +141,7 @@ export const POST = vercelAdapter({ registry, contextFactory });
 export const runtime = 'edge';
 ```
 
-### Cloudflare Workers — Isolate-per-Request Architecture
-
-Workers spawn a V8 isolate per request — true horizontal scaling with zero coordination. Your tools access D1 and KV at the edge without cross-isolate state:
+#### Cloudflare Workers — Isolate-per-Request Architecture
 
 ```typescript
 import { cloudflareWorkersAdapter } from '@vurb/cloudflare';

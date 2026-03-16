@@ -298,7 +298,7 @@ Vurb.ts treats system prompts as **code, not data**. This is a fundamental archi
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules([
         'Always verify invoice amounts against the approved budget',
         'Flag any invoice exceeding $50,000 for manual review',

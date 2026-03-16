@@ -61,6 +61,7 @@ import { defaultSerializer, type StringifyFn } from '../core/serialization/JsonS
 import { compileRedactor, type RedactConfig, type RedactFn } from './RedactEngine.js';
 import {
     executePipeline,
+    stepTruncate,
     stepValidate,
     type PresenterSnapshot,
     type RulesConfig,
@@ -225,6 +226,25 @@ export class Presenter<T> {
     ): Presenter<TSchema['_output']>;
 
     /**
+     * Set the schema from a `defineModel()` Model.
+     *
+     * Extracts the compiled Zod schema from the Model object,
+     * eliminating the redundant `.schema(Model.schema)` pattern.
+     *
+     * @param model - A Model returned by `defineModel()`
+     * @returns A narrowed Presenter typed to the Model's schema output
+     *
+     * @example
+     * ```typescript
+     * import { InvoiceModel } from '../models/InvoiceModel.js';
+     *
+     * createPresenter('Invoice')
+     *     .schema(InvoiceModel)
+     * ```
+     */
+    schema(model: { readonly schema: ZodType<any, any, any>; readonly fields: Record<string, unknown> }): Presenter<any>;
+
+    /**
      * Set the schema from an object of ZodTypes (enables `t.*` shorthand).
      *
      * Accepts a plain object where each value is a ZodType.
@@ -249,14 +269,17 @@ export class Presenter<T> {
         shape: TShape,
     ): Presenter<z.infer<z.ZodObject<TShape>>>;
 
-    // Implementation — accepts both ZodType and plain object shapes
+    // Implementation — accepts ZodType, plain object shapes, or Model objects
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     schema(schemaOrShape: any): Presenter<any> {
         this._assertNotSealed();
         const narrowed = this as unknown as Presenter<unknown>;
 
-        // Detect if it's an already-constructed ZodType (has _def property)
-        if (schemaOrShape instanceof ZodType) {
+        // Detect Model object (duck typing via `fields` + `schema` properties)
+        if (schemaOrShape && typeof schemaOrShape === 'object' && 'fields' in schemaOrShape && 'schema' in schemaOrShape && schemaOrShape.schema instanceof ZodType) {
+            narrowed._schema = schemaOrShape.schema;
+        } else if (schemaOrShape instanceof ZodType) {
+            // Detect if it's an already-constructed ZodType (has _def property)
             narrowed._schema = schemaOrShape;
         } else {
             // Plain object shape → wrap in z.object()
@@ -936,13 +959,17 @@ export class Presenter<T> {
         // Step 1: Run all sync steps (via pipeline)
         // Bypass the make() guard for firewall-enabled presenters
         this._sealed = true;
-        const builder = executePipeline(data, this._toSnapshot(), ctx, selectFields);
+        const isArray = Array.isArray(data);
+        const snapshot = this._toSnapshot();
+
+        // executePipeline handles truncation, validation, redaction, UI blocks normally
+        const builder = executePipeline(data, snapshot, ctx, selectFields);
 
         // Step 2: Async enrichment — append after sync blocks
-        const isArray = Array.isArray(data);
-
-        // Re-validate to get the validated data for async callbacks
-        const validated = stepValidate(data, isArray, this._toSnapshot());
+        // Compute the same truncated+validated data the pipeline used,
+        // so async callbacks operate on the truncated dataset (Bug fix)
+        const truncated = stepTruncate(data, isArray, snapshot);
+        const validated = stepValidate(truncated.data, isArray, snapshot);
 
         // Async UI blocks
         if (isArray && this._asyncCollectionUiBlocks) {
@@ -1011,6 +1038,7 @@ export class Presenter<T> {
             redactConfig: this._redactConfig,
             compiledRedactor: this._compiledRedactor,
             compiledStringify: this._compiledStringify,
+            writeBackRedactor: (fn: RedactFn) => { this._compiledRedactor = fn; },
         };
     }
 }

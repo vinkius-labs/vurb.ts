@@ -371,6 +371,20 @@ export async function createTelemetryBus(config?: TelemetryBusConfig): Promise<T
     });
 
     // ── Start Listening ───────────────────────────────────
+    // Bug #7 fix: chmod inside the listen callback to eliminate the race
+    // window where the socket is world-readable before permissions are set.
+    const chmodSocket = () => {
+        if (platform() !== 'win32') {
+            try {
+                chmodSync(socketPath, 0o600);
+            } catch {
+                process.stderr.write(
+                    '[vurb] Warning: Could not restrict socket permissions.\n',
+                );
+            }
+        }
+    };
+
     await new Promise<void>((resolve, reject) => {
         server.once('error', (err: NodeJS.ErrnoException) => {
             if (err.code === 'EADDRINUSE') {
@@ -379,30 +393,17 @@ export async function createTelemetryBus(config?: TelemetryBusConfig): Promise<T
                 // (the OS will reclaim the pipe name if the owner is dead).
                 try { unlinkSync(socketPath); } catch { /* ignore on Windows */ }
                 server.once('error', (retryErr) => reject(retryErr));
-                server.listen(socketPath, () => resolve());
+                server.listen(socketPath, () => { chmodSocket(); resolve(); });
             } else {
                 reject(err);
             }
         });
 
-        server.listen(socketPath, () => resolve());
+        server.listen(socketPath, () => { chmodSocket(); resolve(); });
     });
 
     // ── Registry: announce this server for auto-discovery ──
     writeRegistryFile(process.pid, config?.path ? undefined : 'vurb');
-
-    // ── Gotcha #1: IPC Security (chmod 0o600) ─────────────
-    // Restrict socket to owner-only on POSIX to prevent PII sniffing
-    if (platform() !== 'win32') {
-        try {
-            chmodSync(socketPath, 0o600);
-        } catch {
-            // Non-fatal — log warning via stderr (never stdout!)
-            process.stderr.write(
-                '[vurb] Warning: Could not restrict socket permissions.\n',
-            );
-        }
-    }
 
     // ── Heartbeat Timer ───────────────────────────────────
     const heartbeatTimer = setInterval(() => {

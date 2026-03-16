@@ -20,6 +20,12 @@
  *   └── converters/    ← Zod Converters
  */
 
+// ── Model Layer ──────────────────────────────────────────
+/** @category Model */
+export { defineModel, FieldDef, ModelBuilder } from './model/index.js';
+/** @category Model */
+export type { Model } from './model/index.js';
+
 // ── Domain Models ────────────────────────────────────────
 /** @category Domain Models */
 export { Role } from './domain/Role.js';

@@ -30,7 +30,7 @@ The principle is identical: **the server tells the client what's possible.** But
 ```typescript
 const InvoicePresenter = definePresenter({
     name: 'Invoice',
-    schema: invoiceSchema,
+    schema: InvoiceModel,
     suggestActions: (invoice) => {
         if (invoice.status === 'pending') {
             return [

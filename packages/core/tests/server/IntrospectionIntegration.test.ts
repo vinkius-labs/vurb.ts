@@ -666,3 +666,111 @@ describe('IntrospectionResource: Manifest Payload Structure', () => {
         expect(getAction.returns_presenter).toBe('Invoice');
     });
 });
+
+// ============================================================================
+// 8. Bug #4 Regression — Introspection + ResourceRegistry Coexistence
+//
+// When both `introspection.enabled` and `resources` are configured in
+// attachToServer(), the manifest resource must be merged into the
+// ResourceRegistry-based handlers instead of being silently overwritten.
+// ============================================================================
+
+describe('Bug #4 Regression: Introspection merged with ResourceRegistry', () => {
+    it('manifest resource should appear alongside registry resources in resources/list', async () => {
+        const server = createMockServer();
+        const registry = createIntrospectionRegistry();
+        const { ResourceRegistry } = await import('../../src/resource/ResourceRegistry.js');
+        const { defineResource } = await import('../../src/resource/ResourceBuilder.js');
+
+        const resRegistry = new ResourceRegistry<{ role: string; tenantId: string }>();
+        resRegistry.register(defineResource('status', {
+            uri: 'app://status',
+            handler: async () => ({ text: JSON.stringify({ ok: true }) }),
+        }));
+
+        await registry.attachToServer(server, {
+            introspection: { enabled: true },
+            serverName: 'merge-test',
+            resources: resRegistry,
+        });
+
+        const result = await server.callListResources();
+        const names = result.resources.map((r: { name: string }) => r.name);
+
+        // Both the user resource AND the introspection manifest must appear
+        expect(names).toContain('status');
+        const manifestEntry = result.resources.find(
+            (r: { uri: string }) => r.uri === 'vurb://manifest.json',
+        );
+        expect(manifestEntry).toBeDefined();
+    });
+
+    it('manifest should be readable when resources option is also configured', async () => {
+        const server = createMockServer();
+        const registry = createIntrospectionRegistry();
+        const { ResourceRegistry } = await import('../../src/resource/ResourceRegistry.js');
+        const { defineResource } = await import('../../src/resource/ResourceBuilder.js');
+
+        const resRegistry = new ResourceRegistry<{ role: string; tenantId: string }>();
+        resRegistry.register(defineResource('health', {
+            uri: 'app://health',
+            handler: async () => ({ text: 'ok' }),
+        }));
+
+        await registry.attachToServer(server, {
+            introspection: { enabled: true },
+            serverName: 'read-merge-test',
+            resources: resRegistry,
+        });
+
+        // Manifest must be readable
+        const manifestResult = await server.callReadResource('vurb://manifest.json');
+        const manifest: ManifestPayload = JSON.parse(manifestResult.contents[0].text);
+        expect(manifest.server).toBe('read-merge-test');
+        expect(manifest.capabilities.tools['projects']).toBeDefined();
+
+        // Registry resource must also be readable
+        const healthResult = await server.callReadResource('app://health');
+        expect(healthResult.contents[0].text).toBe('ok');
+    });
+
+    it('RBAC filter should work on manifest when resources are also configured', async () => {
+        const server = createMockServer();
+        const registry = createIntrospectionRegistry();
+        const { ResourceRegistry } = await import('../../src/resource/ResourceRegistry.js');
+
+        const resRegistry = new ResourceRegistry<{ role: string; tenantId: string }>();
+
+        await registry.attachToServer(server, {
+            contextFactory: (extra: any) => ({
+                role: extra?.role ?? 'viewer',
+                tenantId: extra?.tenantId ?? 'default',
+            }),
+            introspection: {
+                enabled: true,
+                filter: (manifest, ctx) => {
+                    if (ctx.role !== 'admin') {
+                        delete manifest.capabilities.tools['admin'];
+                    }
+                    return manifest;
+                },
+            },
+            resources: resRegistry,
+        });
+
+        // Admin sees admin tools
+        const adminResult = await server.callReadResource(
+            'vurb://manifest.json', { role: 'admin' },
+        );
+        const adminManifest: ManifestPayload = JSON.parse(adminResult.contents[0].text);
+        expect(adminManifest.capabilities.tools['admin']).toBeDefined();
+
+        // Viewer does not see admin tools
+        const viewerResult = await server.callReadResource(
+            'vurb://manifest.json', { role: 'viewer' },
+        );
+        const viewerManifest: ManifestPayload = JSON.parse(viewerResult.contents[0].text);
+        expect(viewerManifest.capabilities.tools['admin']).toBeUndefined();
+        expect(viewerManifest.capabilities.tools['projects']).toBeDefined();
+    });
+});

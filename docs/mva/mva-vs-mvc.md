@@ -18,7 +18,7 @@ In MVA, the Model serves a dual purpose. It validates input (as in MVC), but it 
 | **Security direction** | Inbound (protects the database) | Inbound **and** outbound (protects the agent) |
 | **Unknown fields** | Passed through silently | Rejected with actionable errors |
 | **Scope** | Application-wide (shared schema) | Application-wide (shared schema) |
-| **Implementation** | ORM schema (Prisma, Eloquent) | Zod schema with `.strict()` |
+| **Implementation** | ORM schema (Prisma, Eloquent) | `defineModel()` — compiles to Zod schema with `m.hidden()`, `m.guarded()`, `m.fillable()` |
 
 ```typescript
 // MVC Model — protects the database
@@ -31,13 +31,24 @@ const User = prisma.defineModel({
 });
 
 // MVA Model — protects the database AND the agent
-const userSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string().email(),
-    // password_hash → not declared → rejected by .strict()
-    // tenant_id    → not declared → rejected by .strict()
-}).strict();
+import { defineModel } from '@vurb/core';
+
+const UserModel = defineModel('User', m => {
+    m.casts({
+        id:    m.string('User identifier'),
+        name:  m.string('Full name'),
+        email: m.string('Email address'),
+        // password_hash → not declared → never reaches the agent
+        // tenant_id    → not declared → never reaches the agent
+    });
+
+    m.hidden(['tenant_id']);
+    m.guarded(['id']);
+    m.fillable({
+        create: ['name', 'email'],
+        update: ['name', 'email'],
+    });
+});
 ```
 
 ### The View Layer
@@ -67,7 +78,7 @@ In MVA, the View is a **perception layer** — the Presenter. It does not produc
 
 // MVA View — Presenter (domain-level)
 const InvoicePresenter = createPresenter('Invoice')
-    .schema(invoiceSchema)
+    .schema(InvoiceModel)
     .systemRules(['amount_cents is in CENTS. Divide by 100.'])      // domain rule travels with data
     .suggestActions((inv) => inv.status === 'pending'
         ? [{ tool: 'billing.pay', reason: 'Process payment' }]     // affordance as typed hint
@@ -144,10 +155,15 @@ Modern products increasingly need both architectures simultaneously:
 
 ```typescript
 // Shared domain model
-const invoiceSchema = z.object({
-    id: z.string(),
-    amount_cents: z.number(),
-    status: z.enum(['paid', 'pending', 'overdue']),
+import { defineModel } from '@vurb/core';
+
+const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string('Invoice identifier'),
+        amount_cents: m.number('Amount in cents'),
+        status:       m.enum('Payment status', ['paid', 'pending', 'overdue']),
+    });
+    m.fillable({ update: ['status'] });
 });
 
 // MVC: Human-facing API (returns raw data for React/Vue frontend)
@@ -157,15 +173,13 @@ app.get('/api/invoices/:id', async (req, res) => {
 });
 
 // MVA: Agent-facing API (returns structured perception package)
-const billing = defineTool<AppContext>('billing', {
-    actions: {
-        get_invoice: {
-            returns: InvoicePresenter,  // ← Perception layer
-            params: { id: 'string' },
-            handler: async (ctx, args) => ctx.db.invoices.findUnique(args.id),
-        },
-    },
-});
+const f = initVurb<AppContext>();
+
+const getInvoice = f.query('billing.get_invoice')
+    .describe('Get an invoice by ID')
+    .withString('id', 'Invoice ID')
+    .returns(InvoicePresenter)     // ← Perception layer
+    .handle(async (input, ctx) => ctx.db.invoices.findUnique(input.id));
 ```
 
 Both serve the same business data. Both use the same database. But they serve fundamentally different consumers through fundamentally different architectural patterns.
