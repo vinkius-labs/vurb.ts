@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { requireAuth } from '@vinkius-core/oauth';
+ * import { requireAuth } from '@vurb/oauth';
  * import { createTool } from '@vurb/core';
  *
  * const projects = createTool<AppContext>('projects')
@@ -61,7 +61,7 @@ export function requireAuth(options?: RequireAuthOptions) {
     const recoveryHint = options?.recoveryHint ?? 'Use auth action=login to authenticate';
     const recoveryAction = options?.recoveryAction ?? 'auth';
 
-    return async (ctx: unknown, args: Record<string, unknown>, next: () => Promise<ToolResponse>): Promise<ToolResponse> => {
+    return async (ctx: unknown, _args: Record<string, unknown>, next: () => Promise<ToolResponse>): Promise<ToolResponse> => {
         const token = extractToken(ctx);
 
         if (!token) {

@@ -94,10 +94,11 @@ export class JwtVerifier {
     private readonly _clockTolerance: number;
 
     // Lazy-loaded jose references
-    private _joseLoaded = false;
+    private _loadPromise: Promise<void> | null = null;
     private _jwtVerify: ((token: string, key: unknown, options?: unknown) => Promise<{ payload: JwtPayload }>) | null = null;
     private _createRemoteJWKSet: ((url: URL) => unknown) | null = null;
     private _jwks: unknown = null;
+    private _importedPublicKey: unknown = null;
 
     constructor(config: JwtVerifierConfig) {
         if (!config.secret && !config.jwksUri && !config.publicKey) {
@@ -163,9 +164,10 @@ export class JwtVerifier {
      * @internal
      */
     private async _verifyWithJose(token: string): Promise<JwtPayload | undefined> {
-        if (!this._joseLoaded) {
-            await this._loadJose();
+        if (!this._loadPromise) {
+            this._loadPromise = this._loadJose();
         }
+        await this._loadPromise;
 
         if (!this._jwtVerify) return undefined;
 
@@ -182,9 +184,12 @@ export class JwtVerifier {
             }
             key = this._jwks;
         } else if (this._config.publicKey) {
-            // jose importSPKI for PEM keys
-            const jose = await import('jose');
-            key = await jose.importSPKI(this._config.publicKey, this._config.algorithm ?? 'RS256');
+            // jose importSPKI for PEM keys — cached after first import
+            if (!this._importedPublicKey) {
+                const jose = await import('jose');
+                this._importedPublicKey = await jose.importSPKI(this._config.publicKey, this._config.algorithm ?? 'RS256');
+            }
+            key = this._importedPublicKey;
         } else if (this._config.secret) {
             const encoder = new TextEncoder();
             key = encoder.encode(this._config.secret);
@@ -201,7 +206,6 @@ export class JwtVerifier {
      * @internal
      */
     private async _loadJose(): Promise<void> {
-        this._joseLoaded = true;
         try {
             const jose = await import('jose');
             this._jwtVerify = jose.jwtVerify as unknown as typeof this._jwtVerify;

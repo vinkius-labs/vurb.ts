@@ -6,7 +6,7 @@
  *
  * @example
  * ```ts
- * import { createAuthTool } from '@vinkius-core/oauth';
+ * import { createAuthTool } from '@vurb/oauth';
  *
  * const authTool = createAuthTool({
  *     clientId: '9e8d7c6b-5a4f-3e2d-1c0b-a9b8c7d6e5f4',

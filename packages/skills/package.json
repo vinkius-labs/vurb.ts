@@ -1,60 +1,60 @@
 {
-    "name": "@vurb/skills",
-    "version": "3.2.3",
-    "description": "Agent Skills distribution via MCP. Progressive disclosure (search → load → read) for teaching AI agents domain-specific procedures through the SKILL.md standard.",
-    "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
-        }
-    },
-    "scripts": {
-        "build": "tsc",
-        "test": "vitest run",
-        "prepublishOnly": "npm run build"
-    },
-    "keywords": [
-        "mcp",
-        "vurb",
-        "skills",
-        "agent-skills",
-        "progressive-disclosure",
-        "ai",
-        "llm",
-        "context-engineering"
-    ],
-    "author": "Renato Marinho",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/vinkius-labs/vurb.ts.git",
-        "directory": "packages/skills"
-    },
-    "bugs": {
-        "url": "https://github.com/vinkius-labs/vurb.ts/issues"
-    },
-    "homepage": "https://vurb.vinkius.com/",
-    "files": [
-        "dist",
-        "README.md"
-    ],
-    "engines": {
-        "node": ">=18.0.0"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "dependencies": {
-        "minisearch": "^7.1.1"
-    },
-    "peerDependencies": {
-        "@vurb/core": "^3.0.0",
-        "zod": "^3.25.1 || ^4.0.0"
-    },
-    "devDependencies": {
-        "@vurb/core": ">=3.1.0"
-    },
-    "license": "Apache-2.0"
+  "name": "@vurb/skills",
+  "version": "3.6.6",
+  "description": "Agent Skills distribution via MCP. Progressive disclosure (search → load → read) for teaching AI agents domain-specific procedures through the SKILL.md standard.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "vurb",
+    "skills",
+    "agent-skills",
+    "progressive-disclosure",
+    "ai",
+    "llm",
+    "context-engineering"
+  ],
+  "author": "Renato Marinho",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinkius-labs/vurb.ts.git",
+    "directory": "packages/skills"
+  },
+  "bugs": {
+    "url": "https://github.com/vinkius-labs/vurb.ts/issues"
+  },
+  "homepage": "https://vurb.vinkius.com/",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "minisearch": "^7.1.1"
+  },
+  "peerDependencies": {
+    "@vurb/core": "^3.0.0",
+    "zod": "^3.25.1 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@vurb/core": ">=3.1.0"
+  },
+  "license": "Apache-2.0"
 }
