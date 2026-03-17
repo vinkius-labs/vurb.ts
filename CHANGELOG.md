@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.3] - 2026-03-17
+
+### Fixed
+
+- **FSM session leak via static `'__default__'` key (Bug #3)** — `extractSessionId()` fallback changed from a shared `'__default__'` string to a per-attachment `crypto.randomUUID()`. Multiple stdio clients connected to the same server no longer share FSM state. Prevents one client from inheriting another client's state transitions.
+- **Zombie generator handlers on slow I/O (Bug #4)** — `drainGenerator()` now uses `Promise.race([gen.next(), abortPromise])` to honor `AbortSignal` cancellation in real-time during each yield. Previously, generators blocked on slow I/O (DB queries, network) would continue executing as zombies after client disconnect.
+- **RedactEngine lazy-import race condition (Bug #5)** — `loadFastRedact()` now uses a `_loadPromise` gate to serialize concurrent callers. Previously, concurrent Presenter boot calls could both pass the null-check, trigger duplicate `import('fast-redact')` calls, and non-deterministically overwrite each other's result.
+
+### Test Suite
+
+- 30 new regression tests across 3 test files:
+  - `FsmSessionLeak-bug3.test.ts` — 11 tests: session collision prevention, UUID isolation, per-attachment consistency
+  - `DrainGeneratorZombie-bug4.test.ts` — 9 tests: real-time cancellation during slow I/O, pre-aborted signals, error propagation
+  - `RedactEngineRace-bug5.test.ts` — 10 tests: concurrent import serialization, error handling, integration with `initRedactEngine()`
+
 ## [3.6.2] - 2026-03-17
 
 ### Security

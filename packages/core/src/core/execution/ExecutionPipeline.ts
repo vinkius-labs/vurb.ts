@@ -236,12 +236,23 @@ async function drainGenerator(
     progressSink?: ProgressSink,
     signal?: AbortSignal,
 ): Promise<ToolResponse> {
+    // Bug #4 fix: build a reusable abort promise so Promise.race can cancel
+    // during `await gen.next()`, preventing zombie handlers on slow I/O.
+    const abortPromise = signal && !signal.aborted
+        ? new Promise<never>((_, reject) => {
+            signal.addEventListener('abort', () => {
+                reject(new DOMException('Request cancelled.', 'AbortError'));
+            }, { once: true });
+        })
+        : undefined;
+    // Suppress unhandled rejection if the generator finishes before abort fires
+    abortPromise?.catch(() => {});
+
     let result = await gen.next();
 
     while (!result.done) {
-        // Cancellation check: abort generator if signal fired
+        // Cancellation check: abort generator if signal fired between iterations
         if (signal?.aborted) {
-            // Return the generator to trigger finally {} cleanup
             await gen.return(error('Request cancelled.'));
             return error('Request cancelled.');
         }
@@ -249,7 +260,24 @@ async function drainGenerator(
         if (progressSink && isProgressEvent(result.value)) {
             progressSink(result.value);
         }
-        result = await gen.next();
+
+        // Bug #4 fix: race next iteration against abort signal to prevent
+        // zombie generators that block on slow I/O (DB queries, network, etc.)
+        if (abortPromise) {
+            try {
+                result = await Promise.race([gen.next(), abortPromise]);
+            } catch (err) {
+                if (err instanceof DOMException && err.name === 'AbortError') {
+                    // Fire-and-forget cleanup — gen.return() may also block
+                    // if the generator is stuck on slow I/O, so don't await it.
+                    gen.return(error('Request cancelled.')).catch(() => {});
+                    return error('Request cancelled.');
+                }
+                throw err;
+            }
+        } else {
+            result = await gen.next();
+        }
     }
 
     return result.value;

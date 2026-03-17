@@ -88,20 +88,29 @@ export type RedactFn = (data: unknown) => unknown;
 type FastRedactFactory = (opts: any) => any;
 
 let _fastRedact: FastRedactFactory | null | false = null;
+// Bug #5 fix: promise gate to serialize concurrent lazy-import calls
+let _loadPromise: Promise<FastRedactFactory | null> | null = null;
 
 async function loadFastRedact(): Promise<FastRedactFactory | null> {
     if (_fastRedact === false) return null; // already tried, not available
     if (_fastRedact !== null) return _fastRedact;
 
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mod: any = await import('fast-redact');
-        _fastRedact = (typeof mod === 'function' ? mod : mod.default) as FastRedactFactory;
-        return _fastRedact;
-    } catch {
-        _fastRedact = false; // mark as unavailable
-        return null;
-    }
+    // Bug #5 fix: if another call is already importing, await the same promise
+    if (_loadPromise) return _loadPromise;
+
+    _loadPromise = (async () => {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const mod: any = await import('fast-redact');
+            _fastRedact = (typeof mod === 'function' ? mod : mod.default) as FastRedactFactory;
+            return _fastRedact;
+        } catch {
+            _fastRedact = false; // mark as unavailable
+            return null;
+        }
+    })();
+
+    return _loadPromise;
 }
 
 // Synchronous version — uses the cached function if already loaded.

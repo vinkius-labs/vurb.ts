@@ -41,6 +41,7 @@ import { type PromptRegistry, type PromptFilter } from '../prompt/PromptRegistry
 import { type LoopbackContext } from '../prompt/types.js';
 import { StateMachineGate, type FsmStateStore, type FsmSnapshot } from '../fsm/StateMachineGate.js';
 import type { TelemetrySink } from '../observability/TelemetryEvent.js';
+import { randomUUID } from 'node:crypto';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -455,6 +456,8 @@ interface HandlerContext<TContext> {
     readonly notifyToolListChanged?: () => void;
     readonly telemetry?: TelemetrySink;
     readonly selfHealing?: SelfHealingConfig;
+    /** Bug #3 fix: per-attachment UUID fallback for transports without session IDs (e.g. stdio). */
+    readonly fallbackSessionId: string;
 }
 
 // ── Observability Propagation ────────────────────────────
@@ -524,12 +527,12 @@ function createToolListHandler<TContext>(hCtx: HandlerContext<TContext>) {
         if (fsm) {
             fsm = fsm.clone();
             if (hCtx.fsmStore) {
-                const sessionId = extractSessionId(extra) ?? '__default__';
+                const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                 const snap = await hCtx.fsmStore.load(sessionId);
                 if (snap) fsm.restore(snap);
             } else {
                 // In-memory fallback: restore from session-scoped snapshot
-                const sessionId = extractSessionId(extra) ?? '__default__';
+                const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                 const snap = hCtx.fsmMemorySnapshots?.get(sessionId);
                 if (snap) fsm.restore(snap);
             }
@@ -592,11 +595,11 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         if (fsm) {
             fsm = fsm.clone();
             if (hCtx.fsmStore) {
-                const sessionId = extractSessionId(extra) ?? '__default__';
+                const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                 const snap = await hCtx.fsmStore.load(sessionId);
                 if (snap) fsm.restore(snap);
             } else {
-                const sessionId = extractSessionId(extra) ?? '__default__';
+                const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                 const snap = hCtx.fsmMemorySnapshots?.get(sessionId);
                 if (snap) fsm.restore(snap);
             }
@@ -679,11 +682,11 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                     // Persist new state to external store (serverless/edge)
                     // Use fallback session ID for transports without sessions (e.g., stdio) (Bug #44 fix)
                     if (hCtx.fsmStore) {
-                        const sessionId = extractSessionId(extra) ?? '__default__';
+                        const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                         await hCtx.fsmStore.save(sessionId, fsm.snapshot());
                     } else if (hCtx.fsmMemorySnapshots) {
                         // Bug #77 fix: persist to in-memory session map
-                        const sessionId = extractSessionId(extra) ?? '__default__';
+                        const sessionId = extractSessionId(extra) ?? hCtx.fallbackSessionId;
                         hCtx.fsmMemorySnapshots.set(sessionId, fsm.snapshot());
                     }
                     // Notify client to re-fetch tools/list
@@ -1073,6 +1076,8 @@ export async function attachToServer<TContext>(
         ...(notifyToolListChanged ? { notifyToolListChanged } : {}),
         ...(options.telemetry ? { telemetry: options.telemetry } : {}),
         ...(selfHealing ? { selfHealing } : {}),
+        // Bug #3 fix: per-attachment UUID — never use static key for session-scoped mutable state
+        fallbackSessionId: randomUUID(),
     };
 
     // 5. Register tool handlers
