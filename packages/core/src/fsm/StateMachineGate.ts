@@ -139,8 +139,9 @@ export interface TransitionResult {
 
 /** Cached XState module reference */
 let xstateModule: typeof import('xstate') | null = null;
-/** Whether we already attempted to load XState */
-let xstateLoadAttempted = false;
+/** Number of failed import attempts (Bug #10 fix: retry up to 3 times) */
+let xstateLoadAttempts = 0;
+const MAX_XSTATE_LOAD_ATTEMPTS = 3;
 
 /**
  * Lazily load the `xstate` module.
@@ -148,17 +149,22 @@ let xstateLoadAttempted = false;
  * Returns `null` if `xstate` is not installed — the framework
  * degrades gracefully (all tools remain visible, no gating).
  *
+ * Bug #10 fix: only caches successful imports. Failed imports
+ * are retried up to {@link MAX_XSTATE_LOAD_ATTEMPTS} times to
+ * handle transient filesystem errors on edge/serverless cold starts.
+ *
  * @internal
  */
 async function loadXState(): Promise<typeof import('xstate') | null> {
-    if (xstateLoadAttempted) return xstateModule;
-    xstateLoadAttempted = true;
+    if (xstateModule) return xstateModule; // cached success
+    if (xstateLoadAttempts >= MAX_XSTATE_LOAD_ATTEMPTS) return null; // max retries exceeded
 
+    xstateLoadAttempts++;
     try {
         xstateModule = await import('xstate');
         return xstateModule;
     } catch {
-        return null;
+        return null; // allow retry on next call
     }
 }
 
@@ -172,7 +178,7 @@ async function loadXState(): Promise<typeof import('xstate') | null> {
  * @public
  */
 export function resetXStateCache(): void {
-    xstateLoadAttempted = false;
+    xstateLoadAttempts = 0;
     xstateModule = null;
 }
 

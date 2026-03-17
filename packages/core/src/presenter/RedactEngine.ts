@@ -167,10 +167,13 @@ export function compileRedactor(config: RedactConfig): RedactFn | undefined {
                 const clone = structuredClone(data);
                 redactor(clone);
                 return clone;
-            } catch {
-                // Defensive: if structuredClone or redaction fails,
-                // return original data rather than crash
-                return data;
+            } catch (err) {
+                // Bug #9 fix: never return unredacted data — throw explicitly.
+                // The caller must handle the error rather than silently leaking PII.
+                throw new Error(
+                    `[Vurb] PII redaction failed: ${err instanceof Error ? err.message : String(err)}. ` +
+                    'Data withheld to prevent PII leak.',
+                );
             }
         };
     } catch {

@@ -321,10 +321,12 @@ async function executeConsensus(
         };
     }
 
-    // If all judges errored → apply failOpen/failClosed
+    // Bug #8 fix: in consensus mode, errors violate the "ALL must agree" contract.
+    // Treat adapter errors as implicit rejections — the consensus requires every
+    // adapter to succeed AND agree. failOpen only applies to fallback strategy.
     if (anyError) {
         return {
-            passed: config.failOpen,
+            passed: false,
             results,
             totalDurationMs: Date.now() - start,
             fallbackTriggered: true,
@@ -383,10 +385,10 @@ function parseJudgePass(raw: string): boolean {
 /**
  * Extract the last valid JSON object from a string.
  *
- * Scans from the end to find the last `}`, then walks backward
- * counting braces to find the matching `{`. This avoids the greedy
- * regex problem where `/\{[\s\S]*\}/` captures from the FIRST `{`
- * to the LAST `}`, including non-JSON prose between them.
+ * Scans from the end to find the last `}`, then tries each `{`
+ * position from right-to-left, validating via `JSON.parse`.
+ * This avoids the greedy regex problem AND handles braces
+ * inside JSON string values (which break naive brace counting).
  *
  * Exported for reuse by PromptFirewall's `extractDetailedRejections`.
  *
@@ -396,17 +398,17 @@ export function extractLastJson(raw: string): string | null {
     const lastClose = raw.lastIndexOf('}');
     if (lastClose === -1) return null;
 
-    let depth = 0;
-    for (let i = lastClose; i >= 0; i--) {
-        if (raw[i] === '}') depth++;
-        else if (raw[i] === '{') depth--;
-        if (depth === 0) {
+    // Try each `{` from right to left — closest match to last `}` first.
+    // JSON.parse validates correctness (handles braces inside strings,
+    // nested objects, etc.) so no brace-counting heuristics are needed.
+    for (let i = lastClose - 1; i >= 0; i--) {
+        if (raw[i] === '{') {
             const candidate = raw.slice(i, lastClose + 1);
             try {
                 JSON.parse(candidate);
                 return candidate;
             } catch {
-                return null;
+                continue;
             }
         }
     }

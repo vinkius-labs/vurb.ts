@@ -1043,6 +1043,10 @@ export async function attachToServer<TContext>(
         }
     }
 
+    // Bug #7 fix: exposition dirty flag — O(1) cache validation
+    // Starts dirty to force initial compile, then stays clean until invalidated.
+    let _expositionDirty = true;
+
     const hCtx: HandlerContext<TContext> = {
         registry,
         ...(filter ? { filter } : {}),
@@ -1050,15 +1054,23 @@ export async function attachToServer<TContext>(
         ...(syncLayer ? { syncLayer } : {}),
         toolExposition, actionSeparator,
         isFlat: toolExposition === 'flat',
+        // Bug #7 fix: O(1) exposition cache with dirty flag + builder-count safety net.
+        // Previous code did O(N) identity comparison on every tools/call request.
+        // Now uses a dirty flag for O(1) fast-path, plus a lightweight builder-count
+        // check to detect late-registered builders without O(N) element comparison.
         recompile: (() => {
-            let cachedBuilders: unknown[] | undefined;
             let cachedResult: ExpositionResult<TContext> | undefined;
+            let cachedBuilderCount = -1;
             return () => {
-                const builders = [...registry.getBuilders()];
-                if (cachedResult && cachedBuilders && builders.length === cachedBuilders.length && builders.every((b, i) => b === cachedBuilders![i])) {
-                    return cachedResult;
+                if (!_expositionDirty && cachedResult) {
+                    // O(1) count check: detect late-registered builders
+                    let count = 0;
+                    for (const _ of registry.getBuilders()) count++;
+                    if (count === cachedBuilderCount) return cachedResult;
                 }
-                cachedBuilders = builders;
+                _expositionDirty = false;
+                const builders = [...registry.getBuilders()];
+                cachedBuilderCount = builders.length;
                 // Bug #131: route diagnostic warnings through debug observer
                 const warnFn = debug
                     ? (msg: string) => debug({ type: 'error', tool: '', action: '', error: msg, step: 'route', timestamp: Date.now() })

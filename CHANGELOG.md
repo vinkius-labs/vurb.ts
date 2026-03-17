@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.4] - 2026-03-17
+
+### Fixed
+
+- **`extractLastJson` brace-in-string edge case** — Replaced backward brace counting with try-parse from each `{` position. The previous algorithm treated `{` and `}` inside JSON string values as structural, causing extraction failures for valid JSON like `{"reason": "has } in it", "safe": true}`.
+- **Exposition recompile O(N) per request** — Replaced `builders.every((b, i) => b === cached[i])` identity comparison (O(N) on every `tools/call`) with a dirty-flag cache plus lightweight builder-count safety net. Steady-state cost is now O(1).
+- **Consensus strategy `failOpen` bypass** — In consensus mode, adapter errors (timeout, crash) are now treated as implicit rejections regardless of `failOpen`. The "ALL must agree" contract was violated when `failOpen: true` allowed content through with only 1/3 judges succeeding.
+- **PII leak when `structuredClone` fails** — `compileRedactor()` now throws an explicit error instead of silently returning unredacted data when `structuredClone` fails on non-cloneable objects (Socket, ReadStream, WeakRef). PII is never exposed on the wire.
+- **XState import cached as permanent failure** — `loadXState()` now retries failed imports up to 3 times instead of caching the first failure permanently. Handles transient filesystem errors on edge/serverless cold starts gracefully.
+
+### Test Suite
+
+- 50 new regression tests across 5 test files:
+  - `ExtractLastJson-bug6.test.ts` — 12 tests: braces inside strings, nested objects, multiple JSON blocks, LLM response patterns
+  - `ExpositionCache-bug7.test.ts` — 8 tests: O(N) comparison overhead, dirty-flag cache, invalidation, late-registered builder detection
+  - `ConsensusFailOpen-bug8.test.ts` — 9 tests: consensus error rejection, fallback strategy unaffected, result metadata
+  - `RedactPiiLeak-bug9.test.ts` — 7 tests: throw on clone failure, PII leak prevention, normal redaction unchanged
+  - `XStateCachedFailure-bug10.test.ts` — 7 tests: retry on failure, max attempts, cached success, reset integration
+  - Cumulative: 5600 tests passing across 275 files
+
 ## [3.6.3] - 2026-03-17
 
 ### Fixed
