@@ -58,9 +58,9 @@ export interface RateLimitStore {
 
     /**
      * Clean up resources (intervals, connections).
-     * Called when the server shuts down.
+     * Called automatically when middleware is destroyed via `destroy()`.
      */
-    destroy?(): void;
+    destroy(): void;
 }
 
 /** Rate limit entry returned by the store */
@@ -220,20 +220,33 @@ export class InMemoryStore implements RateLimitStore {
 // ── Middleware Factory ───────────────────────────────────
 
 /**
+ * A rate limiting middleware function with lifecycle management.
+ * Call `destroy()` to clean up the underlying store's resources.
+ */
+export type RateLimitMiddleware = MiddlewareFn<unknown> & {
+    /** Clean up the underlying store (clear intervals, connections). */
+    destroy(): void;
+};
+
+/**
  * Create a rate limiting middleware.
  *
  * Returns a self-healing `toolError('RATE_LIMITED')` with `retryAfterSeconds`
  * when the limit is exceeded, following RFC 7231 semantics.
  *
+ * The returned middleware exposes a `destroy()` method to clean up the
+ * underlying store (intervals, connections). Call it on server shutdown
+ * or in test `afterEach` hooks to prevent timer leaks.
+ *
  * @param config - Rate limit configuration
- * @returns A middleware function compatible with `.use()`
+ * @returns A middleware function compatible with `.use()`, with `destroy()`
  */
-export function rateLimit(config: RateLimitConfig): MiddlewareFn<unknown> {
+export function rateLimit(config: RateLimitConfig): RateLimitMiddleware {
     const store = config.store ?? new InMemoryStore(config.windowMs);
     const errorCode = config.errorCode ?? 'RATE_LIMITED';
     const keyFn = config.keyFn ?? (() => '__global__');
 
-    return async (
+    const middleware = async (
         ctx: unknown,
         args: Record<string, unknown>,
         next: () => Promise<unknown>,
@@ -274,4 +287,8 @@ export function rateLimit(config: RateLimitConfig): MiddlewareFn<unknown> {
 
         return next();
     };
+
+    middleware.destroy = () => store.destroy();
+
+    return middleware;
 }

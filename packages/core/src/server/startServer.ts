@@ -72,6 +72,21 @@ export interface StartServerOptions<TContext> {
      */
     readonly maxBodyBytes?: number;
 
+    /**
+     * Session TTL in milliseconds for the HTTP transport.
+     * Sessions with no activity beyond this duration are reaped automatically.
+     *
+     * @default 1_800_000 (30 minutes)
+     */
+    readonly sessionTtlMs?: number;
+
+    /**
+     * How often (in ms) the session reaper runs to clean up stale sessions.
+     *
+     * @default 300_000 (5 minutes)
+     */
+    readonly sessionReapIntervalMs?: number;
+
     /** Extra attach options (debug, tracing, zeroTrust, etc.). */
     readonly attach?: Omit<AttachOptions<TContext>, 'contextFactory' | 'prompts' | 'telemetry'>;
 }
@@ -304,6 +319,25 @@ export async function startServer<TContext>(
     if (transport === 'http') {
         // ── Streamable HTTP Transport ────────────────────────
         const sessions = new Map<string, StreamableHTTPServerTransport>();
+        const sessionActivity = new Map<string, number>();
+        const sessionTtlMs = options.sessionTtlMs ?? 1_800_000;   // 30 min
+        const reapIntervalMs = options.sessionReapIntervalMs ?? 300_000; // 5 min
+
+        // Periodic reaper for abandoned sessions (TCP kill -9, network drops)
+        const reapInterval = setInterval(() => {
+            const now = Date.now();
+            for (const [id, lastActive] of sessionActivity) {
+                if (now - lastActive > sessionTtlMs) {
+                    const t = sessions.get(id);
+                    if (t) { try { t.close(); } catch { /* best effort */ } }
+                    sessions.delete(id);
+                    sessionActivity.delete(id);
+                }
+            }
+        }, reapIntervalMs);
+        if (typeof reapInterval === 'object' && 'unref' in reapInterval) {
+            reapInterval.unref();
+        }
 
         const httpServer = createHttpServer(async (req, res) => {
             try {
@@ -339,6 +373,7 @@ export async function startServer<TContext>(
 
                     if (sessionId && sessions.has(sessionId)) {
                         const t = sessions.get(sessionId)!;
+                        sessionActivity.set(sessionId, Date.now());
                         await t.handleRequest(req, res, body);
                         return;
                     }
@@ -347,11 +382,15 @@ export async function startServer<TContext>(
                         sessionIdGenerator: () => crypto.randomUUID(),
                         onsessioninitialized: (id) => {
                             sessions.set(id, t);
+                            sessionActivity.set(id, Date.now());
                         },
                     });
                     t.onclose = () => {
                         const id = [...sessions.entries()].find(([, s]) => s === t)?.[0];
-                        if (id) sessions.delete(id);
+                        if (id) {
+                            sessions.delete(id);
+                            sessionActivity.delete(id);
+                        }
                     };
                     await server.connect(t as unknown as import('@modelcontextprotocol/sdk/shared/transport.js').Transport);
                     await t.handleRequest(req, res, body);
@@ -359,6 +398,7 @@ export async function startServer<TContext>(
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;
                     if (sessionId && sessions.has(sessionId)) {
                         const t = sessions.get(sessionId)!;
+                        sessionActivity.set(sessionId, Date.now());
                         await t.handleRequest(req, res);
                     } else {
                         res.writeHead(400).end('Missing or invalid session');
@@ -367,6 +407,7 @@ export async function startServer<TContext>(
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;
                     if (sessionId && sessions.has(sessionId)) {
                         const t = sessions.get(sessionId)!;
+                        sessionActivity.set(sessionId, Date.now());
                         await t.handleRequest(req, res);
                     } else {
                         res.writeHead(400).end('Missing or invalid session');
@@ -385,9 +426,11 @@ export async function startServer<TContext>(
         });
 
         async function close(): Promise<void> {
+            clearInterval(reapInterval);
             if (bus) await bus.close();
             for (const t of sessions.values()) { try { await t.close(); } catch { /* best effort */ } }
             sessions.clear();
+            sessionActivity.clear();
             await new Promise<void>((resolve) => httpServer.close(() => resolve()));
             await server.close();
         }

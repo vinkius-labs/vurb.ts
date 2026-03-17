@@ -159,7 +159,7 @@ export type { AutoDiscoverOptions } from './server/index.js';
 /** @category Server */
 export { createDevServer, cacheBustUrl } from './server/index.js';
 /** @category Server */
-export type { DevServerConfig, DevServer } from './server/index.js';
+export type { DevServerConfig, DevServer, DevServerSetupContext } from './server/index.js';
 /** @category Server */
 export { startServer } from './server/index.js';
 /** @category Server */
@@ -398,7 +398,7 @@ export type { AuditTrailConfig, AuditIdentity, AuditSink } from './core/middlewa
 /** @category Security */
 export { rateLimit, InMemoryStore } from './core/middleware/RateLimiter.js';
 /** @category Security */
-export type { RateLimitConfig, RateLimitStore, RateLimitEntry } from './core/middleware/RateLimiter.js';
+export type { RateLimitConfig, RateLimitStore, RateLimitEntry, RateLimitMiddleware } from './core/middleware/RateLimiter.js';
 /** @category Security */
 export type {
     SecurityFirewallEvent, SecurityAuditEvent, SecurityRateLimitEvent,

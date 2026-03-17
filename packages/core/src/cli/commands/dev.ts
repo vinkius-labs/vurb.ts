@@ -41,7 +41,12 @@ export async function commandDev(args: CliArgs, reporter?: ProgressReporter): Pr
     // Step 3: Create and start dev server
     const devServer = createDevServer({
         dir: watchDir,
-        setup: async (reg) => {
+        setup: async (regOrCtx) => {
+            // Extract registry: new context shape has .registry, duck-typed also has .register
+            const reg = 'registry' in regOrCtx && 'cacheBustUrl' in regOrCtx
+                ? regOrCtx.registry
+                : regOrCtx as { register(b: unknown): void; clear?(): void };
+
             // Bug #75 fix: resolve NEW registry first, only clear+register on success.
             // If resolveRegistry throws (syntax error in user code), the
             // current tools remain available until the next successful reload.

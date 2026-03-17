@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.5] - 2026-03-17
+
+### Fixed
+
+- **RateLimiter cleanup interval never auto-destroyed** — `destroy()` is now required in the `RateLimitStore` interface. The `rateLimit()` factory returns a `RateLimitMiddleware` with an exposed `destroy()` method that forwards to the underlying store. Prevents phantom timer accumulation in test suites and long-running processes.
+- **HTTP session Map grows indefinitely on connection drops** — Added `sessionActivity` tracking with periodic reaper interval (default: every 5 min) that removes sessions inactive beyond `sessionTtlMs` (default: 30 min). New `sessionTtlMs` and `sessionReapIntervalMs` options in `StartServerOptions`. Prevents memory leaks from abandoned TCP connections (kill -9, network timeouts).
+- **DevServer ESM cache-bust not surfaced to setup callback** — The `setup` callback now receives a `DevServerSetupContext` with `registry` and `cacheBustUrl` properties (backward-compatible via duck typing). A one-time ESM warning is emitted on the first file-change reload to guide developers toward using cache-busted imports.
+
+### Added
+
+- `RateLimitMiddleware` type — middleware function with `destroy()` lifecycle method
+- `DevServerSetupContext` type — context passed to dev server setup callbacks
+- `sessionTtlMs` / `sessionReapIntervalMs` options in `StartServerOptions`
+
+### Test Suite
+
+- 25 new regression tests across 3 test files:
+  - `RateLimiter.destroy-bug11.test.ts` — 9 tests: destroy lifecycle, timer leak prevention, custom store forwarding
+  - `SessionTtl-bug12.test.ts` — 6 tests: TTL configuration API, defaults, option composition
+  - `DevServerCacheBust-bug13.test.ts` — 13 tests: setup context, backward compat, ESM warning, cacheBustUrl utility
+  - Cumulative: 5625 tests passing across 278 files
+
 ## [3.6.4] - 2026-03-17
 
 ### Fixed

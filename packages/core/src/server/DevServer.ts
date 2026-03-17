@@ -64,6 +64,25 @@ interface ToolRegistryLike {
 }
 
 /**
+ * Context passed to the `setup` callback on each reload.
+ * Provides the registry for tool registration and the cache-busted URL
+ * for ESM module re-imports.
+ */
+export interface DevServerSetupContext {
+    /** Registry to register tools on. */
+    readonly registry: ToolRegistryLike;
+    /**
+     * Cache-busted URL of the changed file (if any).
+     * Use this to re-import ESM modules so the module cache is invalidated:
+     * ```ts
+     * const mod = await import(ctx.cacheBustUrl ?? cacheBustUrl('./src/tools.ts'));
+     * ```
+     * For CJS modules, cache invalidation is automatic.
+     */
+    readonly cacheBustUrl: string | undefined;
+}
+
+/**
  * Configuration for the development server.
  */
 export interface DevServerConfig {
@@ -89,13 +108,22 @@ export interface DevServerConfig {
     /**
      * Setup callback invoked on every reload.
      *
-     * Receives a fresh ToolRegistry. The callback should:
-     * 1. Import/define all tools
-     * 2. Register them on the registry
+     * Receives either a `ToolRegistryLike` (legacy) or a
+     * `DevServerSetupContext` with the registry and cache-busted URL.
+     *
+     * For ESM hot-reload to work, use the `cacheBustUrl` from the context
+     * when re-importing modules:
+     * ```ts
+     * setup: async (ctx) => {
+     *   const { registry, cacheBustUrl: url } = ctx as DevServerSetupContext;
+     *   const mod = await import(url ?? './src/tools.ts');
+     *   registry.register(mod.default);
+     * }
+     * ```
      *
      * This is called on initial startup and on every file change.
      */
-    readonly setup: (registry: ToolRegistryLike) => void | Promise<void>;
+    readonly setup: (registryOrCtx: ToolRegistryLike | DevServerSetupContext) => void | Promise<void>;
 
     /**
      * Optional callback when a reload occurs.
@@ -256,6 +284,9 @@ export function createDevServer(config: DevServerConfig): DevServer {
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
     let reloadCount = 0;
 
+    /** Whether we've warned about ESM cache-bust already */
+    let esmWarningEmitted = false;
+
     /**
      * Perform a full reload: clear caches, re-run setup, notify MCP client.
      */
@@ -265,6 +296,9 @@ export function createDevServer(config: DevServerConfig): DevServer {
         // Invalidate CJS cache for all watched files
         invalidateModule(changedFile);
 
+        // Capture the cache-busted URL before calling setup
+        const currentCacheBustUrl = lastCacheBustUrl;
+
         // Re-run the user's setup callback
         // Provide a duck-typed registry that satisfies the interface.
         // The user's setup may use this or close over their own registry.
@@ -273,13 +307,45 @@ export function createDevServer(config: DevServerConfig): DevServer {
             register(builder: unknown) { builders.push(builder); },
             getBuilders() { return builders; },
         };
+
+        // Pass both registry and cacheBustUrl to the setup callback.
+        // The setup function can destructure the context or treat it
+        // as a plain registry (backward-compatible duck typing).
+        const setupCtx: DevServerSetupContext = {
+            registry: reloadRegistry,
+            cacheBustUrl: currentCacheBustUrl,
+            // Duck-type compatibility: expose register/getBuilders at top level
+            // so legacy callbacks that expect (registry) still work.
+        };
+        // Assign duck-type methods so old `setup(registry)` signatures work
+        const ctxWithDuck = Object.assign(setupCtx, {
+            register: reloadRegistry.register.bind(reloadRegistry),
+            getBuilders: reloadRegistry.getBuilders!.bind(reloadRegistry),
+        });
+
         try {
-            await setup(reloadRegistry);
+            await setup(ctxWithDuck);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             // eslint-disable-next-line no-console
             console.error(`[vurb dev] Reload failed: ${message}`);
             return;
+        }
+
+        // Warn once if ESM modules may not benefit from cache invalidation
+        if (!esmWarningEmitted && changedFile !== '(initial)' && changedFile !== '(manual)') {
+            const isEsm = extensions.some(ext => ext === '.mjs' || ext === '.mts') ||
+                           changedFile.endsWith('.mjs') || changedFile.endsWith('.mts') ||
+                           extensions.includes('.ts') || extensions.includes('.js');
+            if (isEsm) {
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[vurb dev] ESM hot-reload requires cache-busted imports. ' +
+                    'Use the `cacheBustUrl` from the setup context or `cacheBustUrl()` from \'@vurb/core\' ' +
+                    'when dynamically importing modules. Plain `import(\'./path\')` will use stale cache.',
+                );
+                esmWarningEmitted = true;
+            }
         }
 
         // Transfer collected builders to the real registry (Bug #42 fix)
