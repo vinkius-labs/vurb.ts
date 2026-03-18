@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.7] - 2026-03-18
+
+### Fixed
+
+- **`vurb deploy` — Cannot find module 'vurb'** — `edgeStubAliases()` in the deploy command used `require.resolve('vurb')` to locate `edge-stub.js`, but the package is published as `@vurb/core`. Changed to `require.resolve('@vurb/core')`.
+
+### Added
+
+- **CLI `token` command args** — `tokenValue` and `clearToken` fields in `CliArgs` for the upcoming `vurb token` command.
+
 ## [3.6.6] - 2026-03-17
 
 ### Added

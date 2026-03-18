@@ -26,7 +26,7 @@ import { loadEnv, readVurbRc } from '../rc.js';
 // any transport is created.
 function edgeStubAliases(): Record<string, string> {
     const require = createRequire(import.meta.url);
-    const pkgDir = dirname(require.resolve('vurb'));
+    const pkgDir = dirname(require.resolve('@vurb/core'));
     const stubPath = resolve(pkgDir, 'edge-stub.js');
     const stubs: Record<string, string> = {};
     for (const mod of [
@@ -52,7 +52,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
     const rc = readVurbRc(cwd);
     const remote = rc.remote ?? VINKIUS_CLOUD_URL;
     const serverId = rc.serverId;
-    const token = args.token ?? process.env['VURB_DEPLOY_TOKEN'];
+    const token = args.token ?? process.env['VURB_DEPLOY_TOKEN'] ?? rc.token;
 
     // Bug #76 fix: warn when token would be sent over plaintext HTTP
     if (token && remote && !args.allowInsecure) {
@@ -72,7 +72,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         process.exit(1);
     }
     if (!token) {
-        progress.fail('read-config', 'Reading configuration', 'set VURB_DEPLOY_TOKEN=<connection-token> in .env');
+        progress.fail('read-config', 'Reading configuration', 'run: vurb token <token> or set VURB_DEPLOY_TOKEN in .env');
         process.exit(1);
     }
     progress.done('read-config', 'Reading configuration');

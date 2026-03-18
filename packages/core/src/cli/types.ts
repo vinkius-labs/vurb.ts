@@ -33,10 +33,12 @@ export interface ProjectConfig {
     readonly testing: boolean;
 }
 
-/** Remote cloud configuration stored in .vurbrc (token-free) */
+/** Remote cloud configuration stored in .vurbrc (gitignored) */
 export interface RemoteConfig {
     /** API base URL (e.g., https://api.cloud.vinkius.com) */
     readonly remote: string;
     /** Target server UUID */
     readonly serverId: string;
+    /** Deploy / connection token (sensitive — .vurbrc is gitignored) */
+    readonly token: string;
 }

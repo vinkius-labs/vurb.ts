@@ -38,6 +38,9 @@ export interface CliArgs {
     serverId: string | undefined;
     remoteUrl: string | undefined;
     allowInsecure: boolean;
+    // ── Token-specific ──
+    tokenValue: string | undefined;
+    clearToken: boolean;
 }
 
 // ─── Parser ──────────────────────────────────────────────────────
@@ -62,6 +65,8 @@ export function parseArgs(argv: string[]): CliArgs {
         serverId: undefined,
         remoteUrl: undefined,
         allowInsecure: false,
+        tokenValue: undefined,
+        clearToken: false,
     };
 
     let seenCommand = false;
@@ -75,6 +80,7 @@ export function parseArgs(argv: string[]): CliArgs {
             case 'dev':
             case 'deploy':
             case 'remote':
+            case 'token':
             case 'inspect':
             case 'insp':
             case 'debug':
@@ -137,6 +143,9 @@ export function parseArgs(argv: string[]): CliArgs {
             case '--allow-insecure':
                 result.allowInsecure = true;
                 break;
+            case '--clear':
+                result.clearToken = true;
+                break;
             default:
                 if (!seenCommand) {
                     result.command = arg;
@@ -146,6 +155,8 @@ export function parseArgs(argv: string[]): CliArgs {
                     seenProjectName = true;
                 } else if (result.command === 'remote' && !arg.startsWith('-')) {
                     result.remoteUrl = arg;
+                } else if (result.command === 'token' && !arg.startsWith('-')) {
+                    result.tokenValue = arg;
                 }
                 break;
         }

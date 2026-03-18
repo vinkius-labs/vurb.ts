@@ -71,6 +71,10 @@ export function readVurbRc(cwd: string): Partial<RemoteConfig> {
 export function writeVurbRc(cwd: string, config: Partial<RemoteConfig>): void {
     const existing = readVurbRc(cwd);
     const merged = { ...existing, ...config };
+    // Strip explicitly-undefined keys (e.g. token: undefined from --clear)
+    for (const key of Object.keys(merged) as Array<keyof typeof merged>) {
+        if (merged[key] === undefined) delete merged[key];
+    }
     writeFileSync(resolve(cwd, VURBRC), JSON.stringify(merged, null, 2) + '\n');
     ensureGitignore(cwd);
 }

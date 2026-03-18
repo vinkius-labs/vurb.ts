@@ -14,6 +14,7 @@ import { commandDev } from './commands/dev.js';
 import { commandCreate } from './commands/create.js';
 import { commandRemote } from './commands/remote.js';
 import { commandDeploy } from './commands/deploy.js';
+import { commandToken } from './commands/token.js';
 
 // ─── Re-exports (backward compat — tests import from vurb.js) ──
 
@@ -25,7 +26,7 @@ export { ProgressTracker, createDefaultReporter } from './progress.js';
 export type { RegistryLike, PromptRegistryLike } from './registry.js';
 export { resolveRegistry } from './registry.js';
 export { collectConfig } from './commands/create.js';
-export { commandLock, commandDev, commandCreate };
+export { commandLock, commandDev, commandCreate, commandToken };
 export { ask } from './utils.js';
 
 // ─── Main ────────────────────────────────────────────────────────
@@ -55,6 +56,9 @@ async function main(): Promise<void> {
             break;
         case 'remote':
             await commandRemote(args);
+            break;
+        case 'token':
+            await commandToken(args);
             break;
         case 'inspect':
         case 'insp':

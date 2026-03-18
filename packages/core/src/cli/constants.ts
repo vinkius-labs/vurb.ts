@@ -48,6 +48,7 @@ USAGE
   vurb lock --check                 Verify lockfile is up to date (CI gate)
   vurb deploy                       Bundle, compress & deploy to Edge
   vurb remote                       Show current remote configuration
+  vurb token                        Show current token status
   vurb inspect                      Launch the real-time TUI dashboard
   vurb insp --demo                  Launch TUI with built-in simulator
 
@@ -70,6 +71,12 @@ DEPLOY OPTIONS
 REMOTE OPTIONS
   vurb remote <url>          Override API endpoint (default: Vinkius Cloud)
   vurb remote --server-id <id>  Set target server UUID
+  --token <token>            Save deploy token to .vurbrc
+
+TOKEN OPTIONS
+  vurb token <token>         Save deploy token to .vurbrc
+  vurb token                 Show current token status (masked)
+  vurb token --clear         Remove token from .vurbrc
 
 INSPECTOR OPTIONS
   --demo, -d               Launch with built-in simulator (no server needed)
@@ -94,7 +101,10 @@ EXAMPLES
   vurb lock --server ./src/server.ts
   vurb deploy
   vurb remote --server-id abc-123-def
+  vurb remote --server-id abc-123-def --token vk_live_xxx
   vurb remote http://localhost:8080 --server-id abc-123-def
+  vurb token vk_live_9hfaJlIPOv5xZh
+  vurb token --clear
   vurb inspect --demo
   vurb insp --pid 12345
 `.trim();

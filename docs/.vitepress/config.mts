@@ -122,6 +122,7 @@ export default defineConfig({
           { text: 'Quickstart', link: '/quickstart-lightspeed' },
           { text: 'Enterprise Quickstart', link: '/enterprise-quickstart' },
           { text: 'Client Integrations', link: '/client-integrations' },
+          { text: 'CLI Reference', link: '/governance/cli' },
           { text: 'Migration Guide', link: '/migration' },
         ]
       },
