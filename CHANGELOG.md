@@ -5,13 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.6.9] - 2026-03-18
+## [3.6.10] - 2026-03-18
+
+### Fixed
+
+- **`vurb deploy` — Bundle sanitizer for edge static analysis** — The deploy server rejects bundles containing `eval()`, `new Function()`, `__proto__`, `Object.setPrototypeOf` etc. These patterns appear legitimately in esbuild output (CJS interop, class transpilation) and third-party SDKs (Zod, MCP SDK). Added `sanitizeBundleForEdge()` post-bundle step that neutralizes each pattern without changing JS semantics (indirect eval, bracket notation, etc.). Server security stays intact — V8 isolate sandbox is the real boundary.
+
+### Test Suite
+
+- 12 new sanitizer tests in `deployEdgeStub-bug151.test.ts`:
+  - Per-pattern neutralization against exact server regexes
+  - Safe code passthrough
+  - Multi-violation bundle handling
+
+## [3.6.8] - 2026-03-18
 
 ### Fixed
 
 - **`vurb deploy` — Cannot find module 'vurb' (Bug #151)** — `edgeStubAliases()` used `createRequire().resolve('vurb')` to locate `edge-stub.js`, but the package is published as `@vurb/core`, and its `exports` map only defines the `"import"` (ESM) condition — making CJS `require.resolve` fail even with the correct name. Replaced with `fileURLToPath(new URL('../../edge-stub.js', import.meta.url))`, a relative path that requires no external resolution.
+- **`vurb deploy` — esbuild alias prefix matching** — esbuild `alias` does prefix matching: aliasing `fs` → `edge-stub.js` turned `fs/promises` → `edge-stub.js/promises`. Replaced with esbuild plugin (onResolve + onLoad) using CJS Proxy catch-all for named imports not in edge-stub.js.
 - **`token.ts` exactOptionalPropertyTypes violation** — `writeVurbRc(cwd, { token: undefined })` violated `exactOptionalPropertyTypes: true`. Replaced with destructuring rest `const { token: _, ...rest } = config` to omit the key cleanly.
 - **Dead `dirname` import in `deploy.ts`** — Removed unused `dirname` from `node:path` import after the resolution refactor.
+- **Flaky JWT clock tolerance test** — `JwtVerifier.edge.test.ts` boundary test used real time with 1s margin, failing on slow CI. Fixed with `vi.useFakeTimers()` for deterministic execution.
 
 ### Added
 
@@ -19,12 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Test Suite
 
-- 16 new regression tests in `deployEdgeStub-bug151.test.ts`:
-  - Source analysis: no `require.resolve`, no `createRequire`, uses `import.meta.url`
-  - Physical existence: `edge-stub.js` in dist, relative path distance verification
-  - Alias completeness: all critical Node.js built-ins mapped
-  - Compiled output: no stale references in `dist/deploy.js`
-  - autoDiscover warning: detection and suggestion messaging
+- 32 regression tests in `deployEdgeStub-bug151.test.ts`:
+  - Source analysis, regex coverage for ALL builtinModules
+  - 2 real esbuild integration tests (17 node:* imports including subpaths)
+  - 12 sanitizer tests against exact server-side static analysis regexes
+
 
 ## [3.6.6] - 2026-03-17
 

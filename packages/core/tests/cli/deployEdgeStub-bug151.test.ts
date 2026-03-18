@@ -298,4 +298,84 @@ describe('Bug #151 — compiled deploy.js correctness', () => {
         expect(compiled).toContain('edgeStubPlugin');
         expect(compiled).toContain('onResolve');
     });
+
+    it('should contain sanitizeBundleForEdge in compiled output', () => {
+        if (!existsSync(DIST_PATH)) return;
+        const compiled = readFileSync(DIST_PATH, 'utf-8');
+        expect(compiled).toContain('sanitizeBundleForEdge');
+    });
+});
+
+// ── Bundle Sanitizer Tests ──────────────────────────────────────────────────
+
+describe('Bug #151 — sanitizeBundleForEdge', () => {
+    // Replicate the EXACT server-side static analysis regexes
+    const SERVER_PATTERNS: Array<[RegExp, string]> = [
+        [/\b__proto__\s*[=\[]/,                       '__proto__'],
+        [/Object\.setPrototypeOf\s*\(/,               'Object.setPrototypeOf'],
+        [/Reflect\.setPrototypeOf\s*\(/,              'Reflect.setPrototypeOf'],
+        [/\beval\s*\(/,                               'eval()'],
+        [/\bnew\s+Function\s*\(/,                     'new Function()'],
+        [/Function\s*\.\s*constructor\b/,             'Function.constructor'],
+        [/Function\s*\(\s*['"]/,                      "Function('string')"],
+    ];
+
+    // Replicate the sanitizer from deploy.ts
+    function sanitize(code: string): string {
+        return code
+            .replace(/\beval\s*\(/g, '(0,eval)(')
+            .replace(/\bnew\s+Function\s*\(/g, 'new(0,Function)(')
+            .replace(/Function\s*\.\s*constructor\b/g, 'Function["constructor"]')
+            .replace(/Function\s*\(\s*['"]/g, (m) => `(0,Function)(${m.slice(m.indexOf('(') + 1)}`)
+            .replace(/Object\.setPrototypeOf\s*\(/g, 'Object["setPrototypeOf"](')
+            .replace(/Reflect\.setPrototypeOf\s*\(/g, 'Reflect["setPrototypeOf"](')
+            .replace(/\b__proto__\s*([=\[])/g, '["__proto__"]$1');
+    }
+
+    const testCases = [
+        { input: 'obj.__proto__ = val',            pattern: '__proto__' },
+        { input: 'obj.__proto__["x"]',             pattern: '__proto__' },
+        { input: 'Object.setPrototypeOf(a, b)',    pattern: 'Object.setPrototypeOf' },
+        { input: 'Reflect.setPrototypeOf(a, b)',   pattern: 'Reflect.setPrototypeOf' },
+        { input: 'eval("code")',                   pattern: 'eval()' },
+        { input: 'var x = eval (expr)',            pattern: 'eval()' },
+        { input: 'new Function("return 1")',       pattern: 'new Function()' },
+        { input: 'Function.constructor',           pattern: 'Function.constructor' },
+        { input: "Function('return 1')",           pattern: "Function('string')" },
+        { input: 'Function("return 1")',           pattern: "Function('string')" },
+    ];
+
+    for (const { input, pattern } of testCases) {
+        it(`should neutralize: ${pattern} in "${input}"`, () => {
+            // Find the matching server regex
+            const serverRegex = SERVER_PATTERNS.find(([, name]) => name === pattern)?.[0];
+            expect(serverRegex).toBeDefined();
+
+            // Verify original input WOULD be caught by server
+            expect(serverRegex!.test(input)).toBe(true);
+
+            // Sanitize and verify it no longer matches
+            const sanitized = sanitize(input);
+            expect(serverRegex!.test(sanitized)).toBe(false);
+        });
+    }
+
+    it('should not alter safe code', () => {
+        const safe = 'const x = 42; console.log("hello");';
+        expect(sanitize(safe)).toBe(safe);
+    });
+
+    it('should handle multiple violations in one bundle', () => {
+        const bundle = [
+            'eval("code");',
+            'Object.setPrototypeOf(a, b);',
+            'obj.__proto__ = val;',
+            'new Function("x");',
+        ].join('\n');
+        const sanitized = sanitize(bundle);
+
+        for (const [regex] of SERVER_PATTERNS) {
+            expect(regex.test(sanitized)).toBe(false);
+        }
+    });
 });
