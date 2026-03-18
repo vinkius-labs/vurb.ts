@@ -5,15 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.6.7] - 2026-03-18
+## [3.6.8] - 2026-03-18
 
 ### Fixed
 
-- **`vurb deploy` — Cannot find module 'vurb'** — `edgeStubAliases()` in the deploy command used `require.resolve('vurb')` to locate `edge-stub.js`, but the package is published as `@vurb/core`. Changed to `require.resolve('@vurb/core')`.
+- **`vurb deploy` — Cannot find module 'vurb' (Bug #151)** — `edgeStubAliases()` used `createRequire().resolve('vurb')` to locate `edge-stub.js`, but the package is published as `@vurb/core`, and its `exports` map only defines the `"import"` (ESM) condition — making CJS `require.resolve` fail even with the correct name. Replaced with `fileURLToPath(new URL('../../edge-stub.js', import.meta.url))`, a relative path that requires no external resolution.
+- **`token.ts` exactOptionalPropertyTypes violation** — `writeVurbRc(cwd, { token: undefined })` violated `exactOptionalPropertyTypes: true`. Replaced with destructuring rest `const { token: _, ...rest } = config` to omit the key cleanly.
+- **Dead `dirname` import in `deploy.ts`** — Removed unused `dirname` from `node:path` import after the resolution refactor.
 
 ### Added
 
-- **CLI `token` command args** — `tokenValue` and `clearToken` fields in `CliArgs` for the upcoming `vurb token` command.
+- **CLI `token` command** — `vurb token <value>`, `vurb token --clear`, `vurb token` (show status). `tokenValue` and `clearToken` fields in `CliArgs`.
+
+### Test Suite
+
+- 16 new regression tests in `deployEdgeStub-bug151.test.ts`:
+  - Source analysis: no `require.resolve`, no `createRequire`, uses `import.meta.url`
+  - Physical existence: `edge-stub.js` in dist, relative path distance verification
+  - Alias completeness: all critical Node.js built-ins mapped
+  - Compiled output: no stale references in `dist/deploy.js`
+  - autoDiscover warning: detection and suggestion messaging
 
 ## [3.6.6] - 2026-03-17
 

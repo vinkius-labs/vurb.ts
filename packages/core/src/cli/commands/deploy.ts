@@ -8,11 +8,11 @@
  *
  * @module
  */
-import { resolve, dirname } from 'node:path';
+import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import type { CliArgs } from '../args.js';
 import { ProgressTracker } from '../progress.js';
 import { ansi, VINKIUS_CLOUD_URL } from '../constants.js';
@@ -25,9 +25,8 @@ import { loadEnv, readVurbRc } from '../rc.js';
 // The stubs are NEVER called at runtime — startServer() intercepts before
 // any transport is created.
 function edgeStubAliases(): Record<string, string> {
-    const require = createRequire(import.meta.url);
-    const pkgDir = dirname(require.resolve('@vurb/core'));
-    const stubPath = resolve(pkgDir, 'edge-stub.js');
+    // edge-stub.js lives at dist/edge-stub.js; this file is at dist/cli/commands/deploy.js
+    const stubPath = fileURLToPath(new URL('../../edge-stub.js', import.meta.url));
     const stubs: Record<string, string> = {};
     for (const mod of [
         'child_process', 'fs', 'net', 'events', 'stream',
