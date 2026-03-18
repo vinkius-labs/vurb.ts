@@ -150,12 +150,19 @@ describe('JwtVerifier — Clock Tolerance Boundaries', () => {
     });
 
     it('accepts token expired just within tolerance boundary', async () => {
-        // Token expired 59 seconds ago, tolerance is 60
-        const token = createHS256Token({ sub: 'user-1', exp: freshNow() - 59 }, SECRET);
-        const verifier = new JwtVerifier({ secret: SECRET, clockTolerance: 60 });
+        // Freeze time to eliminate CI timing flakiness.
+        // Token expired 59 seconds ago, tolerance is 60 → must be accepted.
+        const frozenNow = Math.floor(Date.now() / 1000);
+        vi.useFakeTimers({ now: frozenNow * 1000 });
+        try {
+            const token = createHS256Token({ sub: 'user-1', exp: frozenNow - 59 }, SECRET);
+            const verifier = new JwtVerifier({ secret: SECRET, clockTolerance: 60 });
 
-        const result = await verifier.verify(token);
-        expect(result).not.toBeNull();
+            const result = await verifier.verify(token);
+            expect(result).not.toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('works with zero clock tolerance', async () => {

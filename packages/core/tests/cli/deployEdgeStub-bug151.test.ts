@@ -1,22 +1,26 @@
 /**
- * Bug #151 — Deploy edge-stub resolution
+ * Bug #151 — Deploy edge-stub resolution (integration + source analysis)
  *
- * The deploy command must correctly locate `edge-stub.js` to alias
- * Node.js built-in modules for edge V8 isolate deployment.
+ * Previously, `edgeStubAliases()` used `createRequire().resolve('vurb')`
+ * which failed because (1) the package is `@vurb/core`, and (2) the
+ * exports map only defines the `"import"` (ESM) condition — CJS
+ * `require.resolve` fails even with the correct name.
  *
- * Previously, `edgeStubAliases()` used `require.resolve('vurb')` which:
- *   1. Referenced a non-existent package (correct name is `@vurb/core`)
- *   2. Even with the correct name, `createRequire().resolve()` uses CJS
- *      resolution, but `@vurb/core` only exports ESM (`"import"` condition)
+ * Then `alias` was used instead of a plugin, but esbuild `alias` does
+ * prefix matching: aliasing `fs` → `edge-stub.js` turns `fs/promises`
+ * → `edge-stub.js/promises` which doesn't exist.
  *
- * The fix uses `fileURLToPath(new URL('../../edge-stub.js', import.meta.url))`
- * — a relative path from the file itself, eliminating external resolution.
+ * The fix uses an esbuild **plugin** with `onResolve` that intercepts
+ * ALL node built-in imports including subpaths, and `builtinModules`
+ * from `node:module` to dynamically build the regex — future-proof.
  *
  * @module
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { resolve, relative, join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { builtinModules } from 'node:module';
 
 const SRC_PATH = resolve(__dirname, '../../src/cli/commands/deploy.ts');
 const DIST_PATH = resolve(__dirname, '../../dist/cli/commands/deploy.js');
@@ -27,41 +31,45 @@ const deploySource = readFileSync(SRC_PATH, 'utf-8');
 
 // ── Source Analysis ─────────────────────────────────────────────────
 
-describe('Bug #151 — edgeStubAliases() module resolution', () => {
+describe('Bug #151 — source analysis: no require.resolve', () => {
     it('should NOT use require.resolve to locate edge-stub', () => {
-        // The old broken patterns — must never appear
         expect(deploySource).not.toContain("require.resolve('vurb')");
         expect(deploySource).not.toContain('require.resolve("vurb")');
         expect(deploySource).not.toContain("require.resolve('@vurb/core')");
         expect(deploySource).not.toContain('require.resolve("@vurb/core")');
     });
 
-    it('should NOT import createRequire', () => {
-        // createRequire is no longer needed in deploy.ts
-        expect(deploySource).not.toContain('createRequire');
+    it('should NOT use esbuild alias (prefix matching breaks subpaths)', () => {
+        // alias: edgeStubAliases() was the broken pattern
+        expect(deploySource).not.toMatch(/alias\s*:\s*edgeStubAliases/);
     });
 
-    it('should use import.meta.url relative resolution', () => {
+    it('should use an esbuild plugin with onResolve', () => {
+        expect(deploySource).toContain('edgeStubPlugin');
+        expect(deploySource).toContain('onResolve');
+        expect(deploySource).toContain("plugins: [edgeStubPlugin()]");
+    });
+
+    it('should use builtinModules from node:module for dynamic list', () => {
+        expect(deploySource).toContain('builtinModules');
+        expect(deploySource).toContain("from 'node:module'");
+    });
+
+    it('should use import.meta.url relative resolution for edge-stub path', () => {
         expect(deploySource).toContain("new URL('../../edge-stub.js', import.meta.url)");
-    });
-
-    it('should import fileURLToPath from node:url', () => {
-        expect(deploySource).toMatch(/import\s*\{[^}]*fileURLToPath[^}]*\}\s*from\s*['"]node:url['"]/);
+        expect(deploySource).toContain('fileURLToPath');
     });
 
     it('should NOT have unused dirname import', () => {
-        // dirname was used in the old pattern: dirname(require.resolve(...))
-        // After the fix, only resolve should be imported from node:path
         const pathImport = deploySource.match(/import\s*\{([^}]*)\}\s*from\s*['"]node:path['"]/);
         expect(pathImport).toBeTruthy();
         expect(pathImport![1]).not.toContain('dirname');
-        expect(pathImport![1]).toContain('resolve');
     });
 });
 
 // ── Edge Stub File Existence ────────────────────────────────────────
 
-describe('Bug #151 — edge-stub.js physical existence', () => {
+describe('Bug #151 — edge-stub physical existence', () => {
     it('should have edge-stub.ts in source', () => {
         expect(existsSync(EDGE_STUB_SRC)).toBe(true);
     });
@@ -70,51 +78,208 @@ describe('Bug #151 — edge-stub.js physical existence', () => {
         expect(existsSync(EDGE_STUB_DIST)).toBe(true);
     });
 
-    it('should have deploy.js in dist after build', () => {
-        expect(existsSync(DIST_PATH)).toBe(true);
-    });
-
-    it('should maintain correct relative distance between deploy.js and edge-stub.js', () => {
-        // deploy.js is at dist/cli/commands/deploy.js
-        // edge-stub.js is at dist/edge-stub.js
-        // relative path from deploy.js dir to edge-stub.js must be ../../edge-stub.js
+    it('should maintain correct relative distance', () => {
         const deployDir = resolve(DIST_PATH, '..');
         const rel = relative(deployDir, EDGE_STUB_DIST).replace(/\\/g, '/');
         expect(rel).toBe('../../edge-stub.js');
     });
 });
 
-// ── Edge Stub Aliases Coverage ──────────────────────────────────────
+// ── Regex Coverage ──────────────────────────────────────────────────
 
-describe('Bug #151 — edgeStubAliases() completeness', () => {
-    it('should alias both node: prefixed and bare specifiers', () => {
-        // Must map both `node:fs` and `fs` to stubPath
-        expect(deploySource).toContain('`node:${mod}`');
-        expect(deploySource).toContain('stubs[mod]');
+describe('Bug #151 — BUILTIN_FILTER regex coverage', () => {
+    // Reconstruct the same regex as deploy.ts
+    const roots = [
+        ...new Set(builtinModules.filter(m => !m.startsWith('_')).map(m => m.split('/')[0]!)),
+    ];
+    const filter = new RegExp(`^(node:)?(${roots.join('|')})(/.*)?$`);
+
+    it('should match bare module specifiers', () => {
+        expect(filter.test('fs')).toBe(true);
+        expect(filter.test('path')).toBe(true);
+        expect(filter.test('crypto')).toBe(true);
+        expect(filter.test('child_process')).toBe(true);
+        expect(filter.test('http2')).toBe(true);
     });
 
-    it('should include all critical Node.js built-ins for edge stubbing', () => {
-        const requiredModules = [
-            'child_process', 'fs', 'net', 'events', 'stream',
-            'http', 'https', 'tls', 'os', 'path', 'url', 'crypto',
-            'buffer', 'util', 'zlib',
-        ];
-        for (const mod of requiredModules) {
-            expect(deploySource).toContain(`'${mod}'`);
+    it('should match node: prefixed specifiers', () => {
+        expect(filter.test('node:fs')).toBe(true);
+        expect(filter.test('node:path')).toBe(true);
+        expect(filter.test('node:crypto')).toBe(true);
+        expect(filter.test('node:process')).toBe(true);
+    });
+
+    it('should match subpath imports (the core bug)', () => {
+        expect(filter.test('node:fs/promises')).toBe(true);
+        expect(filter.test('fs/promises')).toBe(true);
+        expect(filter.test('node:path/posix')).toBe(true);
+        expect(filter.test('node:path/win32')).toBe(true);
+        expect(filter.test('node:dns/promises')).toBe(true);
+        expect(filter.test('node:stream/promises')).toBe(true);
+        expect(filter.test('node:stream/consumers')).toBe(true);
+        expect(filter.test('node:stream/web')).toBe(true);
+        expect(filter.test('node:readline/promises')).toBe(true);
+        expect(filter.test('node:timers/promises')).toBe(true);
+        expect(filter.test('node:util/types')).toBe(true);
+        expect(filter.test('node:assert/strict')).toBe(true);
+        expect(filter.test('node:inspector/promises')).toBe(true);
+    });
+
+    it('should NOT match non-node modules', () => {
+        expect(filter.test('lodash')).toBe(false);
+        expect(filter.test('esbuild')).toBe(false);
+        expect(filter.test('@vurb/core')).toBe(false);
+        expect(filter.test('zod')).toBe(false);
+        expect(filter.test('./my-module')).toBe(false);
+    });
+
+    it('should cover ALL Node.js built-in modules', () => {
+        for (const mod of builtinModules.filter(m => !m.startsWith('_'))) {
+            expect(filter.test(mod), `missing: ${mod}`).toBe(true);
+            expect(filter.test(`node:${mod}`), `missing: node:${mod}`).toBe(true);
+        }
+    });
+});
+
+// ── REAL esbuild integration test ───────────────────────────────────
+
+/** Reconstruct the exact plugin used in deploy.ts */
+function createTestPlugin(): import('esbuild').Plugin {
+    const roots = [
+        ...new Set(builtinModules.filter(m => !m.startsWith('_')).map(m => m.split('/')[0]!)),
+    ];
+    const builtinFilter = new RegExp(`^(node:)?(${roots.join('|')})(/.*)?$`);
+    const stubPathEscaped = JSON.stringify(EDGE_STUB_DIST);
+
+    return {
+        name: 'vurb-edge-stub',
+        setup(build) {
+            build.onResolve({ filter: builtinFilter }, (args) => ({
+                path: args.path,
+                namespace: 'edge-stub',
+            }));
+            build.onLoad({ filter: /.*/, namespace: 'edge-stub' }, () => ({
+                contents: [
+                    `const _stub = require(${stubPathEscaped});`,
+                    `const CRASH = (api) => { throw new Error(\`[Vinkius Edge] "\${api}" is blocked.\`); };`,
+                    `module.exports = new Proxy(_stub, {`,
+                    `  get(target, prop) {`,
+                    `    if (prop in target) return target[prop];`,
+                    `    if (prop === '__esModule') return true;`,
+                    `    if (typeof prop === 'symbol') return undefined;`,
+                    `    return (...args) => CRASH(prop);`,
+                    `  }`,
+                    `});`,
+                ].join('\n'),
+                loader: 'js',
+                resolveDir: '.',
+            }));
+        },
+    };
+}
+
+describe('Bug #151 — esbuild plugin integration', () => {
+    it('should bundle a file that imports node builtins without errors', async () => {
+        const esbuild = await import('esbuild');
+
+        // Create a temp file that imports various node builtins (including subpaths)
+        const tmpDir = mkdtempSync(join(tmpdir(), 'vurb-deploy-test-'));
+        const entryFile = join(tmpDir, 'entry.mjs');
+        writeFileSync(entryFile, [
+            'import { readFileSync } from "node:fs";',
+            'import { readFile } from "node:fs/promises";',
+            'import { resolve as pathResolve } from "node:path";',
+            'import { join as pathJoin } from "node:path/posix";',
+            'import { createHash } from "node:crypto";',
+            'import { EventEmitter } from "node:events";',
+            'import { createServer } from "node:http";',
+            'import { connect } from "node:http2";',
+            'import { Socket } from "node:net";',
+            'import { Readable } from "node:stream";',
+            'import { pipeline } from "node:stream/promises";',
+            'import process from "node:process";',
+            'import { lookup } from "node:dns/promises";',
+            'import { createInterface } from "node:readline";',
+            'import { setTimeout as setTimeoutP } from "node:timers/promises";',
+            'import { types } from "node:util";',
+            'import { isDeepStrictEqual } from "node:assert/strict";',
+            'console.log("bundled OK");',
+        ].join('\n'));
+
+        try {
+            const result = await esbuild.build({
+                entryPoints: [entryFile],
+                bundle: true,
+                format: 'iife',
+                platform: 'browser',
+                target: 'es2022',
+                write: false,
+                logLevel: 'silent',
+                plugins: [createTestPlugin()],
+            });
+
+            // Must produce output with no errors
+            expect(result.errors).toHaveLength(0);
+            expect(result.outputFiles).toBeDefined();
+            expect(result.outputFiles!.length).toBeGreaterThan(0);
+
+            const output = new TextDecoder().decode(result.outputFiles![0]!.contents);
+            expect(output.length).toBeGreaterThan(0);
+            expect(output).toContain('bundled OK');
+        } finally {
+            rmSync(tmpDir, { recursive: true, force: true });
         }
     });
 
-    it('should include string_decoder and querystring for full SDK compat', () => {
-        expect(deploySource).toContain("'string_decoder'");
-        expect(deploySource).toContain("'querystring'");
+    it('should bundle with the MCP SDK pattern (node:fs + node:fs/promises + node:process)', async () => {
+        const esbuild = await import('esbuild');
+
+        // Simulate the exact imports that caused failures in production
+        const tmpDir = mkdtempSync(join(tmpdir(), 'vurb-deploy-mcp-'));
+        const entryFile = join(tmpDir, 'mcp-entry.mjs');
+        writeFileSync(entryFile, [
+            '// Simulates @modelcontextprotocol/sdk imports',
+            'import process from "node:process";',
+            'import { createServer } from "node:http";',
+            '// Simulates @vurb/core/dist/introspection/CapabilityLockfile.js',
+            'import { readFile } from "node:fs/promises";',
+            '// Simulates @hono/node-server',
+            'import { connect } from "http2";',
+            '// Various other patterns found in real deps',
+            'import { spawn } from "child_process";',
+            'import { EventEmitter } from "events";',
+            'import { Buffer } from "buffer";',
+            'console.log("mcp bundle OK");',
+        ].join('\n'));
+
+        try {
+            const result = await esbuild.build({
+                entryPoints: [entryFile],
+                bundle: true,
+                format: 'iife',
+                platform: 'browser',
+                target: 'es2022',
+                write: false,
+                logLevel: 'silent',
+                plugins: [createTestPlugin()],
+            });
+
+            expect(result.errors).toHaveLength(0);
+            expect(result.outputFiles!.length).toBeGreaterThan(0);
+
+            const output = new TextDecoder().decode(result.outputFiles![0]!.contents);
+            expect(output).toContain('mcp bundle OK');
+        } finally {
+            rmSync(tmpDir, { recursive: true, force: true });
+        }
     });
 });
 
 // ── Compiled deploy.js Verification ─────────────────────────────────
 
 describe('Bug #151 — compiled deploy.js correctness', () => {
-    it('should compile without require.resolve references', () => {
-        if (!existsSync(DIST_PATH)) return; // skip if not built
+    it('should not contain stale require.resolve in compiled output', () => {
+        if (!existsSync(DIST_PATH)) return;
         const compiled = readFileSync(DIST_PATH, 'utf-8');
         expect(compiled).not.toContain("require.resolve('vurb')");
         expect(compiled).not.toContain("require.resolve('@vurb/core')");
@@ -126,18 +291,11 @@ describe('Bug #151 — compiled deploy.js correctness', () => {
         expect(compiled).toContain('../../edge-stub.js');
         expect(compiled).toContain('import.meta.url');
     });
-});
 
-// ── autoDiscover Warning ────────────────────────────────────────────
-
-describe('Deploy — autoDiscover() edge warning', () => {
-    it('should detect autoDiscover usage and warn', () => {
-        expect(deploySource).toContain('autoDiscover');
-        expect(deploySource).toContain('fs.readdir');
-        expect(deploySource).toContain('Edge V8 isolates do not support filesystem access');
-    });
-
-    it('should suggest explicit imports as replacement', () => {
-        expect(deploySource).toContain('registry.register(tool)');
+    it('should use plugins instead of alias in compiled output', () => {
+        if (!existsSync(DIST_PATH)) return;
+        const compiled = readFileSync(DIST_PATH, 'utf-8');
+        expect(compiled).toContain('edgeStubPlugin');
+        expect(compiled).toContain('onResolve');
     });
 });

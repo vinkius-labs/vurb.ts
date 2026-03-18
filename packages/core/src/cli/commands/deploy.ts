@@ -19,24 +19,68 @@ import { ansi, VINKIUS_CLOUD_URL } from '../constants.js';
 import { ask, inferServerEntry } from '../utils.js';
 import { loadEnv, readVurbRc } from '../rc.js';
 
-// ── Edge Stub Aliases ────────────────────────────────────────────────────────
-// Maps node:* to edge-stub.ts (internal, NOT in package.json exports).
-// These stubs satisfy esbuild AST so the MCP SDK compiles without errors.
+// ── Edge Stub Plugin ─────────────────────────────────────────────────────────
+// Intercepts all Node.js built-in imports (including subpaths like
+// node:fs/promises, node:path/posix, etc.) and redirects them to
+// edge-stub.js — a set of AST-compatible stubs that satisfy esbuild
+// so the MCP SDK compiles without errors for V8 isolate deployment.
+//
+// Uses an esbuild plugin (onResolve) instead of the `alias` option because
+// alias does prefix matching: aliasing `fs` → edge-stub.js turns
+// `fs/promises` → `edge-stub.js/promises` which doesn't exist.
+//
 // The stubs are NEVER called at runtime — startServer() intercepts before
 // any transport is created.
-function edgeStubAliases(): Record<string, string> {
-    // edge-stub.js lives at dist/edge-stub.js; this file is at dist/cli/commands/deploy.js
-    const stubPath = fileURLToPath(new URL('../../edge-stub.js', import.meta.url));
-    const stubs: Record<string, string> = {};
-    for (const mod of [
-        'child_process', 'fs', 'net', 'events', 'stream',
-        'http', 'https', 'tls', 'os', 'path', 'url', 'crypto', 'buffer',
-        'util', 'zlib', 'string_decoder', 'querystring', 'assert',
-    ]) {
-        stubs[`node:${mod}`] = stubPath;
-        stubs[mod] = stubPath; // bare specifiers used by some libs
-    }
-    return stubs;
+// Dynamically build the list from Node.js itself — future-proof, never incomplete.
+// Subpaths (fs/promises, path/posix) are handled by the regex (/.*)?$ suffix.
+import { builtinModules } from 'node:module';
+
+const BUILTIN_ROOTS = [
+    ...new Set(builtinModules.filter(m => !m.startsWith('_')).map(m => m.split('/')[0]!)),
+];
+
+// Pre-build regex: matches node:fs, fs, node:fs/promises, fs/promises, etc.
+const BUILTIN_FILTER = new RegExp(
+    `^(node:)?(${BUILTIN_ROOTS.join('|')})(/.*)?$`,
+);
+
+function edgeStubPlugin(): import('esbuild').Plugin {
+    return {
+        name: 'vurb-edge-stub',
+        setup(build) {
+            // edge-stub.js lives at dist/edge-stub.js; this file is at dist/cli/commands/deploy.js
+            const stubPath = fileURLToPath(new URL('../../edge-stub.js', import.meta.url));
+            const stubPathEscaped = JSON.stringify(stubPath);
+
+            // Resolve all node builtins to a virtual namespace
+            build.onResolve({ filter: BUILTIN_FILTER }, (args) => ({
+                path: args.path,
+                namespace: 'edge-stub',
+            }));
+
+            // Load: inline CJS module that re-exports edge-stub.js exports
+            // AND provides a fallback CRASH function for any named import
+            // that edge-stub.js does not define (e.g. readFile, createServer,
+            // connect, pipeline, lookup, etc.). This avoids esbuild
+            // "No matching export" errors while preserving Tier 1/2 stubs.
+            build.onLoad({ filter: /.*/, namespace: 'edge-stub' }, () => ({
+                contents: [
+                    `const _stub = require(${stubPathEscaped});`,
+                    `const CRASH = (api) => { throw new Error(\`[Vinkius Edge] "\${api}" is blocked in the Serverless Sandbox.\`); };`,
+                    `module.exports = new Proxy(_stub, {`,
+                    `  get(target, prop) {`,
+                    `    if (prop in target) return target[prop];`,
+                    `    if (prop === '__esModule') return true;`,
+                    `    if (typeof prop === 'symbol') return undefined;`,
+                    `    return (...args) => CRASH(prop);`,
+                    `  }`,
+                    `});`,
+                ].join('\n'),
+                loader: 'js',
+                resolveDir: '.',
+            }));
+        },
+    };
 }
 
 export async function commandDeploy(args: CliArgs): Promise<void> {
@@ -168,7 +212,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
             write: false,
             logLevel: 'silent',
             external: [],
-            alias: edgeStubAliases(),
+            plugins: [edgeStubPlugin()],
         });
     } catch (err: unknown) {
         const buildErr = err as { errors?: Array<{ text: string; location?: { file: string; line: number; column: number } }> };
