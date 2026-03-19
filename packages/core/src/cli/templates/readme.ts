@@ -22,7 +22,7 @@ export function readme(config: ProjectConfig): string {
 
     return `# ${config.name}
 
-MCP Server built with [Vurb](https://vurb.vinkius.com/) — the MCP framework with MVA architecture.
+MCP Server built with [Vurb.ts](https://vurb.vinkius.com/) — the TypeScript framework for MCP servers.
 
 ## Quick Start
 

@@ -14,7 +14,7 @@ const pages: Record<string, PageSEO> = {
   // LANDING PAGE
   // ═══════════════════════════════════════════════════════
   'index.md': {
-    title: 'Vurb.ts — The MCP Framework with MVA Architecture',
+    title: 'Vurb.ts — The TypeScript Framework for MCP Servers',
     description: 'A TypeScript framework with a Structured Perception Layer for AI agents. MVA (Model-View-Agent) architecture with Presenters, cognitive guardrails, and structured perception packages.',
     faqs: [
       { q: 'What is Vurb.ts?', a: 'Vurb.ts is a TypeScript framework for the Model Context Protocol (MCP) that introduces the MVA (Model-View-Agent) architectural pattern. It replaces raw JSON responses with structured perception packages — validated data, domain rules, server-rendered charts, and explicit action affordances — so AI agents perceive and act on data deterministically instead of guessing.' },
@@ -84,7 +84,7 @@ const pages: Record<string, PageSEO> = {
   // ═══════════════════════════════════════════════════════
   'introduction.md': {
     title: 'Introduction to Vurb.ts',
-    description: 'Get started with Vurb.ts — the MCP framework with MVA architecture for building servers that AI agents actually understand.',
+    description: 'Get started with Vurb.ts — type-safe tools, MVA architecture, and built-in security for MCP servers that AI agents actually understand.',
     faqs: [
       { q: 'What do I need to get started with Vurb.ts?', a: 'You need Node.js >= 18 and TypeScript >= 5.7. Install with: npm install Vurb.ts zod. The framework builds on top of the official @modelcontextprotocol/sdk which is included as a peer dependency.' },
       { q: 'Can I use Vurb.ts with existing MCP servers?', a: 'Yes. Vurb.ts uses the standard MCP SDK under the hood. You can incrementally adopt it by converting tools one at a time. Existing raw handlers continue to work alongside Vurb.ts tools on the same server.' },

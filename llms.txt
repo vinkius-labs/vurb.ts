@@ -1,6 +1,6 @@
 # Vurb.ts
 
-> The MCP framework with MVA architecture for production servers. Structured perception for AI agents — zero hallucination, zero data leaks.
+> Vurb.ts is the TypeScript framework for production MCP servers. MVA architecture, structured perception for AI agents — zero hallucination, zero data leaks.
 
 ## What is Vurb.ts?
 
