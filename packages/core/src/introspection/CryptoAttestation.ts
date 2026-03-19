@@ -151,6 +151,17 @@ export interface VurbTrustCapability {
  * @returns An `AttestationSigner` using HMAC-SHA256
  */
 export function createHmacSigner(secret: string): AttestationSigner {
+    // Security #5: reject weak secrets
+    if (secret.length < 32) {
+        const msg =
+            `[Vurb] HMAC secret must be at least 32 characters (got ${secret.length}). ` +
+            `Use a cryptographically random value (e.g. openssl rand -hex 32).`;
+        if (process.env['NODE_ENV'] === 'production') {
+            throw new Error(msg);
+        }
+        // eslint-disable-next-line no-console
+        console.warn(`⚠️  ${msg}`);
+    }
     return {
         name: 'hmac-sha256',
         async sign(digest: string): Promise<string> {

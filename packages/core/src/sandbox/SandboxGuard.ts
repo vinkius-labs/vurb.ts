@@ -15,6 +15,20 @@
  * - Fail-fast: rejects obviously broken code before V8 boot
  * - NOT a security gate (LLMs can obfuscate; the Isolate is the real wall)
  *
+ * ## Security Model
+ *
+ * The regex patterns below CAN be bypassed (e.g. Unicode escapes like
+ * `\u0072equire()` or string concatenation). This is **by design**.
+ * The patterns exist purely for DX — giving the LLM immediate, actionable
+ * feedback instead of waiting for V8 to throw a cryptic error.
+ *
+ * The **true security boundary** is the V8 Isolate's empty Context:
+ * - No `process`, `require`, `fs`, `globalThis`, or `Buffer` injected
+ * - Each execution creates a fresh Context with no global bindings
+ * - Even if bypass succeeds, the dangerous API simply does not exist
+ *
+ * See {@link SandboxEngine} for the security architecture.
+ *
  * @module
  * @internal
  */

@@ -46,6 +46,20 @@ export interface RequireApiKeyOptions extends ApiKeyManagerConfig {
 
     /** Recovery action name. Default: 'auth' */
     readonly recoveryAction?: string;
+
+    /**
+     * Optional callback invoked on authentication failure.
+     * Use this to log failed attempts, emit telemetry events, or trigger alerts.
+     *
+     * @example
+     * ```ts
+     * requireApiKey({
+     *     keys: ['sk_live_abc123'],
+     *     onAuthFailure: (event) => telemetryBus.emit(event),
+     * });
+     * ```
+     */
+    readonly onAuthFailure?: (event: { type: string; method: string; reason: string; timestamp: number }) => void;
 }
 
 // ============================================================================
@@ -70,6 +84,7 @@ export function requireApiKey(options: RequireApiKeyOptions) {
         const raw = extractKey(ctx);
 
         if (!raw) {
+            options.onAuthFailure?.({ type: 'auth.failed', method: 'api-key', reason: 'missing_key', timestamp: Date.now() });
             return toolError(errorCode, {
                 message: 'API key authentication required',
                 suggestion: recoveryHint,
@@ -80,6 +95,7 @@ export function requireApiKey(options: RequireApiKeyOptions) {
         const result = await manager.validate(raw);
 
         if (!result.valid) {
+            options.onAuthFailure?.({ type: 'auth.failed', method: 'api-key', reason: result.reason ?? 'validation_failed', timestamp: Date.now() });
             return toolError(errorCode, {
                 message: `API key validation failed: ${result.reason}`,
                 suggestion: recoveryHint,

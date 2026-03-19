@@ -55,6 +55,20 @@ export interface RequireJwtOptions extends JwtVerifierConfig {
 
     /** Recovery action name. Default: 'auth' */
     readonly recoveryAction?: string;
+
+    /**
+     * Optional callback invoked on authentication failure.
+     * Use this to log failed attempts, emit telemetry events, or trigger alerts.
+     *
+     * @example
+     * ```ts
+     * requireJwt({
+     *     secret: 'my-secret',
+     *     onAuthFailure: (event) => telemetryBus.emit(event),
+     * });
+     * ```
+     */
+    readonly onAuthFailure?: (event: { type: string; method: string; reason: string; timestamp: number }) => void;
 }
 
 // ============================================================================
@@ -79,6 +93,7 @@ export function requireJwt(options: RequireJwtOptions) {
         const raw = extractToken(ctx);
 
         if (!raw) {
+            options.onAuthFailure?.({ type: 'auth.failed', method: 'jwt', reason: 'missing_token', timestamp: Date.now() });
             return toolError(errorCode, {
                 message: 'JWT authentication required',
                 suggestion: recoveryHint,
@@ -92,6 +107,7 @@ export function requireJwt(options: RequireJwtOptions) {
         const result = await verifier.verifyDetailed(token);
 
         if (!result.valid) {
+            options.onAuthFailure?.({ type: 'auth.failed', method: 'jwt', reason: result.reason ?? 'verification_failed', timestamp: Date.now() });
             return toolError(errorCode, {
                 message: `JWT verification failed: ${result.reason}`,
                 suggestion: recoveryHint,

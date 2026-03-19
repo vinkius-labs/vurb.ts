@@ -87,6 +87,40 @@ export interface StartServerOptions<TContext> {
      */
     readonly sessionReapIntervalMs?: number;
 
+    /**
+     * Maximum number of requests per session per minute for the HTTP transport.
+     * Requests exceeding this limit are rejected with HTTP 429.
+     *
+     * @default 600
+     */
+    readonly rateLimitPerMinute?: number;
+
+    /**
+     * Maximum number of concurrent sessions for the HTTP transport.
+     * New session initialization requests are rejected with HTTP 503
+     * when this limit is reached.
+     *
+     * @default 1000
+     */
+    readonly maxSessions?: number;
+
+    /**
+     * CORS configuration for the HTTP transport.
+     * When provided, sets `Access-Control-Allow-*` headers on all `/mcp` responses
+     * and handles `OPTIONS` preflight requests automatically.
+     *
+     * Default: no CORS headers (most restrictive).
+     *
+     * @example
+     * ```ts
+     * startServer({
+     *     transport: 'http',
+     *     cors: { origin: 'https://app.example.com' },
+     * });
+     * ```
+     */
+    readonly cors?: CorsConfig;
+
     /** Extra attach options (debug, tracing, zeroTrust, etc.). */
     readonly attach?: Omit<AttachOptions<TContext>, 'contextFactory' | 'prompts' | 'telemetry'>;
 
@@ -151,6 +185,114 @@ export interface StartServerResult {
     readonly httpServer?: HttpServer;
     /** Gracefully shut down everything. */
     readonly close: () => Promise<void>;
+}
+
+// ============================================================================
+// Security Helpers
+// ============================================================================
+
+/**
+ * CORS configuration for the HTTP transport.
+ */
+export interface CorsConfig {
+    /**
+     * Allowed origin(s). Use `'*'` for any origin (not recommended for production).
+     * Can be a single origin string or an array of allowed origins.
+     */
+    readonly origin: string | readonly string[];
+
+    /**
+     * Allowed HTTP methods.
+     * @default ['GET', 'POST', 'DELETE', 'OPTIONS']
+     */
+    readonly methods?: readonly string[];
+}
+
+/**
+ * UUID v4 format validator for Mcp-Session-Id.
+ * Rejects oversized or malformed session IDs before they reach the session Map.
+ * @internal
+ */
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidSessionId(id: string): boolean {
+    return UUID_V4_RE.test(id);
+}
+
+/** Dangerous keys that must never be assigned to user state objects. */
+const POISONED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Token bucket rate limiter — tracks request counts per session per minute.
+ * Resets automatically every 60 seconds.
+ * @internal
+ */
+class RateLimitBucket {
+    private readonly _limit: number;
+    private readonly _buckets = new Map<string, { count: number; resetAt: number }>();
+
+    constructor(limitPerMinute: number) {
+        this._limit = Math.max(1, limitPerMinute);
+    }
+
+    /** Returns `true` if the request is allowed, `false` if rate-limited. */
+    allow(sessionId: string): boolean {
+        const now = Date.now();
+        let bucket = this._buckets.get(sessionId);
+        if (!bucket || now >= bucket.resetAt) {
+            bucket = { count: 0, resetAt: now + 60_000 };
+            this._buckets.set(sessionId, bucket);
+        }
+        bucket.count++;
+        return bucket.count <= this._limit;
+    }
+
+    /** Remove stale buckets for sessions that no longer exist. */
+    prune(activeSessions: ReadonlySet<string>): void {
+        for (const key of this._buckets.keys()) {
+            if (!activeSessions.has(key)) this._buckets.delete(key);
+        }
+    }
+}
+
+/**
+ * Apply CORS headers to a response if CORS is configured.
+ * Returns `true` if the request is a preflight OPTIONS that was fully handled.
+ * @internal
+ */
+function applyCorsHeaders(
+    req: { headers: Record<string, string | string[] | undefined>; method?: string | undefined },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any — duck-typed HTTP response
+    res: any,
+    cors: CorsConfig | undefined,
+): boolean {
+    if (!cors) return false;
+
+    const requestOrigin = (req.headers['origin'] as string | undefined) ?? '';
+    const allowedOrigins = typeof cors.origin === 'string' ? [cors.origin] : cors.origin;
+    const methods = cors.methods ?? ['GET', 'POST', 'DELETE', 'OPTIONS'];
+
+    // Check if the request origin is allowed
+    let matchedOrigin: string;
+    if (allowedOrigins.includes('*')) {
+        matchedOrigin = '*';
+    } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+        matchedOrigin = requestOrigin;
+    } else {
+        matchedOrigin = allowedOrigins[0] ?? '';
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', matchedOrigin);
+    res.setHeader('Access-Control-Allow-Methods', methods.join(', '));
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id, Authorization');
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204).end();
+        return true;
+    }
+
+    return false;
 }
 
 // ============================================================================
@@ -306,12 +448,17 @@ export async function startServer<TContext>(
 
             g.__vinkius_edge_setState = (json: string) => {
                 const restored = JSON.parse(json);
+                // Guard: must be a plain object
+                if (typeof restored !== 'object' || restored === null || Array.isArray(restored)) return;
                 // Clear existing keys (handles removed properties)
                 for (const key of Object.keys(state)) {
                     delete (state as Record<string, unknown>)[key];
                 }
-                // Assign restored values (preserves object reference for closures)
-                Object.assign(state, restored);
+                // Assign restored values — skip poisoned keys to prevent prototype pollution
+                for (const [key, value] of Object.entries(restored as Record<string, unknown>)) {
+                    if (POISONED_KEYS.has(key)) continue;
+                    (state as Record<string, unknown>)[key] = value;
+                }
             };
         }
 
@@ -394,6 +541,8 @@ export async function startServer<TContext>(
         const sessionActivity = new Map<string, number>();
         const sessionTtlMs = options.sessionTtlMs ?? 1_800_000;   // 30 min
         const reapIntervalMs = options.sessionReapIntervalMs ?? 300_000; // 5 min
+        const maxSessions = options.maxSessions ?? 1_000;
+        const rateLimiter = new RateLimitBucket(options.rateLimitPerMinute ?? 600);
 
         // Periodic reaper for abandoned sessions (TCP kill -9, network drops)
         const reapInterval = setInterval(() => {
@@ -406,6 +555,8 @@ export async function startServer<TContext>(
                     sessionActivity.delete(id);
                 }
             }
+            // Prune stale rate-limit buckets
+            rateLimiter.prune(new Set(sessions.keys()));
         }, reapIntervalMs);
         if (typeof reapInterval === 'object' && 'unref' in reapInterval) {
             reapInterval.unref();
@@ -419,6 +570,9 @@ export async function startServer<TContext>(
                     res.writeHead(404).end();
                     return;
                 }
+
+                // Security #6: CORS support
+                if (applyCorsHeaders(req, res, options.cors)) return; // preflight handled
 
                 if (req.method === 'POST') {
                     // Bug #149 fix: enforce body size limit to prevent DoS/OOM.
@@ -439,14 +593,38 @@ export async function startServer<TContext>(
                         }
                         chunks.push(chunk as Buffer);
                     }
-                    const body = JSON.parse(Buffer.concat(chunks).toString());
+                    // Security #3: safe JSON parse — reject malformed bodies with 400
+                    let body: unknown;
+                    try {
+                        body = JSON.parse(Buffer.concat(chunks).toString());
+                    } catch {
+                        res.writeHead(400).end('Invalid JSON');
+                        return;
+                    }
 
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
+                    // Security #2: validate session ID format (must be UUID v4)
+                    if (sessionId && !isValidSessionId(sessionId)) {
+                        res.writeHead(400).end('Invalid session ID format');
+                        return;
+                    }
+
                     if (sessionId && sessions.has(sessionId)) {
+                        // Security #1: rate limiting per session
+                        if (!rateLimiter.allow(sessionId)) {
+                            res.writeHead(429).end('Too many requests');
+                            return;
+                        }
                         const t = sessions.get(sessionId)!;
                         sessionActivity.set(sessionId, Date.now());
                         await t.handleRequest(req, res, body);
+                        return;
+                    }
+
+                    // Security #4: reject new sessions when at capacity
+                    if (sessions.size >= maxSessions) {
+                        res.writeHead(503).end('Too many active sessions');
                         return;
                     }
 
@@ -468,7 +646,15 @@ export async function startServer<TContext>(
                     await t.handleRequest(req, res, body);
                 } else if (req.method === 'GET') {
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;
+                    if (sessionId && !isValidSessionId(sessionId)) {
+                        res.writeHead(400).end('Invalid session ID format');
+                        return;
+                    }
                     if (sessionId && sessions.has(sessionId)) {
+                        if (!rateLimiter.allow(sessionId)) {
+                            res.writeHead(429).end('Too many requests');
+                            return;
+                        }
                         const t = sessions.get(sessionId)!;
                         sessionActivity.set(sessionId, Date.now());
                         await t.handleRequest(req, res);
@@ -477,6 +663,10 @@ export async function startServer<TContext>(
                     }
                 } else if (req.method === 'DELETE') {
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;
+                    if (sessionId && !isValidSessionId(sessionId)) {
+                        res.writeHead(400).end('Invalid session ID format');
+                        return;
+                    }
                     if (sessionId && sessions.has(sessionId)) {
                         const t = sessions.get(sessionId)!;
                         sessionActivity.set(sessionId, Date.now());
