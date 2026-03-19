@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.4] - 2026-03-19
+
+### Fixed
+
+- **IIFE introspection via `vm.runInThisContext`** — `vurb deploy` introspection was failing with `Unexpected token '['` because the esbuild bundle (format: `iife`) was being imported as ESM (`.mjs`). Replaced `import()` with `vm.runInThisContext()` to correctly evaluate the IIFE in the current process context. Uses the original unsanitized bundle since edge sanitization is only needed for the deploy payload.
+
 ## [3.7.3] - 2026-03-19
 
 ### Fixed
