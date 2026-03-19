@@ -33,7 +33,7 @@ Open it in Cursor, Claude Code, or GitHub Copilot and prompt:
 >
 > *"Build an MCP server for patient records with Prisma. Redact SSN and diagnosis from LLM output. Add an FSM that gates discharge tools until attending physician signs off."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Build+an+MCP+server+for+patient+records+with+Prisma.+Redact+SSN+and+diagnosis+from+LLM+output.+Add+an+FSM+that+gates+discharge+tools+until+attending+physician+signs+off.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Build+an+MCP+server+for+patient+records+with+Prisma.+Redact+SSN+and+diagnosis+from+LLM+output.+Add+an+FSM+that+gates+discharge+tools+until+attending+physician+signs+off.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Build+an+MCP+server+for+patient+records+with+Prisma.+Redact+SSN+and+diagnosis+from+LLM+output.+Add+an+FSM+that+gates+discharge+tools+until+attending+physician+signs+off.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Build+an+MCP+server+for+patient+records+with+Prisma.+Redact+SSN+and+diagnosis+from+LLM+output.+Add+an+FSM+that+gates+discharge+tools+until+attending+physician+signs+off.)
 
 The agent reads the [`SKILL.md`](https://agentskills.io) (or the [`llms.txt`](https://vurb.vinkius.com/llms.txt)) and writes the entire server. First pass — no corrections.
 
@@ -136,8 +136,8 @@ This works on Cursor, Claude Code, GitHub Copilot, Windsurf, Cline — any agent
 
 Click one of these links. The AI will read the Vurb.ts architecture and generate production-ready code in seconds:
 
-- [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Create+an+invoice+query+tool+with+PII+redaction+on+customer+SSN,+tenant+isolation+middleware,+and+affordances+for+payment+actions.)
-- [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Create+an+invoice+query+tool+with+PII+redaction+on+customer+SSN,+tenant+isolation+middleware,+and+affordances+for+payment+actions.)
+- [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Create+an+invoice+query+tool+with+PII+redaction+on+customer+SSN,+tenant+isolation+middleware,+and+affordances+for+payment+actions.)
+- [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Create+an+invoice+query+tool+with+PII+redaction+on+customer+SSN,+tenant+isolation+middleware,+and+affordances+for+payment+actions.)
 
 The "super prompt" behind these links forces the AI to read [`vurb.vinkius.com/llms.txt`](https://vurb.vinkius.com/llms.txt) before writing code — guaranteeing correct MVA patterns, not hallucinated syntax.
 
@@ -367,7 +367,7 @@ const UserPresenter = createPresenter('User')
 >
 > *"Add an Egress Firewall to the User Presenter — only expose id, name, and email. Strip password_hash and tenant_id at RAM level."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+an+Egress+Firewall+to+the+User+Presenter+—+only+expose+id,+name,+and+email.+Strip+password_hash+and+tenant_id+at+RAM+level.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+an+Egress+Firewall+to+the+User+Presenter+—+only+expose+id,+name,+and+email.+Strip+password_hash+and+tenant_id+at+RAM+level.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+an+Egress+Firewall+to+the+User+Presenter+—+only+expose+id,+name,+and+email.+Strip+password_hash+and+tenant_id+at+RAM+level.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+an+Egress+Firewall+to+the+User+Presenter+—+only+expose+id,+name,+and+email.+Strip+password_hash+and+tenant_id+at+RAM+level.)
 
 ### DLP Compliance Engine — PII Redaction
 
@@ -391,7 +391,7 @@ Custom censors, wildcard paths (`'*.email'`, `'patients[*].diagnosis'`), and cen
 >
 > *"Add PII redaction to the PatientPresenter — mask ssn and diagnosis. Use the Late Guillotine pattern so UI blocks can reference real values but the LLM sees [REDACTED]."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+PII+redaction+to+the+PatientPresenter+—+mask+ssn+and+diagnosis.+Use+the+Late+Guillotine+pattern+so+UI+blocks+can+reference+real+values+but+the+LLM+sees+REDACTED.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+PII+redaction+to+the+PatientPresenter+—+mask+ssn+and+diagnosis.+Use+the+Late+Guillotine+pattern+so+UI+blocks+can+reference+real+values+but+the+LLM+sees+REDACTED.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+PII+redaction+to+the+PatientPresenter+—+mask+ssn+and+diagnosis.+Use+the+Late+Guillotine+pattern+so+UI+blocks+can+reference+real+values+but+the+LLM+sees+REDACTED.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+PII+redaction+to+the+PatientPresenter+—+mask+ssn+and+diagnosis.+Use+the+Late+Guillotine+pattern+so+UI+blocks+can+reference+real+values+but+the+LLM+sees+REDACTED.)
 
 ### 8 Anti-Hallucination Mechanisms
 
@@ -445,7 +445,7 @@ Three complementary layers: **Format** (Zod validates shape), **Guidance** (HATE
 >
 > *"Add an FSM State Gate to the checkout flow — cart.pay is only visible in the 'payment' state. Use bindState to physically remove tools from tools/list."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+an+FSM+State+Gate+to+the+checkout+flow+—+cart.pay+is+only+visible+in+the+payment+state.+Use+bindState+to+physically+remove+tools+from+tools/list.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+an+FSM+State+Gate+to+the+checkout+flow+—+cart.pay+is+only+visible+in+the+payment+state.+Use+bindState+to+physically+remove+tools+from+tools/list.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+an+FSM+State+Gate+to+the+checkout+flow+—+cart.pay+is+only+visible+in+the+payment+state.+Use+bindState+to+physically+remove+tools+from+tools/list.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+an+FSM+State+Gate+to+the+checkout+flow+—+cart.pay+is+only+visible+in+the+payment+state.+Use+bindState+to+physically+remove+tools+from+tools/list.)
 
 ### Zero-Trust Sandbox — Computation Delegation
 
@@ -473,7 +473,7 @@ export default f.query('analytics.compute')
 >
 > *"Add a sandboxed computation tool that lets the LLM send JavaScript to run on server-side data inside a sealed V8 isolate. Timeout 3s, memory 64MB."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+a+sandboxed+computation+tool+that+lets+the+LLM+send+JavaScript+to+run+on+server-side+data+inside+a+sealed+V8+isolate.+Timeout+3s,+memory+64MB.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+a+sandboxed+computation+tool+that+lets+the+LLM+send+JavaScript+to+run+on+server-side+data+inside+a+sealed+V8+isolate.+Timeout+3s,+memory+64MB.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+a+sandboxed+computation+tool+that+lets+the+LLM+send+JavaScript+to+run+on+server-side+data+inside+a+sealed+V8+isolate.+Timeout+3s,+memory+64MB.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+a+sandboxed+computation+tool+that+lets+the+LLM+send+JavaScript+to+run+on+server-side+data+inside+a+sealed+V8+isolate.+Timeout+3s,+memory+64MB.)
 
 ### State Sync — Temporal Awareness for Agents
 
@@ -498,7 +498,7 @@ Registry-level policies with `f.stateSync()`, glob patterns (`*`, `**`), policy 
 >
 > *"Mark 'sprints.list' as stale (no-store) and configure 'sprints.create' to invalidate sprints.* and tasks.* on mutation. Use RFC 7234 cache-control signals."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Mark+sprints.list+as+stale+no-store+and+configure+sprints.create+to+invalidate+sprints+and+tasks+on+mutation.+Use+RFC+7234+cache-control+signals.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Mark+sprints.list+as+stale+no-store+and+configure+sprints.create+to+invalidate+sprints+and+tasks+on+mutation.+Use+RFC+7234+cache-control+signals.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Mark+sprints.list+as+stale+no-store+and+configure+sprints.create+to+invalidate+sprints+and+tasks+on+mutation.+Use+RFC+7234+cache-control+signals.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Mark+sprints.list+as+stale+no-store+and+configure+sprints.create+to+invalidate+sprints+and+tasks+on+mutation.+Use+RFC+7234+cache-control+signals.)
 
 ### Prompt Engine — Server-Side Templates
 
@@ -533,7 +533,7 @@ const IncidentAnalysis = f.prompt('incident_analysis')
 >
 > *"Create a prompt called 'incident_analysis' with auth middleware, severity enum input, and PromptMessage.fromView() that decomposes the IncidentPresenter into structured messages."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Create+a+prompt+called+incident_analysis+with+auth+middleware,+severity+enum+input,+and+PromptMessage.fromView+that+decomposes+the+IncidentPresenter+into+structured+messages.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Create+a+prompt+called+incident_analysis+with+auth+middleware,+severity+enum+input,+and+PromptMessage.fromView+that+decomposes+the+IncidentPresenter+into+structured+messages.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Create+a+prompt+called+incident_analysis+with+auth+middleware,+severity+enum+input,+and+PromptMessage.fromView+that+decomposes+the+IncidentPresenter+into+structured+messages.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Create+a+prompt+called+incident_analysis+with+auth+middleware,+severity+enum+input,+and+PromptMessage.fromView+that+decomposes+the+IncidentPresenter+into+structured+messages.)
 
 ### Agent Skills — Progressive Instruction Distribution
 
@@ -564,7 +564,7 @@ skills/
 >
 > *"Register all SKILL.md files from ./skills and expose them as MCP tools with progressive disclosure — search, load, and read_file."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Register+all+SKILL.md+files+from+./skills+and+expose+them+as+MCP+tools+with+progressive+disclosure+search,+load,+and+read_file.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Register+all+SKILL.md+files+from+./skills+and+expose+them+as+MCP+tools+with+progressive+disclosure+search,+load,+and+read_file.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Register+all+SKILL.md+files+from+./skills+and+expose+them+as+MCP+tools+with+progressive+disclosure+search,+load,+and+read_file.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Register+all+SKILL.md+files+from+./skills+and+expose+them+as+MCP+tools+with+progressive+disclosure+search,+load,+and+read_file.)
 
 ### Fluent API — Semantic Verbs & Chainable Builders
 
@@ -618,7 +618,7 @@ Stack `.use()` calls for layered derivations: auth → permissions → tenant re
 >
 > *"Add auth middleware that validates JWT, injects tenant context, checks permissions, and passes everything as typed ctx downstream. Use f.middleware()."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+auth+middleware+that+validates+JWT,+injects+tenant+context,+checks+permissions,+and+passes+everything+as+typed+ctx+downstream.+Use+f.middleware.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+auth+middleware+that+validates+JWT,+injects+tenant+context,+checks+permissions,+and+passes+everything+as+typed+ctx+downstream.+Use+f.middleware.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+auth+middleware+that+validates+JWT,+injects+tenant+context,+checks+permissions,+and+passes+everything+as+typed+ctx+downstream.+Use+f.middleware.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+auth+middleware+that+validates+JWT,+injects+tenant+context,+checks+permissions,+and+passes+everything+as+typed+ctx+downstream.+Use+f.middleware.)
 
 ### Fluent Router — Grouped Tooling
 
@@ -701,7 +701,7 @@ PR diffs show exactly what changed in the AI-facing surface:
 >
 > *"Add governance to my MCP server: generate a vurb.lock, add lockfile check to CI, configure contract diffing, and enable zero-trust attestation with HMAC-SHA256."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+governance+to+my+MCP+server:+generate+a+vurb.lock,+add+lockfile+check+to+CI,+configure+contract+diffing,+and+enable+zero-trust+attestation+with+HMAC-SHA256.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Add+governance+to+my+MCP+server:+generate+a+vurb.lock,+add+lockfile+check+to+CI,+configure+contract+diffing,+and+enable+zero-trust+attestation+with+HMAC-SHA256.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+governance+to+my+MCP+server:+generate+a+vurb.lock,+add+lockfile+check+to+CI,+configure+contract+diffing,+and+enable+zero-trust+attestation+with+HMAC-SHA256.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Add+governance+to+my+MCP+server:+generate+a+vurb.lock,+add+lockfile+check+to+CI,+configure+contract+diffing,+and+enable+zero-trust+attestation+with+HMAC-SHA256.)
 
 > 💡 **Enterprise & Compliance** — Vurb blocks PII and locks capability surfaces locally. Need to prove it in a SOC2/GDPR/HIPAA audit? [Connect your Vurb server to Vinkius Cloud](https://vinkius.com) for immutable audit logs, visual compliance dashboards, and one-click deployment.
 
@@ -825,7 +825,7 @@ Assert every MVA layer: `result.data` (egress firewall), `result.systemRules` (J
 >
 > *"Write Vitest tests that assert PII stripping, middleware access control, governance rules, and Presenter schema enforcement using createVurbTester."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Write+Vitest+tests+that+assert+PII+stripping,+middleware+access+control,+governance+rules,+and+Presenter+schema+enforcement+using+createVurbTester.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Write+Vitest+tests+that+assert+PII+stripping,+middleware+access+control,+governance+rules,+and+Presenter+schema+enforcement+using+createVurbTester.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Write+Vitest+tests+that+assert+PII+stripping,+middleware+access+control,+governance+rules,+and+Presenter+schema+enforcement+using+createVurbTester.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Write+Vitest+tests+that+assert+PII+stripping,+middleware+access+control,+governance+rules,+and+Presenter+schema+enforcement+using+createVurbTester.)
 
 ---
 
@@ -850,7 +850,7 @@ Write once, deploy to any edge. Your business logic, schemas, PII redaction, FSM
 >
 > *"Set up a production Vurb server with HTTP transport, Presenter-based tools, and deploy it to Vinkius Edge with vurb deploy."*
 >
-> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Set+up+a+production+Vurb+server+with+HTTP+transport,+Presenter-based+tools,+and+deploy+it+to+Vinkius+Edge+with+vurb+deploy.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt.+Based+strictly+on+those+patterns:+Set+up+a+production+Vurb+server+with+HTTP+transport,+Presenter-based+tools,+and+deploy+it+to+Vinkius+Edge+with+vurb+deploy.)
+> [▶ Open in Claude](https://claude.ai/new?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Set+up+a+production+Vurb+server+with+HTTP+transport,+Presenter-based+tools,+and+deploy+it+to+Vinkius+Edge+with+vurb+deploy.) · [▶ Open in ChatGPT](https://chatgpt.com/?q=Read+the+framework+architecture+at+https://vurb.vinkius.com/llms.txt+Based+strictly+on+those+patterns:+Set+up+a+production+Vurb+server+with+HTTP+transport,+Presenter-based+tools,+and+deploy+it+to+Vinkius+Edge+with+vurb+deploy.)
 
 ### Vinkius Edge
 
@@ -1007,7 +1007,7 @@ Every **"▶ Open in Claude / ChatGPT"** link in this README and [in our documen
 **What the link actually sends to the AI:**
 
 ```
-Read the framework architecture at https://vurb.vinkius.com/llms.txt.
+Read the framework architecture at https://vurb.vinkius.com/llms.txt
 Based strictly on those patterns:
 Add PII redaction to the PatientPresenter — mask ssn and diagnosis.
 ```

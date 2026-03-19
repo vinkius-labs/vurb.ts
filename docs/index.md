@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: "The TypeScript Framework for MCP Servers."
+  name: "The Express.js for MCP Servers."
   text: ""
-  tagline: "Type-safe tools, structured AI perception, and built-in security. Deploy once — every AI assistant connects instantly."
+  tagline: "Type-safe tools · Presenters that control what the LLM sees · Built-in PII redaction · Deploy once — every AI assistant connects."
   actions:
     - theme: brand
       text: 30-Second Quickstart →
@@ -224,174 +224,22 @@ hero:
 <a href="/comparison" class="ms-compare-link">SEE THE FULL COMPARISON WITH CODE EXAMPLES →</a>
 </div>
 
-<!-- ═══ Section: Three Core Problems ═══ -->
-<div class="ms-problems">
-<div class="ms-problems-header">
-<div class="ms-label">PROBLEM SPACE</div>
-<h2 class="ms-headline">Three problems.<br>Framework-level solutions.</h2>
-<p class="ms-sub">Every claim below maps to real code in the repository. Not a roadmap. Not a promise.</p>
-</div>
-
-<div class="ms-problem-grid">
-
-<div class="ms-problem-card">
-<div class="ms-problem-number">01</div>
-<h3 class="ms-problem-title">Egress Firewall & Anti-DDoS</h3>
-<p class="ms-problem-pain"><strong>The problem:</strong> Raw MCP servers leak <code>password_hashes</code> directly to the LLM when developers write <code>SELECT *</code>. Returning 100,000 records routinely triggers <strong>LLM OOM</strong> crashes or bankrupts teams with runaway API bills.</p>
-<p class="ms-problem-solution"><strong>The mechanism:</strong> The Zod <code>.schema()</code> on every Presenter physically strips undeclared fields at RAM level — not filtered, gone. Simultaneously, <code>.agentLimit()</code> truncates massive arrays and teaches agents to use filters instead.</p>
-
-```typescript
-const UserPresenter = createPresenter('User')
-    .schema(UserModel);
-    // password_hash, tenant_id, internal_flags
-    // → not declared in defineModel() → physically absent. GONE.
-```
-
-<a href="/presenter" class="ms-card-link">EXPLORE THE PRESENTER →</a>
-</div>
-
-<div class="ms-problem-card">
-<div class="ms-problem-number">02</div>
-<h3 class="ms-problem-title">Context Tree-Shaking</h3>
-<p class="ms-problem-pain"><strong>The problem:</strong> Teaching the AI about invoices, tasks, sprints, and users means a 10,000-token system prompt — sent on every call. The LLM loses coherence mid-text, misapplies rules across domains, and the company pays for irrelevant tokens on every request.</p>
-<p class="ms-problem-solution"><strong>The mechanism:</strong> Like webpack tree-shaking removes unused code, <code>.rules()</code> removes unused rules from the context window. Domain rules travel <strong>with the data</strong> — the invoice rule only exists when the agent processes an invoice. Token overhead drops from ~2,000/call to ~200/call.</p>
-
-```typescript
-// Invoice rules — sent ONLY when invoice data is returned
-const InvoicePresenter = createPresenter('Invoice')
-    .schema(InvoiceModel)
-    .rules((invoice, ctx) => [
-        'CRITICAL: amount_cents is in CENTS. Divide by 100.',
-        ctx?.user?.role !== 'admin'
-            ? 'RESTRICTED: Mask exact totals for non-admin users.'
-            : null,
-    ]);
-```
-
-<a href="/mva/context-tree-shaking" class="ms-card-link">SEE HOW IT WORKS →</a>
-</div>
-
-<div class="ms-problem-card">
-<div class="ms-problem-number">03</div>
-<h3 class="ms-problem-title">SSR for Agents</h3>
-<p class="ms-problem-pain"><strong>The problem:</strong> The developer begs in the prompt: "Please generate valid ECharts JSON." The AI gets the syntax wrong 20% of the time. Charts become a probabilistic coinflip instead of deterministic output.</p>
-<p class="ms-problem-solution"><strong>The mechanism:</strong> Complex chart configs, Mermaid diagrams, and Markdown tables are compiled server-side in Node.js via <code>.ui()</code>. The AI receives a <code>[SYSTEM]</code> pass-through directive and forwards the block unchanged. Visual hallucination drops to zero.</p>
-
-```typescript
-const InvoicePresenter = createPresenter('Invoice')
-    .schema(InvoiceModel)
-    .ui((invoice) => [
-        ui.echarts({
-            series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
-        }),
-        ui.table(
-            ['Field', 'Value'],
-            [['Status', invoice.status], ['Amount', `$${invoice.amount_cents / 100}`]],
-        ),
-    ]);
-// The LLM passes the chart config through. It never generates it.
-```
-
-<a href="/mva/perception-package" class="ms-card-link">SEE HOW IT WORKS →</a>
-</div>
-
+<!-- ═══ Prompt Card — Trojan Horse ═══ -->
+<div style="margin:32px auto;max-width:720px;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Build an MCP server for invoice management with Presenters, PII redaction on customer SSN, tenant isolation middleware, and affordances for payment actions."</div>
+<div style="display:flex;gap:10px;margin-top:20px;padding-top:18px;border-top:1px solid rgba(192,132,252,0.08);flex-wrap:wrap;align-items:center">
+<button onclick="navigator.clipboard.writeText('Read the framework architecture at https://vurb.vinkius.com/llms.txt Based strictly on those patterns: Build an MCP server for invoice management with Presenters, PII redaction on customer SSN, tenant isolation middleware, and affordances for payment actions.');this.querySelector('span').textContent='Copied!';setTimeout(()=>this.querySelector('span').textContent='Copy Prompt',1500)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:Inter,system-ui,sans-serif;font-weight:500;letter-spacing:0.2px;transition:all 0.2s ease" onmouseenter="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.8)'" onmouseleave="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.5)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="M9 14l2 2 4-4"/></svg><span>Copy Prompt</span></button>
+<a href="https://claude.ai/new?q=Read+the+framework+architecture+at+https%3A%2F%2Fvurb.vinkius.com%2Fllms.txt+Based+strictly+on+those+patterns%3A+Build+an+MCP+server+for+invoice+management+with+Presenters%2C+PII+redaction+on+customer+SSN%2C+tenant+isolation+middleware%2C+and+affordances+for+payment+actions." target="_blank" rel="noopener" style="background:rgba(217,119,87,0.06);border:1px solid rgba(217,119,87,0.15);color:rgba(217,119,87,0.8);padding:7px 14px;border-radius:8px;font-size:12px;text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:7px;font-family:Inter,system-ui,sans-serif;letter-spacing:0.2px;transition:all 0.2s ease" onmouseenter="this.style.background='rgba(217,119,87,0.12)';this.style.borderColor='rgba(217,119,87,0.3)';this.style.color='#D97757'" onmouseleave="this.style.background='rgba(217,119,87,0.06)';this.style.borderColor='rgba(217,119,87,0.15)';this.style.color='rgba(217,119,87,0.8)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.709 15.955l4.397-2.85-.933-1.86-6.078 3.54a.75.75 0 0 0-.345.893l1.578 4.674a.75.75 0 0 0 1.162.355l2.87-2.1zM8.68 7.2l4.398-2.85 2.65 1.95-4.397 2.85zm4.688 9.45l4.397-2.85 2.65 1.95-4.397 2.85zM16.01 8.505l4.397-2.85a.75.75 0 0 0 .345-.893L19.174.088a.75.75 0 0 0-1.162-.355l-2.87 2.1.933 1.86 2.652-1.94 1.035 3.065-3.685 2.389z"/></svg> Open in Claude</a>
+<a href="https://chatgpt.com/?q=Read+the+framework+architecture+at+https%3A%2F%2Fvurb.vinkius.com%2Fllms.txt+Based+strictly+on+those+patterns%3A+Build+an+MCP+server+for+invoice+management+with+Presenters%2C+PII+redaction+on+customer+SSN%2C+tenant+isolation+middleware%2C+and+affordances+for+payment+actions." target="_blank" rel="noopener" style="background:rgba(16,163,127,0.06);border:1px solid rgba(16,163,127,0.15);color:rgba(16,163,127,0.8);padding:7px 14px;border-radius:8px;font-size:12px;text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:7px;font-family:Inter,system-ui,sans-serif;letter-spacing:0.2px;transition:all 0.2s ease" onmouseenter="this.style.background='rgba(16,163,127,0.12)';this.style.borderColor='rgba(16,163,127,0.3)';this.style.color='#10A37F'" onmouseleave="this.style.background='rgba(16,163,127,0.06)';this.style.borderColor='rgba(16,163,127,0.15)';this.style.color='rgba(16,163,127,0.8)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zM8.392 12.84l-2.02-1.164a.076.076 0 0 1-.038-.057V6.035a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.794 5.42a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg> Open in ChatGPT</a>
 </div>
 </div>
 
-<!-- ═══ Section: MVA Architecture ═══ -->
-<div class="ms-section ms-conviction">
-<div class="ms-left">
-<div class="ms-label">THE MVA ARCHITECTURE</div>
-<h2 class="ms-headline">MVC was designed<br>for humans.<br><span class="ms-accent">Agents are not<br>humans.</span></h2>
-</div>
-<div class="ms-right">
-<p class="ms-body">MVA replaces the human-centric View with the Presenter — an agent-centric perception layer that tells the AI exactly how to interpret, display, and act on domain data. The handler returns raw data (Model). The Presenter shapes perception (View). The middleware governs access (Agent). This isn't an iteration on MVC. It's a replacement.</p>
-<div class="ms-columns">
-<div class="ms-column">
-<div class="ms-column-label">// MODEL</div>
-<p class="ms-column-text">defineModel() declares field types, hidden fields, guarded fields, and fillable profiles. The compiled Zod schema validates and filters data. Unknown fields are rejected with actionable errors. The LLM cannot inject parameters your schema does not declare.</p>
-</div>
-<div class="ms-column">
-<div class="ms-column-label">// PRESENTER</div>
-<p class="ms-column-text">JIT rules, server-rendered UI, cognitive guardrails, action affordances — all deterministic, all framework-enforced.</p>
-</div>
-</div>
-</div>
-</div>
 
-<!-- ═══ Section: Technical Authority Grid ═══ -->
-<div class="ms-authority">
-<div class="ms-authority-left">
-<div class="ms-label">ARCHITECTURE</div>
-<h2 class="ms-headline">Everything<br>you need.</h2>
-<p class="ms-sub">Every capability designed for autonomous AI agents operating over the Model Context Protocol.</p>
-</div>
-<div class="ms-grid">
-<div class="ms-card">
-<div class="ms-card-number">01 // MVA</div>
-<h3 class="ms-card-title">Presenter Engine</h3>
-<p class="ms-card-desc">Domain-level Presenters validate data, inject rules, render charts, and suggest actions. Use createPresenter() (fluent) or definePresenter() (declarative) — both freeze-after-build.</p>
-<a href="/presenter" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">02 // DX</div>
-<h3 class="ms-card-title">Context Init (initVurb)</h3>
-<p class="ms-card-desc">tRPC-style f = initVurb&lt;AppContext&gt;(). Define your context type once — every f.query(), f.presenter(), f.registry() inherits it. Zero generics pollution.</p>
-<a href="/dx-guide" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">03 // ROUTING</div>
-<h3 class="ms-card-title">Action Consolidation</h3>
-<p class="ms-card-desc">Nest 5,000+ operations into grouped namespaces. File-based routing with autoDiscover() scans directories automatically.</p>
-<a href="/routing" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">04 // SECURITY</div>
-<h3 class="ms-card-title">Context Derivation</h3>
-<p class="ms-card-desc">f.middleware() / defineMiddleware() derives and injects typed data into context. Zod .strict() protects handlers from hallucinated parameters.</p>
-<a href="/middleware" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">05 // RESILIENCE</div>
-<h3 class="ms-card-title">Self-Healing Errors</h3>
-<p class="ms-card-desc">toolError() provides structured recovery hints with suggested actions and pre-populated arguments. Agents self-correct without human intervention.</p>
-<a href="/building-tools" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">06 // AFFORDANCE</div>
-<h3 class="ms-card-title">Agentic HATEOAS</h3>
-<p class="ms-card-desc">.suggest() / .suggestActions() tells agents what to do next based on data state. Eliminates action hallucination through explicit affordances.</p>
-<a href="/mva-pattern" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">07 // DEV</div>
-<h3 class="ms-card-title">HMR Dev Server</h3>
-<p class="ms-card-desc">createDevServer() watches tool files and hot-reloads on change without restarting the LLM client. Sends notifications/tools/list_changed automatically.</p>
-<a href="/dx-guide#hmr-dev-server-createdevserver" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">08 // GUARDRAILS</div>
-<h3 class="ms-card-title">Cognitive Limits</h3>
-<p class="ms-card-desc">.limit() / .agentLimit() truncates large datasets and teaches agents to use filters. Prevents context DDoS and keeps API costs under control.</p>
-<a href="/presenter" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">09 // STATE</div>
-<h3 class="ms-card-title">Temporal Awareness</h3>
-<p class="ms-card-desc">RFC 7234-inspired cache-control signals prevent LLM Temporal Blindness. Cross-domain causal invalidation after mutations.</p>
-<a href="/state-sync" class="ms-card-link">EXPLORE →</a>
-</div>
-<div class="ms-card">
-<div class="ms-card-number">10 // CLIENT</div>
-<h3 class="ms-card-title">Type-Safe Client</h3>
-<p class="ms-card-desc">createVurbClient() provides end-to-end type safety from server to client. Wrong action name? TypeScript catches it at build time.</p>
-<a href="/fusion-client" class="ms-card-link">EXPLORE →</a>
-</div>
-</div>
-</div>
+
 
 <!-- ═══ Section: Ecosystem ═══ -->
-<div class="ms-section ms-ecosystem">
+<div class="ms-section ms-ecosystem" style="border-top:1px solid rgba(255,255,255,0.1)">
 <div class="ms-left">
 <div class="ms-label">ECOSYSTEM</div>
 <h2 class="ms-headline">Deploy<br>anywhere.<br><span class="ms-accent">Generate from<br>anything.</span></h2>
@@ -414,7 +262,17 @@ const InvoicePresenter = createPresenter('Invoice')
 <!-- ═══ Section: CTA ═══ -->
 <div class="ms-cta">
 <div class="ms-label">GET STARTED</div>
-<h2 class="ms-cta-headline">Build MCP servers<br>that actually work in production.</h2>
-<p class="ms-cta-sub"><strong>Vurb.ts</strong> gives you typed schemas, structured AI perception, built-in security, and observability — all out of the box. The framework for the AI era: you define the architecture, your AI agent writes the code.</p>
+<h2 class="ms-cta-headline">You define the architecture.<br>Your AI agent writes the code.</h2>
+<p class="ms-cta-sub"><strong>Vurb.ts</strong> gives you typed schemas, structured AI perception, built-in PII redaction, and governance — all out of the box. Ship a <a href="https://agentskills.io" style="color:rgba(192,132,252,0.8)">SKILL.md</a>, not a tutorial.</p>
+
+<div style="margin:24px auto;max-width:600px;padding:24px 28px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:15px;color:rgba(255,255,255,0.7);margin-top:10px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Build a patient records MCP server with Prisma. Redact SSN and diagnosis. Add an FSM that gates discharge tools until the attending physician signs off."</div>
+<div style="display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(192,132,252,0.08);flex-wrap:wrap;align-items:center;justify-content:center">
+<a href="https://claude.ai/new?q=Read+the+framework+architecture+at+https%3A%2F%2Fvurb.vinkius.com%2Fllms.txt+Based+strictly+on+those+patterns%3A+Build+a+patient+records+MCP+server+with+Prisma.+Redact+SSN+and+diagnosis.+Add+an+FSM+that+gates+discharge+tools+until+the+attending+physician+signs+off." target="_blank" rel="noopener" style="background:rgba(217,119,87,0.06);border:1px solid rgba(217,119,87,0.15);color:rgba(217,119,87,0.8);padding:7px 14px;border-radius:8px;font-size:12px;text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:7px;font-family:Inter,system-ui,sans-serif;transition:all 0.2s ease" onmouseenter="this.style.background='rgba(217,119,87,0.12)';this.style.borderColor='rgba(217,119,87,0.3)';this.style.color='#D97757'" onmouseleave="this.style.background='rgba(217,119,87,0.06)';this.style.borderColor='rgba(217,119,87,0.15)';this.style.color='rgba(217,119,87,0.8)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.709 15.955l4.397-2.85-.933-1.86-6.078 3.54a.75.75 0 0 0-.345.893l1.578 4.674a.75.75 0 0 0 1.162.355l2.87-2.1zM8.68 7.2l4.398-2.85 2.65 1.95-4.397 2.85zm4.688 9.45l4.397-2.85 2.65 1.95-4.397 2.85zM16.01 8.505l4.397-2.85a.75.75 0 0 0 .345-.893L19.174.088a.75.75 0 0 0-1.162-.355l-2.87 2.1.933 1.86 2.652-1.94 1.035 3.065-3.685 2.389z"/></svg> Try in Claude</a>
+<a href="https://chatgpt.com/?q=Read+the+framework+architecture+at+https%3A%2F%2Fvurb.vinkius.com%2Fllms.txt+Based+strictly+on+those+patterns%3A+Build+a+patient+records+MCP+server+with+Prisma.+Redact+SSN+and+diagnosis.+Add+an+FSM+that+gates+discharge+tools+until+the+attending+physician+signs+off." target="_blank" rel="noopener" style="background:rgba(16,163,127,0.06);border:1px solid rgba(16,163,127,0.15);color:rgba(16,163,127,0.8);padding:7px 14px;border-radius:8px;font-size:12px;text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:7px;font-family:Inter,system-ui,sans-serif;transition:all 0.2s ease" onmouseenter="this.style.background='rgba(16,163,127,0.12)';this.style.borderColor='rgba(16,163,127,0.3)';this.style.color='#10A37F'" onmouseleave="this.style.background='rgba(16,163,127,0.06)';this.style.borderColor='rgba(16,163,127,0.15)';this.style.color='rgba(16,163,127,0.8)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zM8.392 12.84l-2.02-1.164a.076.076 0 0 1-.038-.057V6.035a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.794 5.42a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg> Try in ChatGPT</a>
+</div>
+</div>
+
 <a href="/quickstart-lightspeed" class="ms-cta-button">BUILD YOUR FIRST MCP SERVER →</a>
 </div>
