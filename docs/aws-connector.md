@@ -2,18 +2,23 @@
 
 <a href="https://www.npmjs.com/package/@vurb/aws"><img src="https://img.shields.io/npm/v/@vurb/aws?color=blue" alt="npm" /></a>
 
-- [Install](#install)
-- [Resource Tagging Convention](#tagging)
-- [Dynamic Ingestion](#ingestion)
-- [Grouping — Multi-Action Tools](#grouping)
-- [Step Functions — Express vs Standard](#step-functions)
-- [MVA Interception](#mva)
-- [Surgical Construction](#surgical)
-- [Live State Sync](#state-sync)
-- [Full Production Example](#production)
-- [Configuration Reference](#config)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Auto-discover all AWS Lambda functions tagged with mcp:expose=true and register them as grouped MCP tools with MVA Presenters and auth middleware."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Auto-discover AWS Lambda functions and Step Functions via resource tags, then expose them as grouped MCP tools. Tag filtering controls what the AI can see, and the MVA pipeline (Presenters, middleware, egress firewall) applies before results leave your process.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">CLOUD NATIVE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Lambda + Step Functions.<br><span style="color:rgba(255,255,255,0.25)">Auto-discovered as MCP tools.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Tag filtering controls what the AI can see. The MVA pipeline — Presenters, middleware, egress firewall — applies before results leave your process.</div>
+</div>
+
 
 ```typescript
 import { createAwsConnector } from '@vurb/aws';

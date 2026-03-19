@@ -1,0 +1,2246 @@
+# Vurb.ts
+
+> Vurb.ts is the TypeScript framework for production MCP servers. MVA architecture, structured perception for AI agents — zero hallucination, zero data leaks.
+
+## What is Vurb.ts?
+
+Vurb.ts is a TypeScript framework for the Model Context Protocol (MCP) that introduces the **MVA (Model-View-Agent)** architectural pattern — created by Renato Marinho at Vinkius Labs. Instead of dumping raw JSON and hoping the AI figures it out, MVA adds a **Presenter** (the View layer) that gives every response structure: validated data, domain rules, rendered charts, action affordances, and cognitive guardrails.
+
+## Core Architecture: MVA (Model-View-Agent)
+
+```
+Model (defineModel) → View (Presenter) → Agent (LLM)
+   validates            perceives          acts
+```
+
+The Model is the single source of truth for every domain entity. The Presenter receives the Model and adds perception logic. NEVER use raw `z.object()` for Presenter schemas — always `defineModel()` first, then pass the Model to the Presenter.
+
+The Presenter replaces the human-centric View with an agent-centric perception layer. Every tool response becomes a **structured perception package** — not raw JSON.
+
+## Core Concepts
+
+- **MVA Pattern**: Model-View-Agent — the architectural foundation where Presenters replace Views
+- **defineModel()**: Eloquent-inspired Model factory — `m.casts()`, `m.timestamps()`, `m.hidden()`, `m.guarded()`, `m.fillable()`. Produces a `Model` with `.schema` (Zod), `.fields`, `.hidden`, `.guarded`, `.input`, `.toApi()`. The `.toApi()` method strips undefined values and renames aliased fields — used automatically by `.proxy()` and explicitly in custom `.handle()` handlers. Pass directly to Presenter `.schema()`.
+- **Presenter**: **THE core differentiator** — domain-level Egress Firewall. Schema validation, JIT system rules, server-rendered UI, action affordances, cognitive guardrails, relational composition. Define once, reuse across every tool and prompt.
+- **definePresenter()**: Declarative object-config API — `schema: InvoiceModel`, auto-rules from Model `.describe()`, embeds, agentLimit, suggestActions
+- **createPresenter()**: Fluent builder for domain-level Presenters — `.schema(InvoiceModel)`, `.systemRules()`, `.uiBlocks()`, `.embed()`
+- **initVurb()**: tRPC-style context initialization — define context once, every `f.query()`, `f.mutation()`, `f.action()`, `f.prompt()`, `f.router()`, `f.presenter()` inherits it
+- **Fluent API (Recommended)**: The primary API surface — Semantic Verbs (`f.query()`, `f.mutation()`, `f.action()`) return a `FluentToolBuilder` with type-chaining `with*()` methods. Each method narrows the TypeScript generic so `input` and `ctx` are fully typed inside `.handle()` — zero manual interface declarations.
+- **FluentToolBuilder**: Type-chaining builder behind semantic verbs. 12 parameter methods (`.withString()`, `.withOptionalString()`, `.withNumber()`, `.withOptionalNumber()`, `.withBoolean()`, `.withOptionalBoolean()`, `.withEnum()`, `.withOptionalEnum()`, `.withArray()`, `.withOptionalArray()`), plus `.describe()`, `.instructions()`, `.use()`, `.returns()`, `.tags()`, `.readOnly()`, `.destructive()`, `.idempotent()`, `.invalidates()`, `.cached()`, `.stale()`, `.concurrency()`, `.egress()`, `.annotations()`, `.toonDescription()`, `.fromModel()`, `.handle()` (terminal), `.proxy()` (terminal).
+- **FluentRouter**: Prefix grouping — shares prefix, middleware, and tags across child tools. `f.router('users').use(authMw)` → `users.query('list')`, `users.mutation('delete')`. Eliminates repetitive `'users.'` prefixes.
+- **FluentPromptBuilder**: Chainable prompt builder — `.describe()`, `.input()`, `.tags()`, `.use()`, `.timeout()`, `.handler()`. Accepts Zod or fluent param descriptors.
+- **ErrorBuilder**: Fluent self-healing errors via `f.error(code, message)` — `.suggest()`, `.actions()`, `.critical()`, `.warning()`, `.details()`, `.retryAfter()`. Returned directly from handlers.
+- **StateSyncBuilder**: Fluent cache/invalidation configuration via `f.stateSync()` — `.defaults()`, `.policy()`, `.onInvalidation()`, `.notificationSink()`, `.build()`.
+- **Semantic Verbs**: `f.query()` = readOnly:true by default, `f.mutation()` = destructive:true by default, `f.action()` = neutral (no defaults). Semantic overrides (`.readOnly()`, `.destructive()`, `.idempotent()`) take precedence.
+- **Implicit success()**: `.handle()` auto-wraps raw data with `success()` — handlers just return data, no ToolResponse boilerplate.
+- **AI-First Instructions**: `.instructions('Use ONLY when...')` injects system-level guidance into the tool description as `[INSTRUCTIONS]`, reducing hallucination.
+- **GroupedToolBuilder**: Builder that groups related actions into a single MCP tool (for config-bag API: `f.tool()`, `defineTool()`, `createTool()`)
+- **createTool()**: Factory function to create a GroupedToolBuilder with full Zod power
+- **defineTool()**: JSON-first factory — define tools without Zod imports using plain strings/objects
+- **ResponseBuilder**: Fine-grained manual response composition
+- **Action**: A single operation within a grouped tool (e.g., "list", "create", "delete")
+- **Group**: Hierarchical namespace for actions (e.g., "users.create", "billing.refund")
+- **Discriminator**: The field name the LLM uses to select the action (default: "action")
+- **CommonSchema**: Shared Zod schema injected into every action
+- **ToolRegistry**: Centralized registry for all tool builders
+- **Middleware**: Pre-compiled middleware chains following the next() pattern
+- **Tags**: Capability labels for selective tool exposure per session
+- **TOON**: Token-Oriented Object Notation for compact descriptions/responses
+- **State Sync**: RFC 7234-inspired cache-control signals to prevent temporal blindness
+- **FSM State Gate**: Temporal anti-hallucination engine — physically removes tools from `tools/list` based on XState finite state machine state. `.bindState(states, event)` on FluentToolBuilder. Transitions only on success. Ungated tools always visible. Serverless via `fsmStore`.
+- **Tool Exposition**: Compile-time topology compiler — choose flat (one tool per action) or grouped (one tool per builder with discriminator enum) at attach time. Same handlers, different wire format.
+- **Select Reflection**: Opt-in `_select` parameter for context window optimization — AI agents request only the response fields they need. Uses Late Guillotine pattern (filter wire data AFTER UI/rules generation) to preserve UI integrity. Shallow top-level filtering only.
+- **Dynamic Manifest**: RBAC-filtered server capabilities exposed as a native MCP Resource
+- **createGroup()**: Functional closure-based tool groups — pre-composed middleware, frozen by default, minifies 30-40% better
+- **autoDiscover()**: File-based routing — scan directory, auto-register tools from file structure. Deduplicates by tool name (barrel re-exports don't cause double registration)
+- **createDevServer()**: HMR dev server — file changes reload tools, sends MCP notifications/tools/list_changed
+- **Standard Schema**: Decouple from Zod — `autoValidator()` supports Valibot, ArkType, TypeBox via Standard Schema v1
+- **Subpath Exports**: Tree-shakeable imports — `Vurb.ts/client`, `/ui`, `/presenter`, `/schema`, `/dev`, `/prompt`
+- **Governance Stack**: 8-module introspection layer — ToolContract materialization, ContractDiff, BehaviorDigest (SHA-256), CapabilityLockfile (`vurb.lock`), CryptoAttestation (HMAC-SHA-256), TokenEconomics profiling, EntitlementScanner (blast radius), SemanticProbe (LLM-as-Judge)
+- **GovernanceObserver**: Observability bridge — wraps governance operations with DebugEvent emission and optional OTel tracing spans
+- **CLI**: `Vurb.ts` — unified CLI for project management, development, governance, and observability
+
+## CLI Commands
+
+```bash
+# Scaffold a new Vurb.ts server project
+Vurb.ts create <name> [--transport stdio|sse] [--vector vanilla|prisma|n8n|openapi|oauth] [--testing|--no-testing] [--yes|-y]
+
+# Start HMR dev server with auto-reload (auto-detects server entrypoint)
+Vurb.ts dev [--server|-s <path>] [--dir|-d <path>]
+
+# Generate or update the capability lockfile (vurb.lock)
+Vurb.ts lock [--server|-s <path>] [--name|-n <name>] [--cwd <dir>]
+
+# Verify lockfile is up to date (CI gate — exits non-zero on drift)
+Vurb.ts lock --check
+
+# Launch the real-time TUI Inspector dashboard
+Vurb.ts inspect [--demo|-d] [--out|-o tui|stderr] [--pid|-p <pid>] [--path <ipc-path>]
+
+# Shorthand aliases
+Vurb.ts insp          # = Vurb.ts inspect
+Vurb.ts dbg           # = Vurb.ts debug
+```
+
+| Command | What It Does |
+|---|---|
+| `Vurb.ts create <name>` | Scaffold a full MCP server project (15+ files, Cursor pre-configured, autoDiscover, tests) |
+| `Vurb.ts dev` | Start the HMR dev server — file changes reload tools, sends `tools/list_changed` notifications |
+| `Vurb.ts lock` | Generate/update `vurb.lock` — capability lockfile with SHA-256 behavioral digest |
+| `Vurb.ts lock --check` | CI gate — verify lockfile matches current tool contracts (fails if drift detected) |
+| `Vurb.ts inspect` | Real-time TUI dashboard — tool calls, latency, errors, Presenter events |
+| `Vurb.ts insp --demo` | Launch Inspector with built-in simulator (no running server needed) |
+
+## defineModel() — Domain Model (the "M" in MVA)
+
+Every entity in your domain starts with `defineModel()`. It produces a `Model` object with a compiled Zod `.schema` that Presenters accept directly — no manual `z.object()` needed.
+
+```typescript
+import { defineModel } from 'Vurb.ts';
+
+export const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string(),
+        amount_cents: m.number('CRITICAL: in CENTS. Divide by 100 for display.'),
+        status:       m.enum('Status', ['paid', 'pending', 'overdue']),
+        client_name:  m.string('Client name'),
+    });
+});
+
+export const UserModel = defineModel('User', m => {
+    m.casts({
+        id:    m.string(),
+        name:  m.string('Full name'),
+        email: m.string('Email address'),
+        role:  m.enum('Role', ['admin', 'member', 'guest']),
+    });
+    m.hidden(['password_hash', 'stripe_token']);
+    m.timestamps();
+    m.fillable({
+        create: ['name', 'email', 'role'],
+        update: ['name', 'email'],
+    });
+});
+```
+
+### ModelBuilder Type Helpers
+
+| Method | Produces | Semantics |
+|---|---|---|
+| `m.string(label?)` | `z.string()` | General-purpose text |
+| `m.text(label?)` | `z.string()` | Markdown, multiline, long content |
+| `m.number(label?)` | `z.number()` | Numeric field |
+| `m.boolean(label?)` | `z.boolean()` | Boolean flag |
+| `m.date(label?)` | `z.string()` | Auto-hints YYYY-MM-DD |
+| `m.timestamp(label?)` | `z.string()` | ISO datetime |
+| `m.uuid(label?)` | `z.string()` | UUID semantics |
+| `m.id(label?)` | `z.number()` | Always required |
+| `m.enum(label, values)` | `z.enum()` | Tells AI valid values |
+| `m.object(label, shape)` | `z.object()` | Nested object |
+| `m.list(label, shape)` | `z.array(z.object())` | Array of objects |
+
+### ModelBuilder Configuration
+
+| Method | Inspired By | What It Does |
+|---|---|---|
+| `m.casts({ ... })` | Laravel `$casts` | Define field types and labels |
+| `m.timestamps()` | Laravel `timestamps()` | Add `created_at` + `updated_at` |
+| `m.hidden([...])` | Spring `@JsonIgnore` | Fields never shown in output |
+| `m.guarded([...])` | Rails `attr_protected` | Fields never accepted as input |
+| `m.fillable({ profile: [...] })` | Laravel `$fillable` | Input profiles per operation |
+
+### FieldDef Chaining
+
+```typescript
+m.enum('Status', ['open', 'done']).default('open')  // Prisma @default()
+m.string('Display name').alias('displayName')        // Pydantic Field(alias=)
+m.number('Score').examples([85, 92, 100])            // Pydantic Field(examples=)
+```
+
+### Model.toApi() — Runtime Alias Resolution
+
+Every compiled Model exposes a `.toApi(data)` method that **strips undefined values** and **renames aliased fields** (agent-facing keys → API-facing keys). This is equivalent to Pydantic's `model_dump(by_alias=True)`:
+
+```typescript
+const ProposalModel = defineModel('Proposal', m => {
+    m.casts({
+        title:   m.string('Proposal title'),
+        content: m.text('Proposal body').alias('description'),  // agent says 'content', API expects 'description'
+    });
+});
+
+ProposalModel.toApi({ title: 'X', content: 'Y', extra: undefined });
+// → { title: 'X', description: 'Y' }  (alias applied, undefined stripped)
+```
+
+`.proxy()` calls `toApi()` automatically. In custom `.handle()` handlers, call it explicitly. See "Model.toApi() — Clean Payloads in Custom Handlers" below.
+
+## MVA Project Structure
+
+```text
+src/
+├── models/               ← M — defineModel() declarations
+│   ├── InvoiceModel.ts
+│   └── UserModel.ts
+├── views/                ← V — Presenters
+│   ├── invoice.presenter.ts
+│   └── user.presenter.ts
+├── agents/               ← A — Tool definitions
+│   ├── billing.tool.ts
+│   └── users.tool.ts
+├── index.ts              ← ToolRegistry + registerAll()
+└── server.ts             ← attachToServer() bootstrap
+```
+
+**Rules:**
+1. Each layer imports ONLY from the layer above: `agents/` → `views/` → `models/` → `@vurb/core`
+2. One file per entity: `{Entity}Model.ts`, `{entity}.presenter.ts`, `{entity}.tool.ts`
+3. Models are the single source of truth — Presenters receive Models, not raw `z.object()`
+4. Presenters are reused across tools and prompts — define once in `views/`
+5. `autoDiscover()` scans `agents/` and auto-registers tool builders
+
+## Quick Start — Fluent API with Semantic Verbs
+
+```typescript
+import { initVurb, defineModel, definePresenter, ui, PromptMessage } from 'Vurb.ts';
+
+interface AppContext { db: PrismaClient; user: { id: string; role: string } }
+export const f = initVurb<AppContext>();
+
+// ═══════════════════════════════════════════════════════════
+// STEP 1: THE MODEL — Domain Data Definition
+// ═══════════════════════════════════════════════════════════
+export const InvoiceModel = defineModel('Invoice', m => {
+    m.casts({
+        id:           m.string(),
+        amount_cents: m.number('CRITICAL: in CENTS. Divide by 100 for display.'),
+        status:       m.enum('Status', ['paid', 'pending', 'overdue']),
+        client_name:  m.string('Client name'),
+    });
+});
+
+// ═══════════════════════════════════════════════════════════
+// STEP 2: THE PRESENTER — Egress Firewall & Perception Layer
+// ═══════════════════════════════════════════════════════════
+export const InvoicePresenter = definePresenter({
+    name: 'Invoice',
+    schema: InvoiceModel,
+    ui: (inv) => [ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] })],
+    agentLimit: { max: 50, onTruncate: (n) => ui.summary({ omitted: n, hint: 'Use filters.' }) },
+    suggestActions: (inv) => inv.status === 'pending'
+        ? [{ tool: 'billing.pay', reason: 'Process payment', args: { id: inv.id } }]
+        : [],
+    embeds: [{ key: 'client', presenter: ClientPresenter }],
+});
+
+// ═══════════════════════════════════════════════════════════
+// STEP 3: TOOLS — Fluent API with Type-Chaining
+// f.query() = readOnly, f.mutation() = destructive, f.action() = neutral
+// with*() methods accumulate TypeScript generics — input is fully typed
+// .handle() auto-wraps raw data with success() — no boilerplate
+// ═══════════════════════════════════════════════════════════
+const getInvoice = f.query('billing.get_invoice')
+    .describe('Get an invoice by ID')
+    .withString('id', 'The invoice ID')
+    .returns(InvoicePresenter)
+    .handle(async (input, ctx) => {
+        // input.id: string ✅ — fully typed, zero manual interfaces
+        return await ctx.db.invoices.findUnique({ where: { id: input.id } });
+        // ↑ Returns raw data — Presenter validates, strips, renders automatically
+    });
+
+const createInvoice = f.mutation('billing.create_invoice')
+    .describe('Create a new invoice')
+    .withString('client_id', 'Client identifier')
+    .withNumber('amount', 'Invoice amount in cents')
+    .withEnum('currency', ['USD', 'EUR', 'BRL'] as const, 'Currency code')
+    .withOptionalString('notes', 'Optional notes')
+    .handle(async (input, ctx) => {
+        // input.client_id: string, input.amount: number,
+        // input.currency: 'USD'|'EUR'|'BRL', input.notes?: string
+        return await ctx.db.invoices.create({ data: input });
+    });
+
+// ═══════════════════════════════════════════════════════════
+// STEP 4: PROMPTS — Fluent Builder or Config-Bag
+// ═══════════════════════════════════════════════════════════
+const AuditPrompt = f.prompt('financial_audit')
+    .describe('Perform a financial audit on an invoice')
+    .input({ invoiceId: f.string(), depth: f.enum('quick', 'thorough') })
+    .handler(async (ctx, { invoiceId, depth }) => {
+        const invoice = await ctx.db.invoices.get(invoiceId);
+        return {
+            messages: [
+                PromptMessage.system('You are a Senior Financial Auditor.'),
+                ...PromptMessage.fromView(InvoicePresenter.make(invoice, ctx)),
+                PromptMessage.user(`Perform a ${depth} audit on this invoice.`),
+            ],
+        };
+    });
+
+// f.registry() — pre-typed
+const registry = f.registry();
+registry.register(getInvoice);
+registry.register(createInvoice);
+```
+
+## Fluent API — Semantic Verbs & Type-Chaining
+
+The Fluent API is the primary tool definition surface. Three semantic verbs set behavioral defaults at creation:
+
+| Verb | Default | Use Case |
+|---|---|---|
+| `f.query(name)` | `readOnly: true` | Read operations — no side effects |
+| `f.mutation(name)` | `destructive: true` | Write operations — irreversible |
+| `f.action(name)` | *neutral* | Updates, syncs — no assumptions |
+
+Every verb returns a `FluentToolBuilder` with type-chaining `.with*()` methods for **tool input parameters** (filters, IDs, pagination). For **domain entity schemas** (the data your tools return), always use `defineModel()` + Presenter — never inline `z.object()`:
+
+```typescript
+const listUsers = f.query('users.list')
+    .describe('List users from the database')
+    .instructions('Use ONLY for listing users. For search, use users.search.')
+    .withNumber('limit', 'Max results to return')
+    .withOptionalEnum('status', ['active', 'inactive'], 'Filter by status')
+    .withOptionalString('search', 'Search by name')
+    .returns(UserPresenter)
+    .handle(async (input, ctx) => {
+        // input.limit: number ✅
+        // input.status?: 'active' | 'inactive' ✅
+        // input.search?: string ✅
+        return ctx.db.user.findMany({ take: input.limit, where: { status: input.status } });
+    });
+```
+
+### FluentToolBuilder — with*() Type-Chaining Methods
+
+Each `with*()` call narrows the TypeScript generic `TInput` — the IDE provides full autocomplete inside `.handle()` without any manual interface declaration.
+
+| Method | Adds to Input Type |
+|---|---|
+| `.withString(name, desc?)` | `Record<K, string>` |
+| `.withOptionalString(name, desc?)` | `Partial<Record<K, string>>` |
+| `.withNumber(name, desc?)` | `Record<K, number>` |
+| `.withOptionalNumber(name, desc?)` | `Partial<Record<K, number>>` |
+| `.withBoolean(name, desc?)` | `Record<K, boolean>` |
+| `.withOptionalBoolean(name, desc?)` | `Partial<Record<K, boolean>>` |
+| `.withEnum(name, values, desc?)` | `Record<K, V>` (literal union) |
+| `.withOptionalEnum(name, values, desc?)` | `Partial<Record<K, V>>` |
+| `.withArray(name, itemType, desc?)` | `Record<K, T[]>` |
+| `.withOptionalArray(name, itemType, desc?)` | `Partial<Record<K, T[]>>` |
+
+### FluentToolBuilder — Bulk with*() Methods
+
+When a tool has many parameters of the same type, use the **plural** bulk variants to reduce verbosity.
+Each accepts a `Record<string, string>` where keys are parameter names and values are descriptions:
+
+| Bulk Method | Equivalent Singular |
+|---|---|
+| `.withStrings({ k: desc, ... })` | Multiple `.withString(k, desc)` calls |
+| `.withOptionalStrings({ k: desc, ... })` | Multiple `.withOptionalString(k, desc)` calls |
+| `.withNumbers({ k: desc, ... })` | Multiple `.withNumber(k, desc)` calls |
+| `.withOptionalNumbers({ k: desc, ... })` | Multiple `.withOptionalNumber(k, desc)` calls |
+| `.withBooleans({ k: desc, ... })` | Multiple `.withBoolean(k, desc)` calls |
+| `.withOptionalBooleans({ k: desc, ... })` | Multiple `.withOptionalBoolean(k, desc)` calls |
+| `.withEnums({ k: [values, desc?], ... })` | Multiple `.withEnum(k, values, desc)` calls |
+| `.withOptionalEnums({ k: [values, desc?], ... })` | Multiple `.withOptionalEnum(k, values, desc)` calls |
+| `.withArrays(itemType, { k: desc, ... })` | Multiple `.withArray(k, itemType, desc)` calls |
+| `.withOptionalArrays(itemType, { k: desc, ... })` | Multiple `.withOptionalArray(k, itemType, desc)` calls |
+
+```typescript
+// BEFORE — 21 lines of repetitive chaining:
+f.query('tasks.filter')
+    .withString('company_slug', 'Workspace identifier')
+    .withString('project_slug', 'Project identifier')
+    .withOptionalString('title', 'Filter by title')
+    .withOptionalString('workflow', 'Column name')
+    .withOptionalString('labels', 'Comma-separated labels')
+    .withOptionalBoolean('is_blocker', 'Only blockers')
+    .withOptionalBoolean('is_bug', 'Only bugs')
+    .withOptionalNumber('per_page', 'Results per page')
+
+// AFTER — bulk methods, zero repetition:
+f.query('tasks.filter')
+    .withStrings({
+        company_slug: 'Workspace identifier',
+        project_slug: 'Project identifier',
+    })
+    .withOptionalStrings({
+        title:    'Filter by title',
+        workflow: 'Column name',
+        labels:   'Comma-separated labels',
+    })
+    .withOptionalBooleans({
+        is_blocker: 'Only blockers',
+        is_bug:     'Only bugs',
+    })
+    .withOptionalNumbers({
+        per_page: 'Results per page',
+    })
+    .withOptionalEnums({
+        priority: [['low', 'medium', 'high', 'critical'], 'Priority level'],
+    })
+```
+
+All bulk methods preserve full TypeScript type-chaining — `input` is correctly typed inside `.handle()`.
+
+### FluentToolBuilder — Configuration Methods
+
+| Method | What It Does |
+|---|---|
+| `.describe(text)` | Tool description shown to the LLM |
+| `.instructions(text)` | AI-First instructions injected as `[INSTRUCTIONS]` — prompt engineering in the framework |
+| `.use(mw)` | tRPC-style context derivation — enriches `TCtx` type for `.handle()` |
+| `.returns(presenter)` | Attach MVA Presenter for automatic response formatting |
+| `.tags(...tags)` | Set capability tags (replaces existing) |
+| `.readOnly()` | Override: mark as read-only |
+| `.destructive()` | Override: mark as destructive |
+| `.idempotent()` | Override: mark as idempotent (safe to retry) |
+| `.annotations(a)` | Custom MCP tool annotations |
+| `.toonDescription()` | TOON-formatted descriptions for token optimization |
+| `.invalidates(...patterns)` | State Sync: glob patterns invalidated on success |
+| `.cached()` | State Sync: immutable (safe to cache forever) |
+| `.stale()` | State Sync: volatile (never cache) |
+| `.concurrency(config)` | Runtime guard: semaphore + queue |
+| `.egress(bytes)` | Runtime guard: max payload size |
+| `.bindState(states, event?)` | FSM State Gate: tool visibility by FSM state + auto-transition |
+| `.fromModel(Model, profile)` | Import input parameters from a Model's fillable profile — zero manual `.with*()` calls |
+| `.handle(handler)` | **Terminal** — sets handler, builds GroupedToolBuilder |
+| `.proxy(endpoint, opts?)` | **Terminal** — auto-generates handler that proxies to `ctx.client.get/post/put/delete(endpoint)`. Infers HTTP method from semantic verb, passes input as query params (GET) or body (POST/PUT), auto-unwraps `{ data }` envelopes, resolves `:param` path placeholders. Eliminates both client wrapper methods and handler boilerplate. |
+
+### Implicit success() Wrapping
+
+`.handle()` auto-wraps raw data — handlers just return data, no `success()` boilerplate:
+
+```typescript
+// BEFORE (manual wrapping):
+.handle(async (input, ctx) => {
+    return success(await ctx.db.users.findMany());
+});
+
+// AFTER (implicit wrapping — same result):
+.handle(async (input, ctx) => {
+    return await ctx.db.users.findMany();  // ← raw data, framework wraps
+});
+```
+
+### .proxy() — Zero-Boilerplate API Proxying
+
+`.proxy(endpoint)` is a **terminal** method (alternative to `.handle()`) that auto-generates a handler to proxy the call directly to `ctx.client`. It eliminates both the handler boilerplate AND the need for dedicated client wrapper methods:
+
+```typescript
+// BEFORE — 2 things to maintain: tool handler + client method
+// Tool:
+f.query('analytics.pulse')
+    .fromModel(AnalyticsModel, 'query')
+    .handle(async (input, ctx) => {
+        return await ctx.client.getManagerPulse(input.company_slug);
+    });
+// Client:
+async getManagerPulse(companySlug: string) {
+    const params = { company_slug: companySlug };
+    const response = await this.get('companies/manager-dashboard/pulse', params);
+    return response.data;
+}
+
+// AFTER — 1 line, zero client method needed:
+f.query('analytics.pulse')
+    .fromModel(AnalyticsModel, 'query')
+    .proxy('companies/manager-dashboard/pulse');
+```
+
+**How it works:**
+1. HTTP method inferred from semantic verb: `query` → GET, `mutation` → POST, `action` → PUT
+2. All input fields passed as query params (GET) or request body (POST/PUT)
+3. Auto-unwraps `{ data: ... }` response envelopes (disable with `{ unwrap: false }`)
+4. Resolves `:param` path placeholders from input: `.proxy('users/:id')` consumes `input.id`
+5. Consumed path params are automatically excluded from query params/body
+
+```typescript
+// Path params example:
+f.query('user.get')
+    .withString('id', 'User UUID')
+    .proxy('users/:id');  // → GET users/abc-123
+
+// Disable auto-unwrap for raw API responses:
+f.query('legacy.data')
+    .proxy('legacy/endpoint', { unwrap: false });
+```
+
+**When to use `.proxy()` vs `.handle()`:**
+- Use `.proxy()` when the tool is a simple pass-through to the API (no transformation, no business logic)
+- Use `.handle()` when you need business logic, error handling, multi-step calls, or data transformation
+- When using `.handle()` with a Model, call `Model.toApi(data)` to strip undefined values and apply field aliases — never build partial objects with manual `if` checks
+
+### .fromModel() — Model-Driven Input
+
+`.fromModel(Model, profile)` imports all fillable fields from a Model's profile as input parameters — zero manual `.with*()` calls. The Model's `m.fillable()` configuration controls which fields are accepted per operation:
+
+```typescript
+// Model defines the schema AND the input profiles:
+const TaskModel = defineModel('Task', m => {
+    m.casts({
+        title:       m.string('Task title'),
+        description: m.text('Task description').alias('body'),  // ← 'body' sent to API
+        status:      m.enum('Status', ['open', 'done']),
+        priority:    m.number('Priority level'),
+    });
+    m.fillable({
+        create: ['title', 'description', 'status'],    // only these on create
+        update: ['title', 'description', 'priority'],  // only these on update
+    });
+});
+
+// Tool gets its input from the Model — no .withString()/.withNumber() needed:
+const createTask = f.mutation('tasks.create')
+    .fromModel(TaskModel, 'create')  // ← imports title, description, status
+    .proxy('tasks');                  // ← simple pass-through
+
+const updateTask = f.action('tasks.update')
+    .fromModel(TaskModel, 'update')  // ← imports title, description, priority
+    .handle(async (input, ctx) => {
+        // input.title?: string, input.description?: string, input.priority?: number
+        const data = TaskModel.toApi(input);
+        // → { title: '...', body: '...' }  (alias applied, undefined stripped)
+        await ctx.client.put(`tasks/${input.id}`, data);
+    });
+```
+
+### Model.toApi() — Clean Payloads in Custom Handlers
+
+`Model.toApi(data)` applies two operations automatically:
+1. **Strips undefined values** — no need for `if (input.x) data.x = input.x`
+2. **Renames aliased fields** — agent-facing names → API-facing names (e.g., `content` → `description`)
+
+This is the same function `.proxy()` uses internally. When your handler has custom logic (validation, transformation, multi-step calls), you call `toApi()` explicitly instead of relying on `.proxy()`:
+
+```typescript
+// ❌ WRONG — manual if-checks (redundant, error-prone):
+.handle(async (input, ctx) => {
+    const data: Record<string, unknown> = {};
+    if (input.title) data.title = input.title;
+    if (input.color) data.color = normalizeColor(input.color);
+    if (input.status !== undefined) data.status = input.status;
+    await ctx.client.updateItem(input.id, data);
+});
+
+// ✅ CORRECT — toApi() strips undefined, applies aliases:
+.handle(async (input, ctx) => {
+    const data = ItemModel.toApi({
+        title: input.title,
+        color: input.color ? normalizeColor(input.color) : undefined,
+        status: input.status,
+    });
+    await ctx.client.updateItem(input.id, data);
+});
+```
+
+**Decision tree:**
+- **Simple CRUD, no logic** → `.fromModel()` + `.proxy()` — zero code
+- **Custom logic needed** → `.fromModel()` + `.handle()` + `Model.toApi()` — Model still handles cleanup
+
+### AI-First Instructions
+
+`.instructions()` injects system-level guidance into the tool description, telling the LLM WHEN and HOW to use the tool:
+
+```typescript
+f.query('docs.search')
+    .describe('Search internal documentation')
+    .instructions('Use ONLY when the user asks about internal policies. Do NOT use for general questions.')
+    .withString('query', 'Search term')
+    .handle(async (input, ctx) => ctx.docs.search(input.query));
+// Generated description: "[INSTRUCTIONS] Use ONLY when...\n\nSearch internal documentation"
+```
+
+### Context Derivation — .use() Middleware
+
+The `.use()` method follows tRPC-style `{ ctx, next }` signature. It enriches the context type — the TypeScript compiler automatically extends `TCtx` in `.handle()`:
+
+```typescript
+f.mutation('users.delete')
+    .use(async ({ ctx, next }) => {
+        const admin = await requireAdmin(ctx.headers);
+        return next({ ...ctx, adminUser: admin });
+    })
+    .use(async ({ ctx, next }) => {
+        return next({ ...ctx, auditLog: createAuditLog(ctx.adminUser) });
+    })
+    .withString('id', 'User ID to delete')
+    .handle(async (input, ctx) => {
+        // ctx.adminUser is typed! ctx.auditLog is typed! Zero casting.
+        ctx.auditLog.record(`${ctx.adminUser.name} deleting ${input.id}`);
+        await ctx.db.users.delete({ where: { id: input.id } });
+    });
+```
+
+## FluentRouter — Prefix Grouping
+
+Eliminates repetitive prefixes across dozens of tools. A router shares a common prefix, description, middleware chain, and tags:
+
+```typescript
+const users = f.router('users')
+    .describe('User management')
+    .use(requireAuth)
+    .tags('core');
+
+// Tool name: "users", action: "list" — inherits middleware + tags
+const listUsers = users.query('list')
+    .withOptionalNumber('limit', 'Max results')
+    .handle(async (input, ctx) => ctx.db.users.findMany({ take: input.limit }));
+
+// Tool name: "users", action: "delete" — inherits middleware + tags
+const deleteUser = users.mutation('delete')
+    .withString('id', 'User ID')
+    .handle(async (input, ctx) => ctx.db.users.delete({ where: { id: input.id } }));
+
+// Tool name: "users", action: "update" — neutral, explicitly idempotent
+const updateUser = users.action('update')
+    .idempotent()
+    .withString('id', 'User ID')
+    .withOptionalString('name', 'New name')
+    .withOptionalString('email', 'New email')
+    .handle(async (input, ctx) => ctx.db.users.update({ where: { id: input.id }, data: input }));
+```
+
+## ErrorBuilder — Fluent Self-Healing Errors
+
+`f.error()` creates a chainable error builder that produces structured, self-healing error responses:
+
+```typescript
+// Inside a handler:
+const project = await ctx.db.projects.findUnique({ where: { id: input.id } });
+if (!project) {
+    return f.error('NOT_FOUND', `Project "${input.id}" not found`)
+        .suggest('Check the ID. Use projects.list to see valid IDs.')
+        .actions('projects.list', 'projects.search')
+        .details({ searched_id: input.id })
+        .retryAfter(0);  // retry immediately
+}
+
+// Severity shortcuts:
+return f.error('RATE_LIMITED', 'Too many requests').warning().retryAfter(30);
+return f.error('INTERNAL_ERROR', 'Database unreachable').critical();
+```
+
+## StateSyncBuilder — Fluent Cache Policies
+
+`f.stateSync()` creates a chainable builder for centralized State Sync configuration:
+
+```typescript
+const sync = f.stateSync()
+    .defaults(p => p.stale())           // default: no caching
+    .policy('countries.*', p => p.cached()) // reference data: cache forever
+    .policy('billing.*', p => p.stale().invalidates('billing.*', 'reports.*'))
+    .policy('tasks.update', p => p.invalidates('tasks.*', 'sprints.*'))
+    .onInvalidation(event => metrics.increment('cache.invalidations', { tool: event.causedBy }))
+    .notificationSink(n => server.notification(n))
+    .build();
+
+registry.attachToServer(server, { stateSync: sync });
+```
+
+### Inline State Sync on FluentToolBuilder
+
+Alternatively, declare state sync policies directly on each tool:
+
+```typescript
+const updateSprint = f.mutation('sprints.update')
+    .invalidates('sprints.*', 'tasks.*')   // ← inline invalidation
+    .withString('id', 'Sprint ID')
+    .handle(async (input, ctx) => ctx.db.sprints.update(input));
+
+const getCountries = f.query('geo.countries')
+    .cached()                               // ← immutable reference data
+    .handle(async (input, ctx) => ctx.db.countries.findMany());
+
+const getBalance = f.query('billing.balance')
+    .stale()                                // ← always fresh, never cache
+    .withString('account_id', 'Account ID')
+    .handle(async (input, ctx) => ctx.billing.getBalance(input.account_id));
+```
+
+### Inline Runtime Guards on FluentToolBuilder
+
+```typescript
+const processInvoice = f.mutation('billing.process')
+    .concurrency({ maxActive: 5, maxQueue: 20 })  // semaphore + queue
+    .egress(2 * 1024 * 1024)                       // 2MB max payload
+    .withString('id', 'Invoice ID')
+    .handle(async (input, ctx) => ctx.stripe.charges.create(input));
+```
+
+
+## Presenter API — Egress Firewall & Perception Layer
+
+The Presenter is the domain-level egress contract between your handler and the wire. It solves the fundamental problem of every MCP server: the handler owns the response shape, so validation, formatting, and security are ad-hoc, duplicated, and invisible to audits.
+
+Presenter schemas MUST come from `defineModel()`. Never pass `z.object()` directly to `.schema()` — always define a Model first, then pass the Model to the Presenter.
+
+BEFORE: Handler formats its own response. Fields chosen ad-hoc. password_hash leaks. Rules live in global prompt. 10,000 rows crash the agent. Response format drifts between tools.
+AFTER: Handler returns raw data. Presenter validates through Model schema (stripping undeclared fields in RAM), injects JIT domain rules, renders UI server-side, truncates with guidance, and suggests next actions. One Model + one Presenter per entity, reused everywhere.
+
+### definePresenter() — Object Config (Recommended)
+
+```typescript
+import { defineModel, definePresenter, ui } from 'Vurb.ts';
+
+const InvoicePresenter = definePresenter({
+    name: 'Invoice',
+    schema: InvoiceModel,
+    // autoRules: true (default) — Model .describe() annotations auto-extracted as system rules
+    ui: (inv) => [ui.echarts({ series: [{ type: 'gauge', data: [{ value: inv.amount_cents / 100 }] }] })],
+    collectionUi: (items) => [ui.summary({ total: items.length, showing: Math.min(items.length, 50) })],
+    agentLimit: { max: 50, onTruncate: (n) => ui.summary({ omitted: n, hint: 'Use filters.' }) },
+    suggestActions: (inv) => inv.status === 'pending'
+        ? [{ tool: 'billing.pay', reason: 'Process payment', args: { id: inv.id } }] : [],
+    embeds: [{ key: 'client', presenter: ClientPresenter }],
+});
+```
+
+### createPresenter() — Fluent Builder
+
+```typescript
+import { createPresenter, ui } from 'Vurb.ts';
+
+const UserPresenter = createPresenter('User')
+    .schema(UserModel)
+    .systemRules(['Display name in bold'])
+    .systemRules((user, ctx) => ctx.isAdmin ? ['Show internal fields'] : ['Hide internal fields'])
+    .uiBlocks((user) => [ui.summary({ total: 1, showing: 1 })])
+    .agentLimit(50, { warningMessage: 'Showing {shown} of {total}. Use filters.' })
+    .suggestActions((user) => [
+        { tool: 'users.update', reason: 'Edit this user', args: { id: user.id } },
+    ])
+    .embed('team', TeamPresenter);
+```
+
+### Presenter Layers
+
+| Layer | What It Does | Why |
+|---|---|---|
+| Egress Firewall | `.parse()` strips undeclared fields in RAM | PII, passwords gone before wire |
+| JIT System Rules | Rules travel with data, not global prompt | Zero wasted tokens |
+| Server-Rendered UI | ECharts, Mermaid — deterministic | No hallucinated charts |
+| Cognitive Guardrails | `.agentLimit()` truncates + guidance | No OOM, no context explosion |
+| Action Affordances | `.suggestActions()` | Eliminates hallucinated guesswork |
+| Relational Composition | `.embed()` / `embeds:` | Child Presenters inherit full pipeline |
+| Prompt Bridge | `PromptMessage.fromView()` | Same source of truth for tools AND prompts |
+
+## Presenter Composition
+
+```typescript
+const OrderPresenter = createPresenter('Order')
+    .schema(OrderModel)
+    .embed('customer', CustomerPresenter)
+    .embed('items', LineItemPresenter);
+// Child Presenters' rules, UI blocks, and suggestions are automatically merged.
+```
+
+## Select Reflection — Context Window Optimization
+
+Opt-in feature that injects a `_select` parameter into the input schema, allowing AI agents to request only the response fields they need. Reduces token waste by up to 80% on large payloads.
+
+**Late Guillotine Pattern**: UI blocks, system rules, and action suggestions always receive the FULL data. Only the wire-facing data block sent to the AI is filtered. This ensures UI integrity — charts, rules, and suggestions never break due to missing fields.
+
+**Shallow filtering only**: `_select` lists top-level keys. Nested objects are returned whole when selected.
+
+```typescript
+import { createTool, createPresenter } from 'Vurb.ts';
+
+const InvoicePresenter = createPresenter('Invoice')
+    .schema(InvoiceModel);
+
+const billing = createTool<AppContext>('billing')
+    .enableSelect()  // ← opt-in: inject _select into input schema
+    .action({
+        name: 'get_invoice',
+        schema: z.object({ id: z.string() }),
+        returns: InvoicePresenter,
+        handler: async (ctx, args) => await ctx.db.invoices.findUnique(args.id),
+    });
+
+// Generated input schema includes:
+// _select: { type: 'array', items: { enum: ['amount_cents', 'client', 'id', 'status'] } }
+//
+// AI sends: { action: 'get_invoice', id: '123', _select: ['status'] }
+// Response: { status: 'paid' }  ← instead of full invoice
+//
+// UI blocks still render with full data (Late Guillotine)
+```
+
+**Security**: Enum whitelist from Presenter schema keys (AI cannot request arbitrary fields). `Object.hasOwn()` in pickFields blocks prototype pollution. Subtractive-only design (can only remove fields, never add data). Disabled by default.
+
+
+## DX Shortcuts
+
+```typescript
+import { response, ui } from 'Vurb.ts';
+
+return response.ok(data);                          // Simple success
+return response.withRules(data, ['Rule 1']);        // Data + rules
+ui.echarts({ series: [...] });                     // ECharts chart
+ui.mermaid('graph TD; A-->B');                      // Mermaid diagram
+ui.summary({ total: 100, showing: 10 });           // Collection summary
+```
+
+## Hierarchical Groups
+
+```typescript
+const users = f.router('users')
+    .use(requireAdmin)
+    .query('list', b => b.handle(listUsers))
+    .mutation('ban', b => b.withString('userId', 'User to ban').handle(banUser));
+
+const billing = f.router('billing')
+    .mutation('refund', b => b.withString('chargeId', 'Charge ID').handle(issueRefund));
+// Tool names: "users.list", "users.ban", "billing.refund"
+```
+
+## Middleware
+
+```typescript
+const requireAuth: MiddlewareFn<AppContext> = async (ctx, args, next) => {
+    if (!ctx.user) return error('Unauthorized');
+    return next();
+};
+
+// tRPC-style context derivation
+const withDb = f.middleware(async (ctx) => ({
+    ...ctx,
+    db: await createDbConnection(ctx.tenantId),
+}));
+
+const listProjects = f.query('projects.list')
+    .use(requireAuth)
+    .use(withDb)
+    .handle(async (input, ctx) => ctx.db.query());
+```
+
+
+
+## Runtime Guards
+
+Built-in concurrency control and payload size limiting. Fulfills the MCP spec requirement: "Servers MUST rate limit tool invocations."
+
+```typescript
+// Concurrency Limiter
+const processInvoice = f.mutation('billing.process_invoice')
+    .concurrency({ maxActive: 5, maxQueue: 20 })
+    .withString('chargeId', 'Stripe charge ID')
+    .handle(async (input, ctx) => ctx.stripe.charges.create(input));
+// 5 concurrent, 20 queued, rest rejected with SERVER_BUSY
+
+// Egress Guard
+const searchLogs = f.query('logs.search')
+    .egress({ maxPayloadBytes: 2 * 1024 * 1024 })
+    .withString('query', 'Search query')
+    .handle(async (input, ctx) => ctx.db.logs.findMany(input));
+// Responses > 2MB truncated + system intervention injected
+
+// Intent Mutex — destructive tools automatically serialize concurrent calls
+const deleteUser = f.mutation('users.delete')
+    .withString('userId', 'User to delete')
+    .handle(async (input, ctx) => ctx.db.users.delete(input.userId));
+```
+
+Load shedding returns `toolError('SERVER_BUSY')` — a self-healing error that causes the LLM to reduce its cadence. Egress truncation injects `[SYSTEM INTERVENTION: Payload truncated. You MUST use pagination.]`. Intent Mutex prevents LLM double-firing hallucinations. Zero overhead when not configured.
+
+
+## Dynamic Manifest
+
+```typescript
+registry.attachToServer(server, {
+    contextFactory: (extra) => createAppContext(extra),
+    serverName: 'my-platform',
+    introspection: {
+        enabled: process.env.NODE_ENV !== 'production',
+        filter: (manifest, ctx) => {
+            if (ctx.user.role !== 'admin') {
+                delete manifest.capabilities.tools['admin'];
+            }
+            return manifest;
+        },
+    },
+});
+// Exposes Vurb.ts://manifest.json via MCP resources/list + resources/read
+// Manifest includes: all tools, actions (destructive/readOnly flags, required_fields),
+// input schemas, presenter references — RBAC-filtered per session
+```
+
+## Tag Filtering
+
+```typescript
+registry.attachToServer(server, { filter: { tags: ['core'] } });      // Only core tools
+registry.attachToServer(server, { filter: { exclude: ['internal'] } }); // No internal tools
+```
+
+## Tool Exposition
+
+Two strategies for the same codebase — choose at attach time:
+
+```typescript
+// Flat (default) — each action becomes an independent MCP tool
+// projects → projects_list, projects_create, projects_delete
+registry.attachToServer(server, {
+    toolExposition: 'flat',
+    actionSeparator: '_',
+});
+
+// Grouped — one MCP tool per builder with discriminator enum
+// projects → { action: 'list' | 'create' | 'delete' }
+registry.attachToServer(server, {
+    toolExposition: 'grouped',
+});
+```
+
+**Flat** — precision per action: isolated schemas, per-action MCP annotations, per-tool toggles in clients. Best for small-to-medium APIs and weaker LLMs.
+
+**Grouped** — density at scale: one schema, one description, shared params appear once. Best for large domain APIs (50+ actions) and token-constrained contexts.
+
+MCP annotation semantics: Vurb.ts emits `destructiveHint: false` on non-destructive actions because the MCP spec defaults `destructiveHint` to `true` (assume dangerous). Read-only actions get both `readOnlyHint: true` and `destructiveHint: false`. Destructive actions get `destructiveHint: true`. `readOnlyHint: false` is never emitted (matches spec default).
+
+## Response Helpers
+
+```typescript
+import { success, error, required, toonSuccess, toolError } from 'Vurb.ts';
+
+return success('Task completed');
+return success({ id: '123', name: 'Acme' });
+return error('Project not found');
+return error('Project not found', 'NOT_FOUND');   // with optional code
+return required('workspace_id');
+return toonSuccess(users);                         // ~40% fewer tokens
+return toolError('NOT_FOUND', {
+    message: 'Invoice not found',
+    suggestion: 'Call billing.list first.',
+    availableActions: ['billing.list'],
+    severity: 'error',
+    details: { entity_type: 'invoice' },
+    retryAfter: 30,
+});
+```
+
+## Streaming Progress
+
+Generator handlers yield `progress()` events that are **automatically** forwarded to the MCP client as `notifications/progress` when the client includes a `progressToken` in its request `_meta`. Zero configuration, zero overhead when not used.
+
+```typescript
+handler: async function* (ctx, args) {
+    yield progress(25, 'Loading data...');
+    const data = await ctx.db.query();
+    yield progress(75, 'Processing...');
+    return success(data);
+}
+// Wire format: { method: 'notifications/progress', params: { progressToken, progress: 25, total: 100, message: 'Loading data...' } }
+```
+
+## Prompt Engine — Powered by the Presenter
+
+Server-side hydrated prompt templates with schema-informed coercion and lifecycle sync. The `definePrompt()` factory enforces a **flat schema constraint** — prompt arguments must be primitives (string, number, boolean, enum) because MCP clients render them as forms. **No Zod required** — JSON descriptors work everywhere.
+
+```typescript
+import { definePrompt, PromptMessage } from 'Vurb.ts';
+
+// No-Zod prompt — JSON descriptors for args
+const SummarizePrompt = definePrompt<AppContext>('summarize', {
+    title: 'Summarize Document',
+    description: 'Generate a summary of a document.',
+    args: {
+        docId: 'string',
+        length: { enum: ['short', 'medium', 'long'] as const },
+    } as const,
+    handler: async (ctx, { docId, length }) => {
+        const doc = await ctx.db.documents.get(docId);
+        return {
+            messages: [
+                PromptMessage.system('You are a Senior Technical Writer.'),
+                PromptMessage.user(`Summarize this document (${length}):\n\n${doc.content}`),
+            ],
+        };
+    },
+});
+
+// f.prompt() — context-typed, same No-Zod DX
+const ReviewPrompt = f.prompt('code_review', {
+    args: {
+        prUrl: { type: 'string', description: 'GitHub PR URL' },
+        depth: { enum: ['quick', 'thorough', 'security'] as const },
+    } as const,
+    handler: async (ctx, { prUrl, depth }) => {
+        const pr = await ctx.github.getPullRequest(prUrl);
+        return {
+            messages: [
+                PromptMessage.system(`You are a Senior ${depth} Code Reviewer.`),
+                PromptMessage.user(`Review this PR:\n\n${pr.diff}`),
+            ],
+        };
+    },
+});
+```
+
+## Hydration Timeout Sandbox
+
+Prompt handlers fetch data from external sources (APIs, databases). If any source hangs, the UI freezes. The Hydration Timeout Sandbox wraps the handler in a strict `Promise.race` deadline. Three guarantees: (1) handler completes → normal result, (2) handler exceeds deadline → `<hydration_alert><status>TIMEOUT</status>` alert, (3) handler throws → `<hydration_alert><status>ERROR</status>` alert. The UI ALWAYS unblocks.
+
+```typescript
+// Per-prompt deadline
+const Briefing = definePrompt<AppContext>('morning_briefing', {
+    hydrationTimeout: 3000, // 3 seconds strict
+    handler: async (ctx, args) => {
+        // If Jira takes 15s, framework cuts at 3s → returns SYSTEM ALERT
+        const tickets = await ctx.invokeTool('jira.get_assigned');
+        return { messages: [PromptMessage.user(tickets.text)] };
+    },
+});
+
+// Registry-level default (global safety net)
+const prompts = new PromptRegistry<AppContext>();
+prompts.setDefaultHydrationTimeout(5000); // 5s for all prompts
+prompts.register(Briefing); // overrides with 3s
+```
+
+Zero overhead when no timeout configured. Timer cleanup via `finally` — no resource leaks. Interceptors still run after timeout.
+
+## MVA-Driven Prompts — The Presenter Bridge
+
+`PromptMessage.fromView()` extends the Presenter’s egress contract to Prompts. It decomposes a Presenter’s `ResponseBuilder` into XML-tagged prompt messages (`<domain_rules>`, `<dataset>`, `<visual_context>`, `<system_guidance>`) optimized for frontier LLMs. Domain rules, UI blocks, and action suggestions from the Presenter are automatically extracted — **single source of truth between tools and prompts.** The same InvoicePresenter that governs tool responses also governs prompt context.
+
+```typescript
+const AuditPrompt = definePrompt<AppContext>('audit', {
+    args: { invoiceId: 'string' } as const,
+    handler: async (ctx, { invoiceId }) => {
+        const invoice = await ctx.db.getInvoice(invoiceId);
+        return {
+            messages: [
+                PromptMessage.system('You are a Senior Financial Auditor.'),
+                ...PromptMessage.fromView(InvoicePresenter.make(invoice, ctx)),
+                PromptMessage.user('Begin the audit.'),
+            ],
+        };
+    },
+});
+```
+
+## Stateless Cursor Pagination
+
+Prompt Registries support cryptographic, stateless cursor-based pagination out of the box. Cursors encode the current position securely (`globalThis.crypto.subtle`) ensuring O(1) memory overhead.
+
+```typescript
+const registry = new PromptRegistry<AppContext>();
+registry.configurePagination({ pageSize: 50 }); // enable pagination
+```
+
+## Important Rules
+
+1. **ALWAYS use `defineModel()` for domain entity schemas** — never `z.object()` directly. Models go in `models/`, Presenters receive Models via `.schema(MyModel)`
+2. `with*()` methods (`.withString()`, `.withNumber()`, etc.) are for **tool input parameters only** (filters, IDs, pagination) — NOT for domain entity schemas
+3. `.action()` and `.group()` are MUTUALLY EXCLUSIVE on the same builder
+4. Action names must NOT contain dots (dots are reserved for group.action keys)
+5. After `buildToolDefinition()`, the builder is FROZEN — no more modifications
+6. `execute()` auto-calls `buildToolDefinition()` if not already called
+7. `commonSchema` fields are marked `(always required)` in auto-generated descriptions
+8. Zod `.merge().strip()` is used at runtime — unknown fields are silently stripped
+9. Middleware chains are pre-compiled at build time — zero runtime allocation
+10. Tool names must be unique across a ToolRegistry
+11. Presenters are immutable after creation — define once, reuse across tools
+12. `.agentLimit()` automatically truncates and injects guidance blocks
+
+## Public API (all from 'Vurb.ts')
+
+### Context Initialization & Fluent Factory
+- `initVurb<TContext>()` → VurbInstance — define context once, inherit everywhere
+- `VurbInstance<TContext>` — .query(), .mutation(), .action(), .router(), .prompt(), .presenter(), .middleware(), .registry(), .error(), .stateSync(), .tool(), .defineTool()
+- `f.query(name)` → FluentToolBuilder — semantic verb: readOnly:true by default
+- `f.mutation(name)` → FluentToolBuilder — semantic verb: destructive:true by default
+- `f.action(name)` → FluentToolBuilder — semantic verb: neutral (no defaults)
+- `f.router(prefix)` → FluentRouter — prefix grouping with shared middleware/tags
+- `f.prompt(name)` → FluentPromptBuilder — chainable prompt builder
+- `f.prompt(name, config)` → PromptBuilder — config-bag alternative
+- `f.presenter(config)` → Presenter — delegates to `definePresenter()`
+- `f.middleware(deriveFn)` → MiddlewareDefinition — context derivation
+- `f.registry()` → ToolRegistry — pre-typed registry
+- `f.error(code, message)` → ErrorBuilder — fluent self-healing error builder
+- `f.stateSync()` → StateSyncBuilder — fluent cache/invalidation configuration
+- `f.tool(config)` → GroupedToolBuilder — config-bag alternative, handler receives `{ input, ctx }`
+- `f.defineTool(name, config)` → GroupedToolBuilder — full ToolConfig power
+- `VurbToolConfig<TContext, TInput>` — { name, description?, input?, tags?, annotations?, readOnly?, destructive?, idempotent?, middleware?, returns?, handler }
+
+### Model (MVA Domain Layer)
+- `defineModel(name, configure)` → Model — Eloquent-inspired model factory
+- `Model` — { name, schema (ZodObject), fields, hidden, guarded, input, defaults, infer }
+- `FieldDef` — chainable field descriptor: `.default(value)`, `.alias(name)`, `.examples(values)`
+- `ModelBuilder` type helpers — `.string()`, `.text()`, `.number()`, `.boolean()`, `.date()`, `.timestamp()`, `.uuid()`, `.id()`, `.enum(label, values)`, `.object(label, shape)`, `.list(label, shape)`
+- `ModelBuilder` config — `.casts(fields)`, `.timestamps()`, `.hidden(fields)`, `.guarded(fields)`, `.fillable(profiles)`
+
+### FluentToolBuilder — Type-Chaining Tool Builder
+- `FluentToolBuilder<TContext, TInput, TCtx>` — accumulated generics narrow at each step
+- `.describe(text)` → FluentToolBuilder — tool description shown to LLM
+- `.instructions(text)` → FluentToolBuilder — AI-First system guidance injected as `[INSTRUCTIONS]`
+- `.withString(name, desc?)` → FluentToolBuilder<..., TInput & Record<K, string>, ...>
+- `.withOptionalString(name, desc?)` → FluentToolBuilder<..., TInput & Partial<Record<K, string>>, ...>
+- `.withNumber(name, desc?)` → FluentToolBuilder<..., TInput & Record<K, number>, ...>
+- `.withOptionalNumber(name, desc?)` → FluentToolBuilder<..., TInput & Partial<Record<K, number>>, ...>
+- `.withBoolean(name, desc?)` → FluentToolBuilder<..., TInput & Record<K, boolean>, ...>
+- `.withOptionalBoolean(name, desc?)` → FluentToolBuilder<..., TInput & Partial<Record<K, boolean>>, ...>
+- `.withEnum(name, values, desc?)` → FluentToolBuilder<..., TInput & Record<K, V>, ...> (V = literal union)
+- `.withOptionalEnum(name, values, desc?)` → FluentToolBuilder<..., TInput & Partial<Record<K, V>>, ...>
+- `.withArray(name, itemType, desc?)` → FluentToolBuilder<..., TInput & Record<K, T[]>, ...>
+- `.withOptionalArray(name, itemType, desc?)` → FluentToolBuilder<..., TInput & Partial<Record<K, T[]>>, ...>
+- `.use(mw)` → FluentToolBuilder<..., ..., TCtx & TDerived> — tRPC-style context derivation, `{ ctx, next }` signature
+- `.returns(presenter)` → FluentToolBuilder — attach MVA Presenter
+- `.tags(...tags)` → FluentToolBuilder — set capability tags (replaces existing)
+- `.readOnly()` → FluentToolBuilder — override: mark read-only
+- `.destructive()` → FluentToolBuilder — override: mark destructive
+- `.idempotent()` → FluentToolBuilder — override: mark idempotent
+- `.annotations(a)` → FluentToolBuilder — custom MCP annotations
+- `.toonDescription()` → FluentToolBuilder — TOON-formatted descriptions
+- `.invalidates(...patterns)` → FluentToolBuilder — State Sync: glob patterns invalidated on success
+- `.cached()` → FluentToolBuilder — State Sync: immutable (cacheControl: 'immutable')
+- `.stale()` → FluentToolBuilder — State Sync: volatile (cacheControl: 'no-store')
+- `.concurrency(config)` → FluentToolBuilder — runtime guard: semaphore + queue
+- `.egress(bytes)` → FluentToolBuilder — runtime guard: max payload size
+- `.handle(handler)` → GroupedToolBuilder — **terminal**: sets `(input, ctx) => Promise` handler, builds tool. Implicit `success()` wrapping for raw data.
+
+### FluentRouter — Prefix Grouping
+- `FluentRouter<TContext>` — shares prefix, middleware, tags across child tools
+- `.describe(text)` → this — shared description
+- `.use(mw)` → this — shared middleware (standard MiddlewareFn)
+- `.tags(...tags)` → this — set shared capability tags (replaces existing)
+- `.query(action)` → FluentToolBuilder — prefixed read-only tool
+- `.mutation(action)` → FluentToolBuilder — prefixed destructive tool
+- `.action(action)` → FluentToolBuilder — prefixed neutral tool
+
+### ErrorBuilder — Fluent Self-Healing Errors
+- `ErrorBuilder(code, message)` — created via `f.error(code, message)`
+- `.suggest(suggestion)` → this — recovery suggestion for LLM agent
+- `.actions(...names)` → this — alternative tool names the agent should try
+- `.severity(level)` → this — set severity ('warning' | 'error' | 'critical')
+- `.critical()` → this — shortcut for `.severity('critical')`
+- `.warning()` → this — shortcut for `.severity('warning')`
+- `.details(data)` → this — structured metadata (Record<string, string|number|boolean>)
+- `.retryAfter(seconds)` → this — retry delay for transient errors
+- `.build()` → ToolResponse — finalize. Also supports direct handler return via `.content` / `.isError` getters.
+
+### StateSyncBuilder — Fluent Cache Policies
+- `StateSyncBuilder` — created via `f.stateSync()`
+- `.defaults(fn)` → this — global default cache-control (fn receives PolicyBuilder)
+- `.policy(match, fn)` → this — scoped policy for tool name/glob pattern
+- `.onInvalidation(fn)` → this — observability hook (event: InvalidationEvent)
+- `.notificationSink(fn)` → this — protocol-level resource update notifications
+- `.build()` → StateSyncLayer — finalize
+- `.layer` → StateSyncLayer — alias for `.build()`
+- `PolicyBuilder` — nested builder: `.cached()`, `.stale()`, `.invalidates(...patterns)`
+
+### FluentPromptBuilder — Chainable Prompt Definition
+- `FluentPromptBuilder<TContext, TArgs>` — created via `f.prompt(name)` (no config argument)
+- `.title(title)` → this — human-readable title for UI display
+- `.describe(description)` → this — slash command palette description
+- `.icons(icons)` → this — light/dark theme icons
+- `.tags(...tags)` → this — set capability tags (replaces existing)
+- `.input(schema | params)` → this — accepts Zod schema or FluentParamsMap (f.string(), f.number(), etc.)
+- `.use(...fns)` → this — middleware (onion model, same as tool middleware)
+- `.timeout(ms)` → this — hydration timeout in milliseconds
+- `.handler(fn)` → this — **terminal**: sets `(ctx, args) => Promise<PromptResult>` handler
+
+### Declarative Presenter (v2.7+)
+- `definePresenter(config)` → Presenter — object-config API with auto-rules from Zod `.describe()`
+- `PresenterConfig<T>` — { name, schema?, rules?, ui?, collectionUi?, agentLimit?, suggestActions?, embeds?, autoRules? }
+- `AgentLimitDef` — { max: number, onTruncate: (omittedCount) => UiBlock }
+- `EmbedDef` — { key: string, presenter: Presenter }
+- `extractZodDescriptions(schema)` → string[] — walks Zod AST extracting `.describe()` annotations
+
+### Functional Groups (v2.7+)
+- `createGroup<TContext>(config)` → CompiledGroup — closure-based, frozen, pre-composed middleware
+- `GroupConfig<TContext>` — { name, description?, tags?, middleware?, actions }
+- `GroupAction<TContext>` — { description?, schema?, readOnly?, destructive?, idempotent?, middleware?, handler }
+- `CompiledGroup<TContext>` — .name, .description, .tags, .actionNames, .execute(ctx, action, args), .getAction(name)
+
+### File-Based Routing (v2.7+)
+- `autoDiscover(registry, dir, options?)` — scan directory, auto-register tool builders (deduplicates by tool name)
+- `AutoDiscoverOptions` — { pattern?, recursive?, loader?, resolve? }
+
+### Dev Server (v2.7+, from 'Vurb.ts/dev')
+- `createDevServer(config)` → DevServer — HMR-enabled development server
+- `DevServerConfig` — { dir, extensions?, debounce?, setup, onReload?, server? }
+- `DevServer` — .start(), .stop(), .reload(reason?)
+
+### Standard Schema (v2.7+, from 'Vurb.ts/schema')
+- `StandardSchemaV1<TInput, TOutput>` — universal validator contract interface
+- `VurbValidator<T>` — .validate(value) → ValidationResult, .vendor, .schema
+- `toStandardValidator(schema)` → VurbValidator — wrap Standard Schema v1 (Valibot, ArkType, etc.)
+- `fromZodSchema(schema)` → VurbValidator — wrap Zod via safeParse()
+- `autoValidator(schema)` → VurbValidator — auto-detect schema type and wrap
+- `isStandardSchema(value)` → boolean — duck-type check for Standard Schema v1
+- `ValidationResult<T>` — { success: true, data: T } | { success: false, issues: StandardSchemaIssue[] }
+- `InferStandardOutput<T>` — infer output type from Standard Schema
+
+### Subpath Exports (v2.7+)
+- `Vurb.ts` — full framework
+- `Vurb.ts/client` — VurbClient only
+- `Vurb.ts/ui` — UI blocks only
+- `Vurb.ts/presenter` — Presenter + definePresenter
+- `Vurb.ts/prompt` — Prompt engine
+- `Vurb.ts/state-sync` — State Sync layer
+- `Vurb.ts/observability` — Debug observers + tracing
+- `Vurb.ts/dev` — autoDiscover + createDevServer
+- `Vurb.ts/schema` — Standard Schema adapters
+- `Vurb.ts/testing` — VurbTester
+
+### Builder
+- `createTool<TContext>(name)` → GroupedToolBuilder (fluent builder, requires Zod)
+- `defineTool<TContext>(name, config)` → GroupedToolBuilder (JSON-first, no Zod required)
+- `GroupedToolBuilder<TContext>` — .description(), .commonSchema(), .discriminator(), .tags(), .annotations(), .toonDescription(), .enableSelect(), .concurrency(), .maxPayloadBytes(), .use(), .action(), .group(), .buildToolDefinition(), .execute(), .previewPrompt(), .getName(), .getTags(), .getActionNames(), .getActionMetadata(), .getSelectEnabled()
+- `ActionGroupBuilder<TContext>` — .use(), .action()
+
+### Presenter (MVA View Layer)
+- `createPresenter(name)` → PresenterBuilder — .schema(), .systemRules(), .uiBlocks(), .agentLimit(), .suggestActions(), .embed()
+- `ResponseBuilder.create(data)` → ResponseBuilder — .systemRules(), .uiBlock(), .llmHint(), .suggestActions(), .build()
+- `ui.echarts(config)` → UIBlock (ECharts chart)
+- `ui.mermaid(code)` → UIBlock (Mermaid diagram)
+- `ui.summary(stats)` → UIBlock (Collection summary)
+- `response.ok(data)` → ToolResponse (success shortcut)
+- `response.withRules(data, rules)` → ToolResponse (data + system rules)
+
+### Select Reflection (v2.11+)
+- `extractZodKeys(schema)` → string[] — recursively unwrap Zod wrappers to extract top-level object keys
+- `pickFields(data, selectSet)` → filtered object — shallow top-level field picker with Object.hasOwn() guard
+- `applySelectFilter(data, selectFields, isArray)` → filtered data — applies pickFields to single objects or arrays
+- `.enableSelect()` → GroupedToolBuilder — opt-in: inject `_select` parameter into input schema
+- `.getSelectEnabled()` → boolean — AST reflection: check if select is enabled
+
+### Registry
+- `ToolRegistry<TContext>` — .register(), .registerAll(), .getAllTools(), .getTools(filter), .routeCall(), .attachToServer(), .has(), .clear(), .size
+
+### VurbClient (tRPC-style)
+- `createVurbClient<TRouter>(transport, options?)` → VurbClient — type-safe client with autocomplete, middleware, error parsing
+- `VurbClient<TRouter>` — .execute(action, args) with full type inference, .executeBatch(calls, options?) for parallel/sequential batch execution
+- `VurbClientError` — Structured error class: code, message, recovery, availableActions, severity, raw
+- `ClientMiddleware` — `(action, args, next) => Promise<ToolResponse>` — request interceptor type
+- `VurbClientOptions` — `{ middleware?: ClientMiddleware[], throwOnError?: boolean }`
+
+### Response Helpers
+- `success(data)` → ToolResponse
+- `error(message, code?)` → ToolResponse (isError: true, optional code attribute)
+- `required(field)` → ToolResponse (isError: true)
+- `toolError(code, options)` → ToolResponse (structured recovery hints with severity, details, retryAfter)
+- `toonSuccess(data, options?)` → ToolResponse (TOON-encoded)
+- `ErrorCode` — Union type: 15 canonical codes + custom strings
+- `ErrorSeverity` — `'warning' | 'error' | 'critical'`
+
+### State Sync
+- `StateSyncConfig` — { defaults?, policies, onInvalidation?, notificationSink? }
+- `InvalidationEvent` — { causedBy: string, patterns: string[], timestamp: number }
+- `ResourceNotification` — { method: string, params: { uri: string } }
+- `detectOverlaps(policies)` → OverlapWarning[] — static analysis for policy shadowing
+- `OverlapWarning` — { shadowingIndex: number, shadowedIndex: number, message: string }
+
+### Dynamic Manifest
+- `registerIntrospectionResource(server, config, serverName, builders, contextFactory?)` — registers MCP resources/list + resources/read handlers
+- `compileManifest(serverName, builders)` → ManifestPayload (structured server capabilities)
+- `cloneManifest(manifest)` → deep clone for RBAC isolation
+- `Presenter.getSchemaKeys()` → string[] (read-only accessor)
+- `Presenter.getUiBlockTypes()` → string[] (read-only accessor)
+- `Presenter.hasContextualRules()` → boolean (read-only accessor)
+- `ToolRegistry.getBuilders()` → Iterable<ToolBuilder> (for introspection)
+
+### Streaming Progress
+- `progress(percent, message)` → ProgressEvent (yield from generator handlers)
+- `isProgressEvent(value)` → type guard
+- `ProgressSink` — callback type `(event: ProgressEvent) => void` — auto-wired by `attachToServer()`, or pass manually to `execute()` / `routeCall()` for testing
+
+### Prompt Engine
+- `definePrompt<TContext>(name, config)` → PromptBuilder — JSON-first or Zod schema for args, flat primitives only
+- `PromptMessage.system(text)` → PromptMessagePayload (system instruction as MCP user role)
+- `PromptMessage.user(text)` → PromptMessagePayload
+- `PromptMessage.assistant(text)` → PromptMessagePayload (multi-turn seeding)
+- `PromptMessage.image(role, data, mimeType)` → PromptMessagePayload
+- `PromptMessage.audio(role, data, mimeType)` → PromptMessagePayload
+- `PromptMessage.resource(role, uri, options?)` → PromptMessagePayload
+- `PromptMessage.fromView(builder)` → PromptMessagePayload[] — decomposes ResponseBuilder into XML-tagged messages (<domain_rules>, <dataset>, <visual_context>, <system_guidance>)
+- `PromptRegistry<TContext>` — .register(), .registerAll(), .getAllPrompts(), .getPrompts(filter), .routeGet(), .setDefaultHydrationTimeout(), .notifyChanged(), .has(), .clear(), .size
+
+### Result Monad
+- `succeed<T>(value)` → Success<T>
+- `fail(response)` → Failure
+- `Result<T>` = Success<T> | Failure
+
+### Middleware
+- `defineMiddleware(deriveFn)` → MiddlewareDefinition (tRPC-style context derivation)
+- `resolveMiddleware(input)` → MiddlewareFn
+
+### Observability
+- `createDebugObserver(options?)` → Observer for runtime debugging
+- Event types: route, validate, middleware, execute, error, governance
+- `GovernanceEvent` — { type: 'governance', operation: GovernanceOperation, label: string, outcome: 'ok' | 'fail', detail?: string, durationMs: number, timestamp: number }
+- `GovernanceOperation` — `'contract.compile' | 'contract.diff' | 'digest.compute' | 'lockfile.generate' | 'lockfile.check' | 'lockfile.write' | 'lockfile.read' | 'attestation.sign' | 'attestation.verify' | 'entitlement.scan' | 'token.profile'`
+- `createGovernanceObserver(config)` → GovernanceObserver — wraps governance operations with debug events and optional tracing spans
+- `createNoopObserver()` → GovernanceObserver — zero-overhead passthrough
+- `GovernanceObserverConfig` — { debug?: DebugObserverFn, tracer?: VurbTracer }
+- `GovernanceObserver` — .observe(operation, label, fn), .observeAsync(operation, label, fn)
+
+### Tracing (OpenTelemetry-Compatible)
+- `VurbTracer` / `VurbSpan` — structural subtyping interfaces matching OpenTelemetry (no `@opentelemetry/api` dependency)
+- `SpanStatusCode` — exported constants: `UNSET` (0), `OK` (1), `ERROR` (2)
+- `.tracing(tracer)` on builders — per-tool tracing
+- `ToolRegistry.enableTracing(tracer)` — propagate to all builders
+- `AttachOptions.tracing` — pass tracer to `attachToServer()` for full server tracing
+- **Error classification**: AI errors (`validation_failed`, `missing_discriminator`, `unknown_action`, `unknown_tool`, `handler_returned_error`) → `SpanStatusCode.UNSET` (no PagerDuty). System errors (handler `throw`) → `SpanStatusCode.ERROR` (triggers alerts).
+- **Enterprise attributes**: `mcp.system`, `mcp.tool`, `mcp.action`, `mcp.durationMs`, `mcp.isError`, `mcp.error_type`, `mcp.tags`, `mcp.description`, `mcp.response_size`
+- **Span events**: `mcp.route`, `mcp.validate` (with `mcp.valid`, `mcp.durationMs`), `mcp.middleware` (with `mcp.chainLength`)
+- Zero overhead when no tracer is set — separate fast path
+
+### Types
+- `ToolResponse` — { content: [{ type: "text", text: string }], isError?: boolean }
+- `MiddlewareFn<TContext>` — (ctx, args, next) => Promise<ToolResponse>
+- `ActionConfig<TContext>` — { name, description?, schema?, destructive?, readOnly?, handler, returns? }
+- `PresenterConfig` — { schema, systemRules?, uiBlocks?, agentLimit?, suggestActions?, embeds? }
+- `ToolBuilder<TContext>` — Interface for custom builders
+- `ActionMetadata` — { key, actionName, groupName, description, destructive, idempotent, readOnly, requiredFields, hasMiddleware, presenterName?, presenterSchemaKeys?, presenterUiBlockTypes?, presenterHasContextualRules? }
+- `ToolFilter` — { tags?: string[], exclude?: string[] }
+- `AttachOptions<TContext>` — { contextFactory?, filter?, debug?, stateSync?, introspection?, serverName?, toolExposition?, actionSeparator?, tracing? }
+- `ConcurrencyConfig` — { maxActive: number, maxQueue?: number }
+- `EgressConfig` — { maxPayloadBytes: number }
+- `ToolExposition` — 'flat' | 'grouped'
+- `IntrospectionConfig<TContext>` — { enabled, uri?, filter? }
+- `ManifestPayload` — { server, Vurb.ts_version, architecture, capabilities: { tools, presenters } }
+- `ManifestTool` — { description, tags, actions, input_schema }
+- `ManifestAction` — { description, destructive, idempotent, readOnly, required_fields, returns_presenter }
+- `ManifestPresenter` — { schema_keys, ui_blocks_supported, has_contextual_rules }
+- `PromptResult` — { description?: string, messages: PromptMessagePayload[] }
+- `PromptMessagePayload` — { role: 'user' | 'assistant', content: PromptContentBlock }
+- `PromptContentBlock` — PromptTextContent | PromptImageContent | PromptAudioContent | PromptResourceContent
+- `PromptBuilder<TContext>` — DIP interface: .name, .getDefinition(), .handleGet(), .tags
+- `PromptConfig<TContext>` — { title?, description?, args?, tags?, middleware?, hydrationTimeout?, handler }
+
+### Governance (from 'Vurb.ts/introspection')
+
+8-module governance stack for deterministic contract auditing, behavioral fingerprinting, and CI/CD lockfile gating.
+
+#### Tool Contracts — Schema Materialization
+- `materializeContract<TContext>(builder, options?)` → ToolContract — extracts the complete behavioral surface (schema, entitlements, guardrails, token profile)
+- `compileContracts<TContext>(builders)` → ToolContract[] — batch materialization for all registered builders
+- `ToolContract` — { tool, surface, behavior, cognitiveGuardrails, tokenProfile, handlerEntitlements, integrityDigest }
+- `ToolSurface` — { actions: ActionContract[], commonFields: string[], discriminator: string }
+- `ActionContract` — { name, description, destructive, readOnly, idempotent, requiredFields, optionalFields, presenterName? }
+- `ToolBehavior` — { hasMiddleware, middlewareCount, hasConcurrencyLimit, concurrencyConfig?, hasEgressGuard, egressMaxBytes?, tags, annotations }
+- `CognitiveGuardrailsContract` — { hasAgentLimit, agentLimitMax?, hasSystemRules, hasDynamicRules, hasUiBlocks, hasSuggestActions }
+- `TokenEconomicsProfile` — { estimatedTokens, fieldBreakdown: FieldTokenEstimate[], risk: TokenRisk }
+- `HandlerEntitlements` — { filesystem, network, subprocess, crypto }
+
+#### Contract Diffing — Structural Change Detection
+- `diffContracts(before, after)` → ContractDiffResult — semantic diff between two contract snapshots
+- `formatDiffReport(result)` → string — human-readable diff report
+- `formatDeltasAsXml(deltas)` → string — XML-encoded diff for agent consumption (injection-safe)
+- `ContractDelta` — { path, severity, category, before?, after?, description }
+- `DeltaSeverity` — `'BREAKING' | 'RISKY' | 'SAFE' | 'COSMETIC'`
+- `DeltaCategory` — `'schema' | 'behavior' | 'security' | 'guardrails' | 'performance' | 'entitlements' | 'tool-lifecycle'`
+
+#### Behavioral Fingerprinting — SHA-256 Digests
+- `computeDigest(contract)` → BehaviorDigestResult — deterministic SHA-256 fingerprint of a tool's behavioral surface
+- `computeServerDigest(contracts)` → ServerDigest — aggregate digest over all tool contracts
+- `compareServerDigests(a, b)` → DigestComparison — compares two server snapshots for drift detection
+- `BehaviorDigestResult` — { digest: string, components: DigestComponents }
+- `ServerDigest` — { digest: string, toolCount: number, contracts: BehaviorDigestResult[] }
+- `DigestComparison` — { match: boolean, added: string[], removed: string[], changed: string[] }
+
+#### Capability Lockfile — Git-Diffable CI Gate
+- `generateLockfile(options)` → CapabilityLockfile — generates a complete lockfile from registry + prompts
+- `serializeLockfile(lockfile)` → string — deterministic JSON serialization
+- `parseLockfile(content)` → CapabilityLockfile | null — safe deserialization
+- `checkLockfile(current, stored)` → LockfileCheckResult — structural comparison with diff details
+- `writeLockfile(lockfile, dir?)` → void — writes `vurb.lock` to disk
+- `readLockfile(dir?)` → CapabilityLockfile | null — reads lockfile from disk
+- `LOCKFILE_NAME` — `'vurb.lock'`
+- `CapabilityLockfile` — { version, generatedAt, serverDigest, capabilities: LockfileCapabilities }
+- `LockfileCapabilities` — { tools: LockfileTool[], prompts: LockfilePrompt[] }
+- `LockfileTool` — { name, surface: LockfileToolSurface, behavior: LockfileToolBehavior, tokenEconomics: LockfileTokenEconomics, entitlements: LockfileEntitlements }
+- `LockfileCheckResult` — { upToDate: boolean, differences: string[], newDigest: string, storedDigest: string }
+
+#### Zero-Trust Runtime — Cryptographic Attestation
+- `createHmacSigner(secret)` → AttestationSigner — HMAC-SHA-256 signer for server digests
+- `attestServerDigest(digest, signer)` → AttestationResult — sign a digest with timestamp and nonce
+- `verifyAttestation(result, signer)` → boolean — verify attestation signature
+- `verifyCapabilityPin(attestation, knownDigest)` → boolean — verify against a pinned digest
+- `buildTrustCapability(attestation)` → VurbTrustCapability — MCP capability payload for trust negotiation
+- `AttestationError` — thrown on verification failures
+- `ZeroTrustConfig` — { signer, digest, attestation }
+- `AttestationResult` — { digest, signature, timestamp, nonce }
+
+#### Token Economics — Cost Profiling
+- `estimateTokens(text)` → number — approximate token count (GPT-4 heuristic: chars/4)
+- `profileBlock(block)` → BlockTokenProfile — token profile for a single response block
+- `profileResponse(response, config?)` → TokenAnalysis — full response token analysis
+- `computeStaticProfile(contract)` → StaticTokenProfile — static token estimate from contract schema
+- `aggregateProfiles(profiles)` → ServerTokenSummary — server-wide token economics summary
+- `TokenAnalysis` — { estimatedTokens, fieldBreakdown, risk, blocks }
+- `TokenRisk` — `'low' | 'medium' | 'high' | 'critical'`
+
+#### Entitlement Scanner — Blast Radius Analysis
+- `scanSource(source)` → EntitlementMatch[] — static analysis of handler source for capability usage (fs, net, subprocess, crypto)
+- `buildEntitlements(matches)` → HandlerEntitlements — aggregate matches into entitlement categories
+- `validateClaims(report, claims)` → EntitlementViolation[] — verify declared entitlements match actual usage
+- `scanAndValidate(source, claims)` → { report, violations } — combined scan + validate
+- `EntitlementCategory` — `'filesystem' | 'network' | 'subprocess' | 'crypto'`
+
+#### Semantic Probing — LLM-as-Judge Drift Detection
+- `createProbe(config)` → SemanticProbe — creates a semantic probe for contract comparison via LLM
+- `buildJudgePrompt(probe)` → string — generates the LLM judge prompt
+- `parseJudgeResponse(response)` → SemanticProbeResult — parses the judge's response
+- `evaluateProbe(probe, adapter)` → SemanticProbeResult — end-to-end probe evaluation
+- `evaluateProbes(probes, adapter)` → SemanticProbeReport — batch evaluation with aggregate scoring
+- `aggregateResults(results)` → SemanticProbeReport — aggregate probe results
+- `DriftLevel` — `'none' | 'low' | 'medium' | 'high'`
+
+#### Contract-Aware Self-Healing
+- `enrichValidationError(error, contract)` → SelfHealingResult — enriches validation errors with contract context for agent self-correction
+- `createToolEnhancer(contracts)` → function — creates a contract-aware error enhancer for the pipeline
+
+### CLI — `Vurb.ts lock`
+- `Vurb.ts lock [--server <entrypoint>] [--name <serverName>]` — generate or update `vurb.lock`
+- `Vurb.ts lock --check [--server <entrypoint>]` — verify lockfile matches current server (CI gate, exits 0 or 1)
+- Progress output with timing per step (Composer/Yarn-style status icons)
+- Auto-discovers registry + prompts from server entrypoint via ESM dynamic import
+
+### Testing (from '@vurb/testing')
+- `createVurbTester<TContext>(registry, options)` → VurbTester — in-memory MVA lifecycle emulator
+- `VurbTester<TContext>` — .callAction(toolName, actionName, args?, overrideContext?) → Promise<MvaTestResult>
+- `TesterOptions<TContext>` — { contextFactory: () => TContext | Promise<TContext> }
+- `MvaTestResult<TData>` — { data: TData, systemRules: readonly string[], uiBlocks: readonly unknown[], isError: boolean, rawResponse: unknown }
+
+The VurbTester runs the REAL execution pipeline in RAM (Zod → Middleware → Handler → Presenter → Egress Firewall). Zero tokens consumed. Zero servers. Deterministic — same input → same output on every CI run. Uses the Symbol Backdoor (MVA_META_SYMBOL) to extract structured MVA layers from ToolResponse without XML parsing.
+
+```typescript
+import { createVurbTester } from '@vurb/testing';
+
+const tester = createVurbTester(registry, {
+    contextFactory: () => ({ prisma: mockPrisma, tenantId: 't_42', role: 'ADMIN' }),
+});
+
+// Egress Firewall — PII physically absent
+const result = await tester.callAction('db_user', 'find_many', { take: 5 });
+expect(result.data[0]).not.toHaveProperty('passwordHash');  // SOC2 CC6.1
+expect(result.systemRules).toContain('Email addresses are PII.');
+
+// Middleware — GUEST blocked
+const denied = await tester.callAction('db_user', 'find_many', { take: 5 }, { role: 'GUEST' });
+expect(denied.isError).toBe(true);  // SOC2 CC6.3
+
+// OOM Guard — Zod rejects
+const oom = await tester.callAction('db_user', 'find_many', { take: 99999 });
+expect(oom.isError).toBe(true);
+
+// Symbol Invisibility — transport never sees metadata
+expect(JSON.stringify(result.rawResponse)).not.toContain('passwordHash');
+```
+
+### Zero-Trust Sandbox Engine
+
+Execute LLM-generated JavaScript in a sealed V8 isolate (via `isolated-vm`). The LLM sends a function as a string, the framework runs it in an empty V8 Context with zero access to Node.js APIs (no `process`, `require`, `fs`, `net`, `eval`). Data stays on the server — only the computed result crosses the boundary.
+
+- `SandboxEngine(config?)` — manages V8 Isolate lifecycle, per-request Context creation, and mandatory C++ pointer cleanup
+  - `.execute(code, data?)` → Promise<SandboxResult> — compile, run, return result with timing
+  - `.dispose()` → void — destroy the Isolate and release all native resources
+  - Config: `{ timeout?: number (default 5000), memoryLimit?: number (default 128), maxOutputBytes?: number (default 1_048_576) }`
+- `SandboxResult<T>` — `{ ok: true, value: T, executionMs: number }` | `{ ok: false, error: string, code: SandboxErrorCode }`
+- `SandboxErrorCode` — `'TIMEOUT' | 'MEMORY' | 'SYNTAX' | 'RUNTIME' | 'GUARD' | 'OUTPUT_TOO_LARGE' | 'ISOLATE_DEAD'`
+- `validateSandboxCode(code)` → `{ valid: boolean, error?: string }` — fail-fast syntax check (SandboxGuard). Rejects non-function expressions and flags suspicious patterns. Speed optimization, not security boundary.
+- `SANDBOX_SYSTEM_INSTRUCTION` — constant injected via HATEOAS auto-prompting when `.sandboxed()` is used
+
+**Fluent API Integration:**
+- `.sandboxed(config?)` on FluentToolBuilder — enables sandbox + injects SANDBOX_SYSTEM_INSTRUCTION into description
+- `f.sandbox(config?)` → SandboxEngine — standalone factory via initVurb
+
+**V8 Engineering Rules:**
+1. One Isolate, new Context per request — Isolate reuse for performance, Context isolation for security
+2. Mandatory `try/finally` with `.release()` on every ExternalCopy, Script, Context — prevents C++ memory leaks outside Node GC
+3. Async-only execution — `script.run()` (not `runSync()`) to avoid blocking the event loop
+4. Automatic Isolate recreation if OOM kills the Isolate — next `.execute()` transparently creates a fresh one
+
+**Security Model:**
+- Empty V8 Context — no globalThis properties, no setTimeout, no console, no Proxy, no Function constructor
+- Prototype pollution blocked — Object.prototype is frozen inside the isolate
+- constructor.constructor escape blocked — Function constructor does not exist
+- arguments.callee blocked — strict mode enforced
+- import() blocked — dynamic import not available in the isolate
+
+`isolated-vm` is an **optional** peer dependency — lazy-loaded only when SandboxEngine is instantiated.
+
+```typescript
+// Fluent API — one-liner
+const compute = f.query('analytics.compute')
+    .sandboxed({ timeout: 3000, memoryLimit: 64 })
+    .withString('code', 'JavaScript function as string')
+    .handle(async (input, ctx) => {
+        const engine = f.sandbox({ timeout: 3000 });
+        const result = await engine.execute(input.code, ctx.data);
+        if (!result.ok) return f.error(result.code, result.error);
+        return result.value;
+    });
+
+// Standalone
+import { SandboxEngine } from 'Vurb.ts';
+const engine = new SandboxEngine({ timeout: 5000, memoryLimit: 128 });
+const result = await engine.execute('(data) => data.filter(d => d.risk > 90)', records);
+engine.dispose();
+```
+
+Subpath export: `Vurb.ts/sandbox`
+
+### AWS Connector (from '@vurb/aws')
+
+Auto-discover AWS Lambda functions and Step Functions via resource tags and expose them as grouped MCP tools. Tag filtering controls what the AI can see.
+
+- `createLambdaAdapter(client)` → LambdaAdapter — wraps `@aws-sdk/client-lambda` (dynamic import)
+- `createSfnAdapter(client)` → SfnAdapter — wraps `@aws-sdk/client-sfn` (dynamic import)
+- `AwsClient(lambdaAdapter?, sfnAdapter?)` — facade over both adapters
+  - `.listLambdaFunctions()` → LambdaFunctionSummary[]
+  - `.getLambdaTags(arn)` → Record<string, string>
+  - `.invokeLambda(arn, payload)` → { statusCode, payload, functionError? }
+  - `.listStateMachines()` → SfnStateMachineSummary[]
+  - `.getStateMachineTags(arn)` → Record<string, string>
+  - `.describeStateMachine(arn)` → { description, type }
+  - `.startSyncExecution(arn, input)` → { status, output, error?, cause?, executionArn }
+  - `.startExecution(arn, input)` → { executionArn, startDate }
+- `LambdaDiscovery(client, options?)` — discovers tagged Lambda functions
+  - `.discover()` → AwsLambdaConfig[] — fetches functions with `mcp:expose=true`
+  - `LambdaDiscoveryOptions` — { tagFilter?: Record<string, string> }
+- `StepFunctionDiscovery(client)` — discovers tagged Step Functions
+  - `.discover()` → AwsStepFunctionConfig[] — fetches state machines with `mcp:expose=true`
+- `synthesizeLambdaTools(configs, client)` → SynthesizedToolConfig[] — converts discovered Lambdas into tool definitions
+- `synthesizeStepFunctionTools(configs, client)` → SynthesizedToolConfig[] — converts discovered SFNs into tool definitions
+- `synthesizeAll(lambdas, sfns, client)` → SynthesizedToolConfig[] — combines both
+- `toToolName(name)` → string — converts PascalCase/camelCase to snake_case MCP tool name
+- `createAwsConnector(config)` → AwsConnector — full auto-discovery lifecycle
+  - `.tools()` → SynthesizedToolConfig[] — current compiled tool definitions
+  - `.lambdas` → AwsLambdaConfig[] — discovered Lambda configurations
+  - `.stepFunctions` → AwsStepFunctionConfig[] — discovered Step Function configurations
+  - `.client` → AwsClient — for use with `defineAwsTool()`
+  - `.refresh()` → Promise<boolean> — manual poll; returns true if list changed
+  - `.stop()` → void — stop background polling
+  - config: { lambdaClient?, sfnClient?, enableLambda?, enableStepFunctions?, tagFilter?, pollInterval?, onChange?, onError? }
+- `defineAwsTool(name, client, config)` → SynthesizedToolConfig — manual tool definition
+  - config: { arn, description?, annotations?: { readOnlyHint?, destructiveHint? } }
+  - ARN detection: `arn:aws:lambda:...` → Lambda invoke, `arn:aws:states:...` → SFN startSyncExecution
+
+Resource Tagging Convention:
+- `mcp:expose = true` — opt-in, resource becomes an MCP tool
+- `mcp:group = <name>` — groups multiple resources into a single multi-action tool
+- `mcp:action = <name>` — action name within a group (default: `execute`)
+- `mcp:readOnly = true` — marks the action as read-only
+- `mcp:destructive = true` — marks the action as destructive
+- `mcp:sfn-type = express|standard` — overrides Step Function execution type
+
+Step Function Execution Types:
+- EXPRESS — synchronous, blocks until completion, returns parsed output
+- STANDARD — async fire-and-forget, returns executionArn + cognitive instruction (`_instruction: "Do NOT assume completion"`)
+
+Peer dependencies: `Vurb.ts`, `@aws-sdk/client-lambda` (optional), `@aws-sdk/client-sfn` (optional).
+
+```typescript
+import { createAwsConnector, createLambdaAdapter, defineAwsTool } from '@vurb/aws';
+import { LambdaClient } from '@aws-sdk/client-lambda';
+import { defineTool, ToolRegistry } from 'Vurb.ts';
+
+const connector = await createAwsConnector({
+  lambdaClient: await createLambdaAdapter(new LambdaClient({ region: 'us-east-1' })),
+  enableLambda: true,
+  pollInterval: 60_000,
+  onChange: () => server.notification({ method: 'notifications/tools/list_changed' }),
+});
+
+const registry = new ToolRegistry();
+for (const tool of connector.tools()) {
+  registry.register(defineTool(tool.name, tool.config));
+}
+```
+
+### OAuth — Device Authorization Grant (from '@vurb/oauth')
+
+OAuth 2.0 Device Authorization Grant (RFC 8628) for MCP servers. Provider agnostic.
+
+- `DeviceAuthenticator` — RFC 8628 Device Flow handshake
+  - `.requestDeviceCode(request)` → DeviceCodeResponse (device_code, user_code, verification_uri, verification_uri_complete, expires_in, interval)
+  - `.pollForToken(codeResponse, signal?)` → TokenResponse (polls with slow_down respect + AbortSignal support)
+  - `.attemptTokenExchange(request)` → TokenResponse (single exchange attempt for manual polling)
+- `TokenManager` — Secure file-based token storage (0o600 permissions, env-var priority)
+  - `.getToken()` → string | null (env var > file)
+  - `.getTokenSource()` → 'environment' | 'file' | null
+  - `.saveToken(token)` → void (saves to ~/.{configDir}/token.json)
+  - `.clearToken()` → void
+  - `.savePendingDeviceCode(code, ttl)` → void (survives process restarts)
+  - `.getPendingDeviceCode()` → DeviceCodeResponse | null (auto-expired)
+- `createAuthTool<TContext>(config)` → GroupedToolBuilder with 4 actions: login, complete, status, logout
+  - config: { clientId, authorizationEndpoint, tokenEndpoint, headers?, tokenManager, onAuthenticated, onLogout?, getUser? }
+- `requireAuth(options?)` → MiddlewareFn — rejects unauthenticated requests with toolError('AUTH_REQUIRED') + recovery hints
+  - options: { extractToken: (ctx) => string | null, recoveryHint?, recoveryAction? }
+- Types: DeviceAuthenticatorConfig, DeviceCodeRequest, DeviceCodeResponse, TokenRequest, TokenResponse, DeviceFlowError, TokenManagerConfig, StoredToken, TokenSource, AuthToolConfig, AuthContext, RequireAuthOptions
+
+```typescript
+import { createAuthTool, requireAuth } from '@vurb/oauth';
+
+const auth = createAuthTool({
+    clientId: 'your-client-id',
+    authorizationEndpoint: 'https://api.example.com/oauth/device/code',
+    tokenEndpoint: 'https://api.example.com/oauth/device/token',
+    tokenManager: { configDir: '.myapp', envVar: 'MY_APP_TOKEN' },
+    onAuthenticated: (token, ctx) => ctx.setToken(token),
+    getUser: async (ctx) => ctx.getMe(),
+});
+```
+
+### Cloudflare Workers Adapter (from '@vurb/cloudflare')
+
+Deploy Vurb.ts servers to Cloudflare Workers edge. Stateless JSON-RPC — no SSE sessions, no streaming state. Registry compiles at cold start (Zod reflection, Presenter compilation cached). Warm requests only instantiate McpServer + Transport. Uses the MCP SDK's native `WebStandardStreamableHTTPServerTransport` with `enableJsonResponse: true`.
+
+- `cloudflareWorkersAdapter<TEnv, TContext>(options)` → CloudflareWorkerHandler — creates a Workers `fetch()` handler
+  - options: { registry, serverName?, serverVersion?, contextFactory?, attachOptions? }
+  - `registry` — pre-compiled ToolRegistry (built at module scope, cached across warm requests)
+  - `contextFactory(req, env, ctx)` — creates per-request context from Cloudflare bindings (D1, KV, R2, secrets, ExecutionContext)
+  - `serverName` — MCP server name (default: `'Vurb.ts-edge'`)
+  - `serverVersion` — version string (default: `'1.0.0'`)
+  - `attachOptions` — forwarded to `registry.attachToServer()` (filter, stateSync, debug, etc.)
+- `CloudflareWorkerHandler<TEnv>` — { fetch(request, env, ctx): Promise<Response> }
+- `CloudflareAdapterOptions<TEnv, TContext>` — full configuration interface
+- `RegistryLike` — duck-typed interface (any object with `attachToServer()`)
+- `ExecutionContext` — inline Cloudflare Workers types (waitUntil, passThroughOnException)
+
+Peer dependencies: `Vurb.ts` (^3.0.0), `@modelcontextprotocol/sdk` (^1.12.0).
+
+```typescript
+import { initVurb } from 'Vurb.ts';
+import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
+import { z } from 'zod';
+
+interface AppContext { db: D1Database; tenantId: string }
+const f = initVurb<AppContext>();
+
+const listUsers = f.tool({
+  name: 'users.list',
+  input: z.object({ limit: z.number().optional().default(20) }),
+  readOnly: true,
+  handler: async ({ input, ctx }) =>
+    ctx.db.prepare('SELECT id, name FROM users LIMIT ?').bind(input.limit).all(),
+});
+
+const registry = f.registry();
+registry.register(listUsers);
+
+export interface Env { DB: D1Database }
+
+export default cloudflareWorkersAdapter<Env, AppContext>({
+  registry,
+  contextFactory: async (req, env) => ({
+    db: env.DB,
+    tenantId: req.headers.get('x-tenant-id') || 'public',
+  }),
+});
+```
+
+### Vercel Adapter (from '@vurb/vercel')
+
+Deploy Vurb.ts servers to Vercel Functions (Edge or Node.js). Stateless JSON-RPC — no SSE sessions, no streaming state. Registry compiles at cold start (Zod reflection, Presenter compilation cached). Warm requests only instantiate McpServer + Transport. Uses the MCP SDK's native `WebStandardStreamableHTTPServerTransport` with `enableJsonResponse: true`.
+
+- `vercelAdapter<TContext>(options)` → VercelHandler — creates a POST handler for Next.js App Router or standalone Vercel Functions
+  - options: { registry, serverName?, serverVersion?, contextFactory?, attachOptions? }
+  - `registry` — pre-compiled ToolRegistry (built at module scope, cached across warm requests)
+  - `contextFactory(req)` — creates per-request context from the Request object (use `process.env` for environment variables)
+  - `serverName` — MCP server name (default: `'@vurb/vercel'`)
+  - `serverVersion` — version string (default: `'1.0.0'`)
+  - `attachOptions` — forwarded to `registry.attachToServer()` (filter, stateSync, debug, etc.)
+- `VercelHandler` — (req: Request) => Promise<Response>
+- `VercelAdapterOptions<TContext>` — full configuration interface
+- `RegistryLike` — duck-typed interface (any object with `attachToServer()`)
+
+Peer dependencies: `Vurb.ts` (^3.0.0), `@modelcontextprotocol/sdk` (^1.12.0).
+
+```typescript
+// app/api/mcp/route.ts
+import { initVurb } from 'Vurb.ts';
+import { vercelAdapter } from '@vurb/vercel';
+import { z } from 'zod';
+
+interface AppContext { tenantId: string; dbUrl: string }
+const f = initVurb<AppContext>();
+
+const listUsers = f.tool({
+  name: 'users.list',
+  input: z.object({ limit: z.number().optional().default(20) }),
+  readOnly: true,
+  handler: async ({ input, ctx }) =>
+    fetch(`${ctx.dbUrl}/users?limit=${input.limit}&tenant=${ctx.tenantId}`).then(r => r.json()),
+});
+
+const registry = f.registry();
+registry.register(listUsers);
+
+export const POST = vercelAdapter<AppContext>({
+  registry,
+  contextFactory: async (req) => ({
+    tenantId: req.headers.get('x-tenant-id') || 'public',
+    dbUrl: process.env.DATABASE_URL!,
+  }),
+});
+
+export const runtime = 'edge';
+```
+
+### DLP Compliance Engine — PII Redaction (GDPR / LGPD / HIPAA)
+
+Zero-leak PII masking for MCP servers. Powered by `fast-redact` (V8-compiled, same engine as Pino). Redaction runs AFTER UI blocks and system rules see full data (Late Guillotine pattern) — only the wire payload is sanitized.
+
+- `createPresenter('Name').redactPII(paths, censor?)` — fluent API
+  - `paths` — array of `fast-redact` path strings: `['*.ssn', 'patients[*].diagnosis', 'email']`
+  - `censor` — string (`'[REDACTED]'`, default) or function (`(v) => '****-' + String(v).slice(-4)`)
+  - `.redact()` — alias for `.redactPII()`
+- `definePresenter({ redactPII: { paths, censor } })` — declarative API
+- `compileRedactor(config)` → `RedactFn | undefined` — standalone compiler
+  - `config.paths` — array of dot/bracket/wildcard paths
+  - `config.censor` — string or `(value: unknown) => unknown`
+- `initRedactEngine()` → `Promise<boolean>` — optional boot-time pre-loading
+- `fast-redact` is an optional peer dependency — install only on servers that handle PII
+
+Path syntax: dot notation (`user.ssn`), bracket notation (`user["ssn"]`), wildcards (`*.ssn`), array items (`patients[*].diagnosis`), specific indices (`items[0].secret`), deeply nested (`records[*].contact.email`).
+
+Late Guillotine: `structuredClone(wireData)` → redact clone → ResponseBuilder. UI blocks and system rules always see full, unmasked data. Only the final JSON-RPC payload is sanitized.
+
+```typescript
+// Fluent API
+const PatientPresenter = createPresenter('Patient')
+    .schema(PatientModel)
+    .redactPII(['ssn', 'diagnosis'])
+    .uiBlocks((p) => [ui.markdown(`Patient: **${p.name}**`)]);
+// Wire: { name: "John", ssn: "[REDACTED]", diagnosis: "[REDACTED]" }
+// UI blocks see: { name: "John", ssn: "123-45-6789", diagnosis: "Hypertension" }
+
+// Declarative API
+const EmployeePresenter = definePresenter({
+    name: 'Employee',
+    schema: EmployeeModel,
+    redactPII: { paths: ['ssn'], censor: '***-**-****' },
+});
+```
+
+### Zero-Trust Sandbox Engine
+
+Execute LLM-generated JavaScript in a sealed V8 isolate (via `isolated-vm`). The data stays on the server — only the result crosses the boundary.
+
+- `SandboxEngine(config?)` — creates a V8 isolate engine
+  - `config.timeout` — max execution time in ms (default: 5000)
+  - `config.memoryLimit` — V8 heap cap in MB (default: 128)
+  - `config.maxOutputBytes` — max serialized result size (default: 1MB)
+- `engine.execute<T>(code, data, options?)` → `Promise<SandboxResult<T>>`
+  - `code` — JavaScript function as string: `'(data) => data.filter(d => d.risk > 90)'`
+  - `data` — deep-copied into isolate via `ExternalCopy` (no references shared)
+  - `options.signal` — `AbortSignal` for Connection Watchdog kill-switch
+- `engine.dispose()` — releases native C++ memory (mandatory)
+- `engine.isDisposed` — check engine state
+- `validateSandboxCode(code)` → `GuardResult` — fail-fast syntax check before V8
+
+SandboxResult discriminated union:
+- `{ ok: true, value: T, executionMs: number }` — success
+- `{ ok: false, error: string, code: SandboxErrorCode }` — failure
+
+SandboxErrorCode: `'TIMEOUT'` | `'MEMORY'` | `'SYNTAX'` | `'RUNTIME'` | `'OUTPUT_TOO_LARGE'` | `'INVALID_CODE'` | `'UNAVAILABLE'` | `'ABORTED'`
+
+V8 Isolation: Context is empty — no process, require, fs, net, setTimeout, Buffer, fetch, eval. Only `__input__` (deep-copied data) is available. Each execute() call creates a new pristine Context.
+
+Connection Watchdog: When a client disconnects mid-request, the AbortSignal fires and calls `isolate.dispose()`, killing V8 C++ threads instantly. The engine auto-recovers on the next `execute()` call. Pre-aborted signals skip all V8 allocation (zero overhead). Error code: `ABORTED`.
+
+Fluent API: `f.query('name').sandboxed(config?)` — enables sandbox + HATEOAS auto-prompting on any tool.
+Factory: `f.sandbox(config?)` — creates a SandboxEngine from the Vurb.ts instance.
+
+### FSM State Gate — Temporal Anti-Hallucination
+
+Prevents LLMs from calling tools out of order by physically removing them from `tools/list` based on finite state machine state. Three complementary anti-hallucination layers:
+
+1. **Layer 1 — Format**: Zod validates input shape
+2. **Layer 2 — Guidance**: `suggestActions` (HATEOAS) recommends next tool — LLM can ignore
+3. **Layer 3 — Gate**: FSM State Gate physically removes tools from `tools/list` — LLM won't see them (advisory, not enforced at dispatch)
+
+- `StateMachineGate(config)` — creates an FSM engine from `FsmConfig` (XState v5 shape)
+  - `.bindTool(name, allowedStates, transitionEvent?)` — bind tool to FSM states (chainable)
+  - `.isToolAllowed(name)` → `boolean` — check if tool is visible in current state
+  - `.getVisibleToolNames(allTools)` → `string[]` — filter tool list by current state
+  - `.getTransitionEvent(name)` → `string | undefined` — get event for a tool
+  - `.transition(event)` → `Promise<TransitionResult>` — advance FSM state
+  - `.onTransition(callback)` → unsubscribe function — register state change listener
+  - `.snapshot()` → `FsmSnapshot` — serialize state for persistence
+  - `.restore(snapshot)` — restore state from persistence
+  - `.currentState` → `string` — current FSM state (getter)
+  - `.hasBindings` → `boolean` — whether any tools are bound (getter)
+  - `.dispose()` — clean up callbacks and resources
+- `FsmConfig` — `{ id?, initial: string, states: Record<string, { on?: Record<string, string>, type?: 'final' }> }`
+- `FsmSnapshot` — `{ state: string, updatedAt: number }`
+- `TransitionResult` — `{ changed: boolean, previousState: string, currentState: string }`
+- `FsmStateStore` — `{ load(sessionId): Promise<FsmSnapshot | undefined>, save(sessionId, snapshot): Promise<void> }` — external persistence for serverless/edge
+
+Ungated tools (no `.bindState()`) are always visible — zero breaking change.
+
+Transitions only fire on successful execution (`!result.isError`). Failed tool calls keep the FSM in the same state.
+
+After a state change, the framework emits `notifications/tools/list_changed` so the LLM client re-fetches tools.
+
+Serverless: provide `fsmStore` in `attachToServer()` options. The framework loads state from the store before processing and persists after transitions, using `Mcp-Session-Id` for session identification.
+
+`xstate` is an **optional** peer dependency — lazy-loaded. Without it, a built-in manual fallback handles simple linear workflows.
+
+Fluent API: `.bindState(states, transitionEvent?)` on any FluentToolBuilder.
+Factory: `f.fsm(config)` — creates a StateMachineGate from the Vurb.ts instance.
+Boot: `initFsmEngine()` — pre-load xstate at startup (optional optimization).
+Reset: `resetXStateCache()` — flush the cached xstate module. Useful in test suites that mock xstate and need a fresh import between tests.
+
+### Agent Skills (`@vurb/skills`)
+
+Progressive disclosure of domain-specific instructions for AI agents via MCP. Skills are discovered, loaded, and read on demand — keeping agent context windows lean.
+
+Three-layer progressive disclosure:
+1. **Search** — metadata only (id, name, description). ~50 tokens/skill.
+2. **Load** — full SKILL.md instructions + auxiliary file list. ~500–2000 tokens.
+3. **Read File** — on-demand auxiliary file content (text or base64).
+
+- `SkillRegistry(options?)` — core registry for skill lifecycle management
+  - `options.validate` — validate skills on registration (default: true)
+  - `options.maxFileSize` — max readable file size in bytes (default: 5MB)
+  - `options.searchEngine` — custom `SkillSearchEngine` implementation (default: MiniSearch-based `FullTextSearchEngine`)
+  - `.register(skill)` — register a single skill
+  - `.registerAll(skills)` — atomic batch registration (all-or-nothing)
+  - `.search(query, limit?)` → `SkillSearchResult[]` — full-text search with prefix/fuzzy matching
+  - `.load(id)` → `Skill | null` — load full skill instructions
+  - `.readFile(skillId, filePath)` → `Promise<SkillFileContent>` — read auxiliary file with security checks
+  - `.has(id)` → `boolean` — check skill existence
+  - `.list()` → `string[]` — all registered skill IDs
+  - `.clear()` — remove all registrations
+
+- `autoDiscoverSkills(registry, dirs, options?)` — recursively scan directories for SKILL.md files
+  - `dirs` — single path or array of paths to scan
+  - `options.strict` — throw on validation errors (default: false, skips invalid)
+  - `options.onError` — callback for individual skill errors
+  - Returns `string[]` — IDs of successfully discovered skills
+
+- `createSkillTools(Vurb.ts, registry, options?)` — generate 3 MCP tools for progressive disclosure
+  - `options.prefix` — tool name prefix (default: `'skills'`)
+  - Returns `[search, load, readFile]` — three `GroupedToolBuilder` instances
+  - `skills.search` — `{ query: string }` → `{ skills: SkillSearchResult[], total: number }`
+  - `skills.load` — `{ skill_id: string }` → `{ id, instructions, files, metadata }` or error hint
+  - `skills.read_file` — `{ skill_id, file_path }` → `{ content, path, size, encoding, mimeType }` or sanitized error
+
+- `parseSkillMd(content, path)` — parse SKILL.md into a `Skill` object
+- `extractFrontmatter(content)` — extract YAML frontmatter and body
+- `toSkillFrontmatter(raw)` — convert raw object to typed `SkillFrontmatter` (handles array→string coercion for compatibility field)
+- `validateSkill(skill)` → `ValidationResult` — validate against agentskills.io specification
+- `formatValidationIssues(issues)` → `string` — format validation issues for display
+
+SKILL.md format (agentskills.io specification):
+```
+---
+name: deploy-k8s
+description: Deploy applications to Kubernetes clusters.
+license: MIT
+compatibility: Claude, GPT-4, Gemini
+allowed-tools: Bash(kubectl:*) Bash(helm:*)
+metadata:
+  author: Platform Team
+  version: "2.1"
+---
+# Instructions content follows here
+```
+
+Security in `readFile`:
+- Path normalization (backslashes, `..` rejection)
+- Boundary check (resolved path must stay inside skill directory)
+- Symlink resolution via `fs.realpath()` — prevents symlinks escaping skill directory
+- SKILL.md blocking (case-insensitive) — use `skills.load` instead
+- File size limits (prevents OOM)
+- Error sanitization (absolute server paths never exposed to agents)
+
+SkillSearchEngine interface (pluggable):
+- `.index(skills: SkillMetadata[])` — build search index
+- `.search(query: string, limit: number)` → `SkillSearchResult[]` — execute search
+
+### JWT Verification (`Vurb.ts-jwt`)
+
+Standards-compliant JWT verification for MCP servers. Verifies tokens using `jose` when installed (RS256, ES256, JWKS auto-discovery) or falls back to native Node.js `crypto` for HS256. Zero external dependencies required for HS256.
+
+- `JwtVerifier(config)` — core verification engine
+  - `config.secret` — symmetric secret for HS256 (native crypto fallback)
+  - `config.jwksUri` — JWKS endpoint URL for RS256/ES256 (requires jose)
+  - `config.publicKey` — PEM-encoded public key for RS256/ES256 (requires jose)
+  - `config.algorithm` — algorithm for `publicKey` verification (default: `'RS256'`). Accepts any `jose`-compatible algorithm string: `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, etc. Ignored when using `secret` (always HS256) or `jwksUri` (algorithm auto-detected from JWKS).
+  - `config.issuer` — expected `iss` claim (string or string[])
+  - `config.audience` — expected `aud` claim (string or string[])
+  - `config.clockTolerance` — seconds tolerance for exp/nbf (default: 60)
+  - `config.requiredClaims` — custom claims that must be present
+  - `.verify(token)` → `JwtPayload | null` — verify and return payload
+  - `.verifyDetailed(token)` → `{ valid, payload?, reason? }` — verify with error reason
+  - `JwtVerifier.decode(token)` → `JwtPayload | null` — decode without verification (⚠️ not for auth)
+  - `JwtVerifier.isExpired(token, tolerance?)` → `boolean` — quick expiration check
+- `requireJwt(options)` — middleware factory, blocks with `toolError('JWT_INVALID')` + self-healing hints
+  - Extracts from `ctx.token`, `ctx.jwt`, `Authorization` header (Bearer prefix auto-strip)
+  - `onVerified(ctx, payload)` — callback after successful verification
+  - Custom `extractToken`, `errorCode`, `recoveryHint`, `recoveryAction`
+- `createJwtAuthTool(config)` — pre-built MCP tool with `verify` and `status` actions
+
+`jose` is an **optional** peer dependency — lazy-loaded. Without it, only HS256 is supported via native `crypto.createHmac` + constant-time XOR comparison.
+
+### API Key Validation (`Vurb.ts-api-key`)
+
+Timing-safe API key validation for MCP servers. Zero external dependencies — uses native Node.js `crypto`.
+
+- `ApiKeyManager(config)` — core validation engine, three strategies:
+  - `config.keys` — static plaintext keys (pre-hashed to SHA-256 at construction)
+  - `config.hashedKeys` — pre-computed SHA-256 hashes (for DB storage)
+  - `config.validator` — `(key) => Promise<{ valid, metadata?, reason? }>` for DB lookups
+  - `config.prefix` — required key prefix (e.g., `'sk_live_'`)
+  - `config.minLength` — minimum key length (default: 16)
+  - `.validate(key)` → `{ valid, metadata?, reason? }` — validate with detailed result
+  - `.isValid(key)` → `boolean` — quick boolean check
+  - `ApiKeyManager.hashKey(key)` → SHA-256 hex hash (64 chars)
+  - `ApiKeyManager.matchKey(key, hash)` → timing-safe comparison
+  - `ApiKeyManager.generateKey({ prefix?, length? })` → random key with `crypto.randomBytes`
+- `requireApiKey(options)` — middleware factory, blocks with `toolError('APIKEY_INVALID')` + self-healing hints
+  - Extracts from `ctx.apiKey`, `x-api-key` header, `Authorization` header (ApiKey/Bearer prefix)
+  - `onValidated(ctx, metadata?)` — callback after successful validation
+  - Custom `extractKey`, `errorCode`, `recoveryHint`, `recoveryAction`
+- `createApiKeyTool(config)` — pre-built MCP tool with `validate` and `status` actions
+
+All comparisons use constant-time XOR accumulation to prevent timing attacks.
+
+### n8n Connector (from '@vurb/n8n')
+
+Turn n8n webhook workflows into MCP tools. Tag filtering controls what the AI can see. Presenters strip sensitive data before it leaves the process.
+
+- `createN8nConnector(config)` → N8nConnector — auto-discover n8n webhook workflows as MCP tools
+  - `config.url` — n8n instance base URL
+  - `config.apiKey` — n8n REST API key
+  - `config.includeTags` — only expose tagged workflows (default: all)
+  - `config.excludeTags` — hide workflows with these tags
+  - `config.timeout` — webhook call timeout in ms (default: 30000)
+  - `config.pollInterval` — background polling interval for live sync (ms)
+  - `config.onChange` — fires when tool list changes (emit `notifications/tools/list_changed`)
+- `N8nConnector` — .tools() → SynthesizedTool[], .workflows → WebhookConfig[], .client → N8nClient, .refresh() → Promise<boolean>, .stop() → void
+- `defineN8nTool(name, client, config)` → SynthesizedTool — surgical manual tool definition with strict typing
+  - `config.workflowId` — exact workflow ID
+  - `config.webhookPath` — webhook endpoint path
+  - `config.method` — HTTP method (default: POST)
+  - `config.description` — tool description for the LLM
+  - `config.params` — strict parameter schema (JSON descriptors or Zod)
+  - `config.annotations` — MCP annotations (readOnlyHint, destructiveHint)
+  - `config.tags` — tool tags
+
+Semantic Inference: n8n Webhook Notes field becomes the tool description. The LLM reads it and sends correct payloads zero-shot.
+MVA Interception: produces ToolBuilder instances — attach Presenters and middleware before registration.
+Live State Sync: background polling detects workflow changes and fires `notifications/tools/list_changed`.
+
+Peer dependencies: `Vurb.ts`, `zod`.
+
+```typescript
+import { createN8nConnector, defineN8nTool } from '@vurb/n8n';
+import { defineTool, ToolRegistry } from 'Vurb.ts';
+
+const n8n = await createN8nConnector({
+  url: process.env.N8N_URL!,
+  apiKey: process.env.N8N_API_KEY!,
+  includeTags: ['ai-enabled'],
+  pollInterval: 60_000,
+  onChange: () => server.notification({ method: 'notifications/tools/list_changed' }),
+});
+
+const registry = new ToolRegistry();
+for (const tool of n8n.tools()) {
+  registry.register(defineTool(tool.name, tool.config));
+}
+
+// Surgical construction for critical routes
+const refund = defineN8nTool('refund_invoice', n8n.client, {
+  workflowId: 15,
+  webhookPath: '/webhook/refund',
+  description: 'Reverse a Stripe invoice.',
+  params: {
+    invoice_id: 'string',
+    reason: { type: 'string', enum: ['duplicate', 'fraudulent', 'requested_by_customer'] },
+  },
+  annotations: { destructiveHint: true },
+});
+registry.register(defineTool(refund.name, refund.config));
+```
+
+### OpenAPI Generator (from '@vurb/openapi-gen')
+
+Turn any REST/OpenAPI 3.x or Swagger 2.0 spec into a working MCP server — code generation or runtime proxy.
+
+- `parseOpenAPI(input)` → ApiSpec — parse YAML/JSON to AST (auto-detects v2 and v3)
+- `mapEndpoints(spec)` → MappedSpec — apply naming, annotations, deduplication
+- `emitFiles(mapped, config)` → GeneratedFile[] — generate TypeScript files
+- `mergeConfig(partial)` → FullConfig — merge partial config with defaults
+- `loadConfig(path?)` → FullConfig — load from YAML file
+- `compileZod(schema)` → string — compile a SchemaNode to Zod code string
+- `loadOpenAPI(input, config)` → RuntimeTool[] — runtime proxy mode (no codegen step)
+  - `config.baseUrl` — base URL for API calls
+  - `config.headers` — default headers sent with every request
+  - `config.fetchFn` — custom fetch function
+- `buildHandler(action)` → handler — build a single HTTP proxy handler
+- `isSwagger2(obj)` → boolean — detect Swagger 2.0 documents
+- `convertSwagger2ToV3(obj)` → OpenAPI3Spec — convert Swagger 2.0 to OpenAPI 3.0
+
+Generated output structure:
+```
+generated/
+├── models/      ← Zod schemas with .strict() validation
+├── views/       ← Presenters with response shaping
+├── agents/      ← MCP tool definitions with inferred annotations
+├── index.ts     ← ToolRegistry barrel
+└── server.ts    ← Server bootstrap (stdio or SSE)
+```
+
+Annotation Inference: HTTP method → MCP annotation. GET → readOnly, DELETE → destructive, PUT → idempotent.
+
+Swagger 2.0 auto-detected and converted internally — host+basePath+schemes → servers, definitions → components.schemas, body params → requestBody.
+
+CLI: `npx openapi-gen generate -i ./spec.yaml -o ./generated`
+Config file: `openapi-gen.yaml` (auto-detected or --config)
+
+Peer dependencies: `Vurb.ts`, `zod`. Bundled: `yaml`.
+
+```typescript
+// Runtime proxy — no code generation
+import { loadOpenAPI } from '@vurb/openapi-gen';
+import { defineTool, ToolRegistry } from 'Vurb.ts';
+
+const tools = loadOpenAPI(specYaml, {
+    baseUrl: 'https://api.example.com',
+    headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
+});
+
+const registry = new ToolRegistry();
+for (const tool of tools) {
+    registry.register(defineTool(tool.name, {
+        description: tool.description,
+        actions: Object.fromEntries(
+            tool.actions.map(a => [a.name, {
+                description: a.description,
+                readOnly: a.method === 'GET',
+                handler: async (ctx, args) => a.handler(ctx, args),
+            }])
+        ),
+    }));
+}
+```
+
+### Prisma Generator (from '@vurb/prisma-gen')
+
+A Prisma Generator that produces Vurb.ts ToolBuilders and Presenters with field-level security, tenant isolation, and OOM protection.
+
+Schema annotations:
+- `/// @vurb.hide` — physically excludes field from generated Zod response schema
+- `/// @vurb.describe("...")` — adds `.describe()` to the Zod field
+- `/// @vurb.tenantKey` — injects into every query's `WHERE` clause from `ctx.tenantId`
+
+Generator configuration:
+```prisma
+generator mcp {
+  provider = "Vurb.ts-prisma-gen"
+  output   = "../src/tools/database"
+}
+```
+
+Generated output per model:
+- `{model}Presenter.ts` — Zod `.strict()` schema with `@vurb.hide` fields removed, `createPresenter()` with auto-rules
+- `{model}Tools.ts` — `defineTool()` with CRUD actions: `find_many`, `find_unique`, `create`, `update`, `delete`
+- `index.ts` — barrel export
+
+Security guarantees:
+- `@vurb.hide` fields physically absent from Presenter schema — Zod `.strict()` strips them at RAM level
+- `@vurb.tenantKey` injected into every generated query WHERE clause — cross-tenant access structurally impossible
+- Pagination: `take` capped at 50 via `.max(50).default(20)` — OOM protection
+
+Peer dependencies: `Vurb.ts`, `zod`, `@prisma/generator-helper`.
+
+```prisma
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  passwordHash String /// @vurb.hide
+  stripeToken  String /// @vurb.hide
+  creditScore  Int    /// @vurb.describe("Score 0-1000. Above 700 is PREMIUM.")
+  tenantId     String /// @vurb.tenantKey
+}
+```
+
+`npx prisma generate` → typed CRUD tools + Presenters with field-level security.
+
+### Inspector — Real-Time TUI Dashboard (from '@vurb/inspector')
+
+Zero-overhead real-time terminal dashboard for Vurb.ts servers. Connects via Shadow Socket (IPC) — no stdio interference, no port conflicts, no agent disruption.
+
+- `commandTop(options?)` → Promise<void> — launch interactive TUI
+  - `options.pid` — connect to specific server PID
+  - `options.path` — custom IPC socket/pipe path
+- `streamToStderr(options?)` → Promise<void> — headless stderr logger (ECS/K8s/CI)
+- `startSimulator(options?)` → Promise<TelemetryBus> — built-in demo simulator
+  - `options.rps` — simulated requests per second
+
+Dashboard layout:
+- Header Bar — PID, REQ/S, RAM (visual bar), DLP count, queue depth, active concurrency, uptime
+- Tool List — live registry with status (✓/✗/⋯), type (R/O, W, 🔒 sandboxed, ◆FSM), latency
+- X-RAY Inspector — deep inspection of selected tool: Error Autopsy, Late Guillotine (DB raw vs wire savings), Select Reflection, Cognitive Guardrails, DLP Redactions, Cognitive Rules, Call History
+- Traffic Log — real-time color-coded event stream (ROUTE, ZOD, MW, EXEC, SLICE, DLP)
+
+Shadow Socket: Named Pipes on Windows (`\\.\pipe\vurb-{hash}`), Unix Domain Sockets on macOS/Linux (`/tmp/vurb-{hash}.sock`). Deterministic path from SHA-256 of working directory.
+
+Auto-discovery: local match → registry scan → polling (2s). Auto-reconnect on connection drop.
+
+Telemetry events: topology, heartbeat, route, validate, middleware, execute, error, presenter.slice, presenter.rules, dlp.redact, fsm.transition, sandbox.exec, governance.
+
+CLI:
+```bash
+Vurb.ts inspect          # Auto-discover
+Vurb.ts insp --demo      # Built-in simulator
+Vurb.ts insp --out stderr # Headless mode
+Vurb.ts insp --pid 12345  # Specific PID
+```
+
+Peer dependency: `Vurb.ts` ≥ 3.0.0.
+
+### Domain Models
+- `BaseModel` — abstract base (name, title, description, meta, icons)
+- `GroupItem` — leaf with multi-parent groups
+- `Group` — tree node (addChildGroup, addChildTool, addChildPrompt, addChildResource)
+- `Tool` — inputSchema, outputSchema, toolAnnotations
+- `Resource` — uri, size, mimeType, annotations
+- `Prompt` — promptArguments
+- `PromptArgument` — required: boolean
+
+## Security Layer — Composable Middleware
+
+Five production-grade security middleware modules that compose via the standard `.use()` pipeline. Each module is independent — use one or all, configure per-tool or globally.
+
+### InputFirewall — LLM-as-Judge Ingress Scanner
+
+Evaluates tool arguments for injection attacks before handler execution. Uses an LLM judge model to detect SQL injection, prompt injection, command injection, and path traversal.
+
+```typescript
+import { inputFirewall } from '@vurb/core';
+
+const firewall = inputFirewall({
+  judge: openai('gpt-4o-mini'),
+  severity: 'block',              // 'block' | 'warn' | 'log'
+  allowlist: ['system.health'],   // bypass for safe tools
+});
+
+const tool = f.query('db.search')
+  .use(firewall)
+  .withString('query', 'Search query')
+  .handle(async (input, ctx) => ctx.db.search(input.query));
+```
+
+Verdicts: `safe`, `suspicious`, `malicious`. Malicious inputs return `toolError('INPUT_BLOCKED')` with self-healing hints.
+
+### PromptFirewall — System Rule Evaluator
+
+Evaluates Presenter system rules before they reach the agent. Detects rule conflicts, data exfiltration instructions, and prompt override patterns.
+
+```typescript
+import { promptFirewall } from '@vurb/core';
+
+const pfw = promptFirewall({
+  judge: openai('gpt-4o-mini'),
+  policies: ['no-exfiltration', 'no-override', 'no-conflict'],
+});
+
+const tool = f.query('reports.generate')
+  .use(pfw)
+  .returns(ReportPresenter)
+  .handle(async (input, ctx) => ctx.db.reports.get(input.id));
+```
+
+### AuditTrail — SOC2/GDPR Invocation Logger
+
+Records every tool invocation with identity, args hash, status, and duration. Pluggable sink for external SIEM integration.
+
+```typescript
+import { auditTrail } from '@vurb/core';
+
+const audit = auditTrail({
+  sink: (event) => siem.ingest(event),
+  extractIdentity: (ctx) => ({ userId: ctx.auth.userId, ip: ctx.ip }),
+  hashAlgorithm: 'sha256',
+});
+
+const tool = f.mutation('billing.refund')
+  .use(audit)
+  .handle(async (input, ctx) => ctx.stripe.refund(input.chargeId));
+```
+
+Event fields: `identity`, `tool`, `action`, `argsHash` (SHA-256), `status` (`success`|`error`), `durationMs`, `timestamp`.
+
+### RateLimiter — Token-Bucket Per Identity
+
+```typescript
+import { rateLimit } from '@vurb/core';
+
+const limiter = rateLimit({
+  maxRequests: 100,
+  windowMs: 60_000,
+  keyExtractor: (ctx) => ctx.auth.userId,
+});
+
+const tool = f.query('search.execute')
+  .use(limiter)
+  .handle(async (input, ctx) => ctx.search(input.query));
+```
+
+Returns `toolError('RATE_LIMITED')` with `retryAfter` seconds and upgrade URL.
+
+### JudgeChain — Multi-Model Consensus
+
+Fans out to N judge LLMs, aggregates verdicts, and produces a final allow/deny decision.
+
+```typescript
+import { judgeChain } from '@vurb/core';
+
+const consensus = judgeChain({
+  judges: [openai('gpt-4o-mini'), anthropic('claude-3-haiku')],
+  strategy: 'majority',         // 'unanimous' | 'majority' | 'weighted'
+  threshold: 0.7,
+});
+```
+
+Strategies: `unanimous` (all must agree), `majority` (>50% agree), `weighted` (confidence-weighted average against threshold).
+
+### Security Middleware Composition
+
+```typescript
+// Minimum viable secure tool — 3 middleware lines
+const tool = f.query('operations.list')
+  .use(requireJwt(verifier))
+  .use(auditTrail({ sink: telemetrySink, extractIdentity: (ctx) => ({ userId: ctx.auth.userId }) }))
+  .use(inputFirewall({ judge: openai('gpt-4o-mini') }))
+  .handle(async (input, ctx) => ctx.db.operations.findMany());
+```
+
+## Resource Subscriptions
+
+Fluent builder for MCP resources with push-based subscriptions. Clients subscribe to resource URIs and receive `notifications/resources/updated` when data changes.
+
+```typescript
+import { ResourceBuilder, ResourceRegistry, SubscriptionManager } from '@vurb/core';
+
+const subscriptions = new SubscriptionManager();
+
+const configResource = new ResourceBuilder()
+  .uri('config://app/settings')
+  .name('Application Settings')
+  .mimeType('application/json')
+  .handler(async () => JSON.stringify(await db.settings.get()))
+  .build();
+
+const registry = new ResourceRegistry();
+registry.register(configResource);
+
+// When settings change, notify subscribers
+await subscriptions.notify('config://app/settings');
+// → Emits: notifications/resources/updated { uri: 'config://app/settings' }
+```
+
+`SubscriptionManager` tracks client subscriptions per URI. `ResourceRegistry` handles `resources/list`, `resources/read`, `resources/subscribe`, and `resources/unsubscribe`. Integrates with `ServerAttachment` for automatic MCP protocol handling.

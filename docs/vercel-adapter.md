@@ -2,19 +2,22 @@
 
 <a href="https://www.npmjs.com/package/@vurb/vercel"><img src="https://img.shields.io/npm/v/@vurb/vercel?color=blue" alt="npm" /></a>
 
-- [Why This Matters](#why-this-matters)
-- [Installation](#installation)
-- [Architecture](#architecture)
-- [Step-by-Step Setup](#setup)
-- [Edge vs Node.js Runtime](#runtimes)
-- [Adding Middleware](#middleware)
-- [Adding Presenters](#presenters)
-- [Configuration Reference](#config)
-- [Vercel Services Integration](#services)
-- [What Works on Vercel](#compatibility)
-- [Compatible Clients](#clients)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create a Next.js App Router route handler at app/api/mcp/route.ts that deploys my Vurb registry to Vercel Edge using vercelAdapter."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Deploy your Vurb.ts server as a Next.js App Router route handler or standalone Vercel Function. Edge Runtime or Node.js — one line, zero transport config.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">EDGE DEPLOYMENT</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">MCP on Vercel.<br><span style="color:rgba(255,255,255,0.25)">One line, zero transport config.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Deploy your Vurb server as a Next.js App Router route handler or standalone Vercel Function. Edge Runtime or Node.js — one line, zero transport config.</div>
+</div>
 
 ```typescript
 // app/api/mcp/route.ts — the entire file

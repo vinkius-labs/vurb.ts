@@ -193,10 +193,10 @@ export default f.mutation('users.delete')
 ## Step 6 — Run {#step-6-run}
 
 ```bash
-Vurb.ts dev
+vurb dev
 ```
 
-`Vurb.ts dev` starts with `autoDiscover()`, SSE transport, observability, and **HMR** — edit any tool, middleware, or Presenter and the server reloads instantly. No manual restarts during development. See [HMR Dev Server](/cookbook/hmr-dev-server) for configuration details.
+`vurb dev` starts with `autoDiscover()`, SSE transport, observability, and **HMR** — edit any tool, middleware, or Presenter and the server reloads instantly. No manual restarts during development. See [HMR Dev Server](/cookbook/hmr-dev-server) for configuration details.
 
 Connect it to your MCP client:
 

@@ -34,10 +34,10 @@ function validateVector(raw: string | undefined): IngestionVector {
 
 /** @internal */
 function validateTarget(raw: string | undefined): DeployTarget {
-    if (!raw) return 'node';
+    if (!raw) return 'vinkius';
     if (VALID_TARGETS.includes(raw as DeployTarget)) return raw as DeployTarget;
-    process.stderr.write(`  ${ansi.red('⚠')} Unknown target "${raw}" — using ${ansi.bold('node')}. Valid: ${VALID_TARGETS.join(', ')}\n`);
-    return 'node';
+    process.stderr.write(`  ${ansi.red('⚠')} Unknown target "${raw}" — using ${ansi.bold('vinkius')}. Valid: ${VALID_TARGETS.join(', ')}\n`);
+    return 'vinkius';
 }
 
 // ─── Config Collection ───────────────────────────────────────────
@@ -81,7 +81,7 @@ export async function collectConfig(args: CliArgs): Promise<ProjectConfig | null
             return null;
         }
 
-        const targetRaw = args.target ?? await ask(rl, 'Target? [node, vercel, cloudflare]', 'node');
+        const targetRaw = args.target ?? await ask(rl, 'Target? [vinkius, vercel, cloudflare]', 'vinkius');
         const target = validateTarget(targetRaw);
 
         // For vercel/cloudflare, transport is always HTTP (stateless JSON-RPC)

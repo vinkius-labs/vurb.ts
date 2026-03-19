@@ -9,16 +9,23 @@ description: "Generate, verify, and integrate vurb.lock into CI/CD. A determinis
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Generating the Lockfile](#generating)
-- [What the Lockfile Captures](#structure)
-- [Why Canonical Serialization Matters](#canonical)
-- [Gating Your CI Build](#verification)
-- [Reviewing Lockfile Diffs](#diffs)
-- [CI/CD Integration](#ci)
-- [Parsing and Validation](#parsing)
-- [Best Practices](#best-practices)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Generate a vurb.lock for my server, add it to git, and create a GitHub Actions step that runs vurb lock --check on every PR."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-The MCP protocol provides `tools/list` — the current surface. It provides `notifications/tools/list_changed` — something changed. Neither provides a durable artifact, a comparison mechanism, or behavioral-level change detection. This black box makes it impossible to guarantee **CISO Compliance** or prevent **Phantom Capabilities** (tools that silently hijack other imports) from slipping into production.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(99,102,241,0.6);letter-spacing:3px;font-weight:700">BEHAVIORAL LOCKFILE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">package-lock.json for capabilities.<br><span style="color:rgba(255,255,255,0.25)">Pins what your server can do.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">A deterministic, canonical JSON snapshot of the complete behavioral surface — tool contracts, prompts, guardrails, entitlements. Git-diffable. CI-gatable.</div>
+</div>
+
 
 `vurb.lock` fills all three gaps. It is a deterministic, canonical JSON file that captures the complete behavioral surface of your MCP server — tool contracts, prompt definitions, cognitive guardrails, entitlements, and token economics. The behavioral equivalent of `package-lock.json`, except instead of pinning dependency versions, it pins what your server can do.
 

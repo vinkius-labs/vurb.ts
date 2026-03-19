@@ -161,7 +161,7 @@ export const deleteProject = f.mutation('projects.delete')
   });
 ```
 
-You don't need to tell the AI to "confirm before deleting" — the framework handles this for you. `f.mutation()` automatically sets `destructiveHint: true` in the MCP tool annotations. MCP clients like Claude Desktop read this annotation and show a confirmation dialog before executing. Zero boilerplate, zero prompt engineering.
+You don't need to tell the AI to "confirm before deleting" — the framework handles this for you. `f.mutation()` automatically sets `destructiveHint: true` in the MCP tool annotations. MCP clients like Claude Desktop read this annotation and show a confirmation dialog before executing. Zero configuration, zero prompt engineering.
 
 ## Registering & Serving {#register}
 

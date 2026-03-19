@@ -4,16 +4,23 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [The Problem](#problem)
-- [How It Works](#how-it-works)
-- [Configuration](#configuration)
-- [Multi-Adapter Setup](#multi-adapter)
-- [Verdict Structure](#verdict)
-- [Telemetry](#telemetry)
-- [Integration with Presenters](#integration)
-- [API Reference](#api)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add a prompt firewall to the InvoicePresenter that evaluates dynamically-generated system rules through a JudgeChain before they reach the AI agent."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-The Prompt Firewall protects the **output side** of your MCP server. It evaluates dynamically-generated system rules — rules that interpolate database content — through an LLM judge before they reach the AI agent.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">OUTPUT SHIELD</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Database rows can be weapons.<br><span style="color:rgba(255,255,255,0.25)">The firewall disarms them.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">The Prompt Firewall evaluates dynamically-generated system rules — rules that interpolate database content — through an LLM judge before they reach the AI agent.</div>
+</div>
+
 
 
 ## The Problem {#problem}

@@ -1,0 +1,65 @@
+# Vurb.ts
+
+> The Express.js for MCP Servers. The framework for the AI era.
+
+## What is Vurb.ts?
+
+Vurb.ts is a TypeScript framework for building production-grade MCP (Model Context Protocol) servers. It provides structured routing, data shaping via Presenters, built-in security (DLP, PII redaction, Egress Firewall), middleware pipelines, and one-command deployment.
+
+## Core Concepts
+
+- **MVA Pattern** (Model-View-Agent): Replaces MVC for AI. Presenters shape what the LLM perceives — schema allowlists, business rules, affordances, and truncation.
+- **Fluent API**: `f.query()`, `f.mutation()`, `f.action()` — semantic verbs with Zod validation and type inference.
+- **Presenters**: Define once, reuse everywhere. Schema strips undeclared fields. Rules guide the agent. Suggestions enable agentic HATEOAS.
+- **Middleware**: tRPC-style `f.middleware()` with context derivation. Auth, rate limiting, audit — write once, apply everywhere.
+- **Self-Healing Errors**: `toolError()` and `f.error()` carry structured XML with recovery paths, available actions, and retry hints.
+- **File-Based Routing**: `autoDiscover()` maps your directory tree to MCP tool definitions with discriminators and action consolidation.
+
+## Security
+
+- **Egress Firewall**: Zod schema strips undeclared fields at RAM level. New database columns are invisible unless declared.
+- **PII Redaction**: `.redactPII()` — V8-optimized via fast-redact. GDPR, LGPD, HIPAA compliant.
+- **State Gate**: Removes tools from `tools/list` based on workflow state (FSM). Anti-hallucination.
+- **V8 Isolate Sandbox**: Zero access to `process`, `fs`, `net`. Sealed execution environment.
+
+## Installation
+
+```
+npm install @vurb/core @modelcontextprotocol/sdk zod
+```
+
+## Quick Start
+
+```
+npx vurb create my-server
+cd my-server
+vurb dev
+vurb deploy
+```
+
+## Links
+
+- Docs: https://vurb.dev
+- GitHub: https://github.com/vinkius-labs/vurb.ts
+- npm: https://www.npmjs.com/package/@vurb/core
+
+## Pages
+
+- /introduction — Overview, installation, and feature summary
+- /quickstart-lightspeed — Zero to production in 40 seconds
+- /client-integrations — Vercel AI SDK, LangChain, LlamaIndex integration
+- /mva-pattern — The Model-View-Agent architecture pattern
+- /building-tools — Fluent API for defining tools
+- /presenter — The Presenter engine (View layer)
+- /middleware — Context derivation and cross-cutting concerns
+- /routing — File-based routing, routers, discriminators
+- /error-handling — Self-healing errors with recovery paths
+- /comparison — Raw MCP vs Vurb MVA side-by-side
+- /governance/cli — CLI reference (create, dev, lock, deploy, inspect)
+- /governance/capability-lockfile — Capability lockfile for CI governance
+- /enterprise-quickstart — Enterprise setup with DLP, SSO, audit
+- /vercel-adapter — Deploy to Vercel Edge or Node.js
+- /cloudflare-adapter — Deploy to Cloudflare Workers
+- /oauth — OAuth Device Flow (RFC 8628)
+- /prisma-gen — Auto-generate tools from Prisma schema
+- /openapi-gen — Generate tools from OpenAPI/Swagger specs

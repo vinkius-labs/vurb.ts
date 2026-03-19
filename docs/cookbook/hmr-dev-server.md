@@ -19,7 +19,7 @@ The HMR (Hot Module Replacement) dev server is the **killer feature** for MCP de
 The fastest way to start:
 
 ```bash
-Vurb.ts dev
+vurb dev
 ```
 
 The CLI auto-detects your server entrypoint by probing common paths: `src/server.ts`, `src/index.ts`, `server.ts`, `index.ts` (and `.js` variants).
@@ -27,7 +27,7 @@ The CLI auto-detects your server entrypoint by probing common paths: `src/server
 For explicit control:
 
 ```bash
-Vurb.ts dev --server ./src/server.ts --dir ./src/tools
+vurb dev --server ./src/server.ts --dir ./src/tools
 ```
 
 Options:
@@ -44,7 +44,7 @@ Add to `package.json` for convenience:
 ```json
 {
   "scripts": {
-    "dev": "Vurb.ts dev"
+    "dev": "vurb dev"
   }
 }
 ```
@@ -88,7 +88,7 @@ When `server` is provided, the dev server sends `notifications/tools/list_change
 ## How It Works {#how}
 
 ```text
-1. Vurb.ts dev
+1. vurb dev
     ↓
 2. Auto-detect src/server.ts (or --server flag)
     ↓

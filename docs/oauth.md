@@ -6,7 +6,23 @@ description: Drop-in OAuth 2.0 Device Flow (RFC 8628) for MCP servers built with
 
 # OAuth — Device Authorization Grant
 
-OAuth 2.0 Device Authorization Grant ([RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628)) for MCP servers. The server requests a device code, the user authorizes in a browser, and the token is stored for future sessions. No redirect URIs, no embedded browsers.
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add OAuth device flow authentication to my MCP server using @vurb/oauth — with automatic token refresh, persistent storage, and an auth tool for the AI agent."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">DEVICE FLOW</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">No redirect URIs. No browsers.<br><span style="color:rgba(255,255,255,0.25)">RFC 8628 for MCP servers.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">OAuth 2.0 Device Authorization Grant for headless MCP servers. The server requests a device code, the user authorizes in a browser, and the token is stored for future sessions.</div>
+</div>
+
 
 ```bash
 npm install @vurb/oauth
@@ -209,3 +225,11 @@ interface TokenManagerConfig {
 
 type TokenSource = 'environment' | 'file' | null;
 ```
+
+## Other Authentication Methods {#other-auth}
+
+| Method | Guide |
+|---|---|
+| JWT bearer token verification | [JWT Verification](/jwt) |
+| Static API key validation | [API Key Validation](/api-key) |
+| Security overview — all layers | [Security](/security/) |

@@ -2,25 +2,22 @@
 
 <a href="https://www.npmjs.com/package/@vurb/openapi-gen"><img src="https://img.shields.io/npm/v/@vurb/openapi-gen?color=blue" alt="npm" /></a>
 
-- [Install](#install)
-- [Generated Output](#output)
-- [Schema Fidelity — OpenAPI to Strict Zod](#schema-fidelity)
-- [Annotation Inference](#annotations)
-- [Code Generation Pipeline](#pipeline)
-- [Swagger 2.0 Support](#swagger2)
-- [Runtime Proxy Mode](#runtime)
-- [Full Production Example](#production)
-- [Configuration](#config)
-- [Exposition Strategy](#exposition)
-- [Name Resolution](#naming)
-- [Tag Filtering](#tag-filtering)
-- [Custom Context](#context)
-- [API Reference](#api)
-- [Requirements](#requirements)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Generate a complete MCP server from our petstore.yaml OpenAPI spec — with strict Zod models, Presenters, annotations, and a server.ts bootstrap."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Turn any **REST/OpenAPI 3.x or Swagger 2.0 spec into a working MCP server** — either by generating typed TypeScript files ahead of time, or by parsing the spec at startup and proxying requests at runtime. 
+---
 
-This is the ultimate **Legacy API Migration strategy for AI Agents**. Whether you need to connect thousands of legacy corporate endpoints to an LLM, or simply want to bridge **Swagger to Claude Desktop**, this generator completely automates the creation of strict MVA architectures, models, and Presenters.
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(34,211,238,0.6);letter-spacing:3px;font-weight:700">LEGACY API MIGRATION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Any REST API → MCP Server.<br><span style="color:rgba(255,255,255,0.25)">OpenAPI 3.x and Swagger 2.0.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Turn any OpenAPI spec into a working MCP server — either by generating typed TypeScript files ahead of time, or by parsing the spec at startup and proxying requests at runtime. The ultimate Legacy API Migration strategy for AI Agents.</div>
+</div>
 
 ```bash
 npx openapi-gen generate -i ./petstore.yaml -o ./generated
@@ -369,3 +366,12 @@ const petTools = defineTool<AppCtx>('pet', { /* handlers receive ctx: AppCtx */ 
 | `Vurb.ts` | ^2.0.0 (peer) |
 | `zod` | ^3.25.1 \|\| ^4.0.0 (peer) |
 | `yaml` | ^2.7.0 (bundled) |
+
+## Other Generators & Connectors {#other-generators}
+
+| Generator | Guide |
+|---|---|
+| Auto-generate MCP tools from Prisma schema | [Prisma Generator](/prisma-gen) |
+| Bridge n8n workflows as MCP tools | [n8n Connector](/n8n-connector) |
+| Type-safe tRPC-style client for MCP tools | [FusionClient](/fusion-client) |
+

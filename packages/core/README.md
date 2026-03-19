@@ -162,12 +162,12 @@ Choose where your server runs with `--target`:
 
 | Target | Runtime | Deploy with |
 |---|---|---|
-| `node` (default) | Node.js — Streamable HTTP | [`vurb deploy`](#vinkius-edge) |
-| `vercel` | Next.js App Router — Vercel Functions | [`vercel deploy`](#vercel-functions) |
-| `cloudflare` | Cloudflare Workers — V8 isolates | [`wrangler deploy`](#cloudflare-workers) |
+| `vinkius` (default) | Vinkius Edge | [`vurb deploy`](#vinkius-edge) |
+| `vercel` | Vercel Functions | [`vercel deploy`](#vercel-functions) |
+| `cloudflare` | Cloudflare Workers | [`wrangler deploy`](#cloudflare-workers) |
 
 ```bash
-# Node.js (default) — Streamable HTTP, deploy to Vinkius Edge
+# Vinkius Edge (default) — deploy with vurb deploy
 vurb create my-server --yes
 
 # Vercel Functions — Next.js App Router + @vurb/vercel adapter

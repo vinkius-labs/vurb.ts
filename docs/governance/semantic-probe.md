@@ -9,16 +9,23 @@ description: "LLM-as-a-Judge evaluation framework for detecting semantic drift i
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Creating Probes](#probes)
-- [The LLM Adapter](#adapter)
-- [Evaluating Probes](#evaluate)
-- [Drift Classification](#drift)
-- [The Judge Prompt](#prompt)
-- [Aggregation](#aggregate)
-- [Testing Integration](#testing)
-- [API Reference](#api)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create semantic probes for the invoices tool, compare expected vs actual outputs through a Claude judge, and fail CI if drift exceeds medium."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Deterministic governance modules — Contract Diffing, Surface Integrity, Capability Lockfile — detect structural changes: schema mutations, system rule rewording, entitlement additions. But a handler can change its *meaning* without changing its structure. A `list` action that previously returned 10 items now returns 1000. A `summarize` action that used to produce two-sentence summaries now outputs full paragraphs. The egress schema is identical, the system rules are unchanged — yet the LLM's downstream behavior will be affected.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">BEHAVIORAL REGRESSION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Same schema. Different meaning.<br><span style="color:rgba(255,255,255,0.25)">LLM-as-Judge detects it.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">A handler can change its meaning without changing its structure. Semantic Probing delegates behavioral evaluation to an LLM judge — expected vs actual, drift scored, contract violations flagged.</div>
+</div>
+
 
 Semantic Probing addresses this gap by delegating behavioral evaluation to an LLM judge. You provide input/output pairs (expected vs. actual), and the module constructs a structured evaluation prompt, sends it through a pluggable adapter, and parses the judge's verdict into a typed result with drift classification.
 

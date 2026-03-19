@@ -4,42 +4,94 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Why MVC Fails for Agents](#why-mvc-fails)
-- [The Solution: MVA](#solution)
-- [The Presenter](#presenter-responsibilities)
-- [Presenter Composition](#composition)
-- [Pipeline Integration](#pipeline)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Rewrite my raw MCP handler using the MVA pattern — Model for data, Presenter for agent perception, middleware for auth."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-**Model-View-Agent (MVA)** replaces the human-centric View of MVC with a **Presenter** — a deterministic perception layer that tells the agent how to interpret, display, and act on domain data. For the full reference, see the [MVA Architecture Section](/mva/).
+---
 
-## Why MVC Fails for Agents {#why-mvc-fails}
+<!-- Editorial break: The problem -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">THE PROBLEM</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">MVC wasn't built for agents.<br><span style="color:rgba(255,255,255,0.25)">Every guess is a hallucination.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">When a tool returns <code style="font-size:12px;color:rgba(239,68,68,0.6);background:rgba(239,68,68,0.06);padding:1px 5px;border-radius:3px">{ amount_cents: 45000 }</code>, the agent guesses: cents or dollars? Offer a payment action? What visualization?</div>
+</div>
 
-**MVC wasn't built for agents.** The Model-View-Controller pattern works when a human reads the screen and applies their own judgment. An AI agent doesn't have that luxury — it acts on exactly what you give it. If your tool returns raw data with no context, the agent fills in the blanks. That's where hallucination starts.
+<!-- Problem cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-When a tool returns `{ "amount_cents": 45000, "status": "pending" }`, the agent guesses: cents or dollars? Offer a payment action? What visualization? Every guess is a potential hallucination.
+<div style="border:1px solid rgba(239,68,68,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(239,68,68,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Context Starvation</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Data without rules. <code style="font-size:10px">45000</code> displays as dollars instead of cents.</div>
+</div>
 
-**Context Starvation** — data without rules means `45000` displays as dollars. **Action Blindness** — no affordances means hallucinated tool names. **Perception Inconsistency** — same entity presented differently by different tools means contradictory behavior.
+<div style="border:1px solid rgba(245,158,11,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(245,158,11,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Action Blindness</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">No affordances → hallucinated tool names and skipped workflows.</div>
+</div>
 
-## The Solution: MVA {#solution}
+<div style="border:1px solid rgba(192,132,252,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(192,132,252,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Perception Drift</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Same entity, different tools, contradictory behavior.</div>
+</div>
 
-```text
-Model              View              Agent
-─────              ────              ─────
-Domain Data   →   Presenter    →   LLM/AI
-(defineModel)      (Rules +          (Claude,
-                   UI Blocks +       GPT, etc.)
-                   Affordances)
-```
+</div>
 
-The Presenter is **domain-level, not tool-level.** Define `InvoicePresenter` once — every tool that returns invoices uses the same Presenter. The agent always perceives invoices identically. The **Model** is defined with `defineModel()` — a single closure that declares field types, defaults, fillable input profiles, hidden and guarded fields. Tools can use `.fromModel()` to derive input parameters directly from the Model, or hand-write parameters with the Fluent API. The Presenter layer works identically regardless of how tools are authored.
+---
 
-## The Presenter {#presenter-responsibilities}
+<!-- Editorial break: The solution -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">THE SOLUTION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Model → View → Agent.<br><span style="color:rgba(255,255,255,0.25)">Deterministic perception.</span></div>
+</div>
 
-Three APIs produce the same result: `createPresenter('Name').schema(s).rules(r)` (fluent), `definePresenter({})` (declarative), `f.presenter({})` (context-aware). Each method has a shorthand (`.rules()`, `.ui()`, `.limit()`, `.suggest()`) and a full-control alias (`.systemRules()`, `.uiBlocks()`, `.agentLimit()`, `.suggestActions()`).
+## The MVA Flow {#solution}
 
-### Schema Validation {#schema-validation}
+<!-- Numbered steps -->
+<div style="margin:32px 0">
 
-The Zod schema is a security boundary. Only declared fields pass through. In production projects, schemas come from `defineModel()` — the framework's standard Model definition:
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(129,140,248,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">01</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Model — Domain Data</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Defined with <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">defineModel()</code>. Declares field types, defaults, fillable profiles, hidden and guarded fields. One source of truth.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(34,211,238,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">02</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">View — Presenter</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Shapes perception with rules, UI blocks, affordances, and Zod validation. Domain-level, not tool-level. Define <code style="font-size:10px;color:rgba(34,211,238,0.6);background:rgba(34,211,238,0.06);padding:1px 5px;border-radius:3px">InvoicePresenter</code> once — every tool reuses it.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;padding:20px 24px;border-left:2px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(52,211,153,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">03</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Agent — LLM/AI</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Receives structured context — not raw data. The agent follows explicit affordances instead of guessing. Claude, GPT, Gemini, or any MCP client.</div>
+</div>
+</div>
+
+</div>
+
+## The Model {#schema-validation}
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">models/InvoiceModel.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { defineModel } from '@vurb/core';
@@ -58,43 +110,65 @@ export const InvoiceModel = defineModel('Invoice', m => {
     update: ['status'],
   });
 });
-
-export const InvoiceSchema = InvoiceModel.schema;
 ```
 
-`.describe()` annotations auto-extract as system rules. Fields like `password_hash` or `tenant_id` — not declared in `m.casts()` or excluded via `m.hidden()` — never reach the agent.
+</div>
+</div>
 
-The Presenter then references the Model's compiled schema:
+Fields not in `m.casts()` or excluded via `m.hidden()` never reach the agent. `.describe()` annotations auto-extract as system rules.
 
-```typescript
-import { createPresenter } from '@vurb/core';
-import { InvoiceSchema } from '../models/InvoiceModel.js';
+---
 
-export const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceSchema);
-```
+## The Presenter {#presenter-responsibilities}
 
-### System Rules {#system-rules}
+<!-- Feature Grid: Presenter capabilities -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:32px 0">
 
-Rules travel with the data, not in a global system prompt:
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(129,140,248,0.8);padding:3px 10px;border:1px solid rgba(129,140,248,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">RULES</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">System Rules</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Travel with the data, not in a global prompt. Context-aware — adapt to user role, tenant, locale.</div>
+</div>
 
-```typescript
-export const InvoicePresenter = definePresenter({
-  name: 'Invoice',
-  schema: InvoiceModel,
-  rules: [
-    'CRITICAL: amount_cents is in CENTS. Always divide by 100 before display.',
-    'Use currency format: $XX,XXX.00',
-    'Use status emojis: ✅ paid, ⏳ pending, 🔴 overdue',
-  ],
-});
-```
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(34,211,238,0.8);padding:3px 10px;border:1px solid rgba(34,211,238,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">UI</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">UI Blocks</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Charts, tables, markdown, diagrams. Single items use <code style="font-size:10px">.ui()</code>, arrays use <code style="font-size:10px">.collectionUi()</code>.</div>
+</div>
 
-When the agent works with users or orders, invoice rules aren't loaded. This is Context Tree-Shaking.
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(52,211,153,0.8);padding:3px 10px;border:1px solid rgba(52,211,153,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">LIMIT</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Cognitive Guardrails</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Truncate arrays before validation. Without this, 10,000 rows dump into the context window.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(245,158,11,0.8);padding:3px 10px;border:1px solid rgba(245,158,11,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">HATEOAS</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Affordances</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Data-driven next actions. No hallucinated tool names, no skipped workflows.</div>
+</div>
+
+</div>
 
 ### Context-Aware Rules {#context-aware-rules}
 
-Rules receive data and request context. Return `null` to exclude conditionally:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">dynamic rules — RBAC-aware</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
@@ -108,61 +182,22 @@ const InvoicePresenter = createPresenter('Invoice')
   ]);
 ```
 
-### UI Blocks {#ui-blocks}
+</div>
+</div>
 
-Presenters generate charts and visualizations the agent renders directly:
-
-```typescript
-import { definePresenter, ui } from '@vurb/core';
-
-export const InvoicePresenter = definePresenter({
-  name: 'Invoice',
-  schema: InvoiceModel,
-  ui: (invoice) => [
-    ui.echarts({
-      series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
-    }),
-  ],
-  collectionUi: (invoices) => [
-    ui.echarts({
-      xAxis: { data: invoices.map(i => i.id) },
-      series: [{ type: 'bar', data: invoices.map(i => i.amount_cents / 100) }],
-    }),
-    ui.summary(
-      `${invoices.length} invoices. Total: $${(invoices.reduce((s, i) => s + i.amount_cents, 0) / 100).toLocaleString()}`
-    ),
-  ],
-});
-```
-
-`.ui()` fires for single items. `.collectionUi()` fires for arrays. Auto-detected.
-
-### Cognitive Guardrails {#cognitive-guardrails}
-
-`.limit()` is the shorthand; `.agentLimit()` gives full control with a custom message:
-
-```typescript
-// Shorthand — auto-generated truncation message
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .limit(50);
-
-// Full control — custom truncation message
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .agentLimit(50, (omitted) =>
-    ui.summary(
-      `⚠️ Dataset truncated. Showing 50 of ${50 + omitted} invoices. ` +
-      `Use filters (status, date_range) to narrow results.`
-    )
-  );
-```
-
-Without this, 10,000 rows dump into the context window. With it, the agent receives 50 rows plus an instruction to refine.
+When the agent works with users or orders, invoice rules aren't loaded. This is **Context Tree-Shaking**.
 
 ### Affordances {#affordances}
 
-`.suggest()` with the `suggest()` helper tells the agent what it can do next based on state:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">HATEOAS — state-driven actions</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { createPresenter, suggest } from '@vurb/core';
@@ -171,20 +206,26 @@ const InvoicePresenter = createPresenter('Invoice')
   .schema(InvoiceModel)
   .suggest((invoice) => [
     suggest('billing.pay', 'Process immediate payment'),
-    invoice.status === 'pending'
-      ? suggest('billing.send_reminder', 'Send payment reminder')
-      : null,
     invoice.status === 'overdue'
       ? suggest('billing.escalate', 'Escalate to collections')
       : null,
   ].filter(Boolean));
 ```
 
-The agent receives `→ billing.pay: Process immediate payment` as a system hint. No hallucinated tool names, no skipped workflows.
+</div>
+</div>
 
-## Presenter Composition {#composition}
+## Composition {#composition}
 
-`.embed()` composes Presenters across relationships:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">nested Presenters</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const ClientPresenter = createPresenter('Client')
@@ -197,17 +238,24 @@ const InvoicePresenter = createPresenter('Invoice')
   .embed('client', ClientPresenter);
 ```
 
-`ClientPresenter`'s rules and UI blocks merge into the invoice response automatically. Define once — reuse in `InvoicePresenter`, `OrderPresenter`, `ContractPresenter`.
+</div>
+</div>
+
+`ClientPresenter`'s rules and UI blocks merge automatically. Define once — reuse across `InvoicePresenter`, `OrderPresenter`, `ContractPresenter`.
 
 ## Pipeline Integration {#pipeline}
 
-The `.returns()` method connects a Presenter to a tool. The handler returns raw data; the Presenter does everything else:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">tool + Presenter = MVA</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-import { initVurb } from '@vurb/core';
-
-const f = initVurb<AppContext>();
-
 const getInvoice = f.query('billing.get_invoice')
   .describe('Get an invoice by ID')
   .withString('invoice_id', 'The exact invoice ID')
@@ -220,9 +268,70 @@ const getInvoice = f.query('billing.get_invoice')
   });
 ```
 
+</div>
+</div>
+
 The handler (Model) produces raw data. The Presenter (View) shapes perception. The LLM (Agent) acts on structured context.
 
 > [!TIP]
-> The handler can return raw data directly — `FluentToolBuilder.handle()` auto-wraps non-`ToolResponse` returns with `success()`. No need to manually call `success()` when using `.returns()`.
+> The handler can return raw data directly — `FluentToolBuilder.handle()` auto-wraps non-`ToolResponse` returns with `success()`.
 
-For one-off responses that don't map to a reusable entity, use `response(data).uiBlock(...).systemRules([...]).build()` — see the [Presenter Guide](/presenter) for the `ResponseBuilder` API.
+---
+
+## Deep Dives {#deep-dives}
+
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
+
+<a href="/mva/" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">OVERVIEW</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">MVA At a Glance</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Visual overview of the MVA flow.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/mva/theory" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">THEORY</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Theory & Axioms</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Formal axioms behind the pattern.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/mva/mva-vs-mvc" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(239,68,68,0.5);letter-spacing:2px;font-weight:600">COMPARISON</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">MVA vs MVC</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Why MVC doesn't work for agents.</div>
+<span style="font-size:10px;color:rgba(239,68,68,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 32px">
+
+<a href="/comparison" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">CODE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Side-by-Side</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Code comparison with raw MCP SDK.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/architecture" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">INTERNALS</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Architecture</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Registry, pipeline, compilation details.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/mva-convention" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">CONVENTION</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">MVA Convention</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">File and folder conventions.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>
+
+### Cookbook Recipes
+
+- [MVA Presenter](/cookbook/mva-presenter) · [Presenter Composition](/cookbook/presenter-composition) · [Custom Responses](/cookbook/custom-responses)
+- [Context-Aware Rules](/cookbook/context-aware-rules) · [Context Tree-Shaking](/cookbook/context-tree-shaking) · [Agentic Affordances](/cookbook/agentic-affordances)

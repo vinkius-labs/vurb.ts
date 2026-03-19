@@ -4,10 +4,24 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-MCP Prompts are server-side templates that return structured messages — instructions, fetched data, domain rules — as a ready-to-use array. Clients expose them as slash commands. The Prompt Engine is opt-in: skip the `prompts` option on `attachToServer()` and nothing runs.
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create a prompt called 'incident_analysis' with auth middleware, Zod-typed args (incident_id, severity enum), and a handler that fetches from the database and seeds a structured SRE analysis."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Prompt arguments must be **flat primitives** (string, number, boolean, enum). MCP clients render them as form controls — a nested object can't become a text field. The engine enforces this at definition time.
+---
 
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(34,211,238,0.6);letter-spacing:3px;font-weight:700">SERVER-SIDE TEMPLATES</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Slash commands for agents.<br><span style="color:rgba(255,255,255,0.25)">Data-hydrated, middleware-secured.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">MCP Prompts return structured messages — instructions, fetched data, domain rules — as a ready-to-use array. Clients expose them as slash commands. The Prompt Engine is opt-in.</div>
+</div>
+
+Prompt arguments must be **flat primitives** (string, number, boolean, enum). MCP clients render them as form controls — the engine enforces this at definition time.
 ## Defining a Prompt — Fluent Builder (Recommended) {#fluent}
 
 The Fluent Prompt Builder provides a chainable API that mirrors the Fluent Tool Builder. Use `f.prompt(name)` (no config object) to start the chain:

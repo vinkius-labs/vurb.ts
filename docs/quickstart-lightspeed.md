@@ -1,17 +1,53 @@
 # Quickstart — Lightspeed
 
-From zero to a running MCP server in under 30 seconds. The CLI scaffolds a production-ready project with `autoDiscover()` file-based routing, typed context, Presenters, middleware, testing, and pre-configured connections for Cursor, Claude Desktop, and Claude Code — no boilerplate.
+---
 
-::: tip Skip the scaffold — let your AI agent build it
-Vurb.ts ships a **[SKILL.md](https://agentskills.io)** — a machine-readable architectural contract your AI coding agent can ingest. Instead of following this guide manually, point your agent at the spec and prompt:
+<!-- Editorial break: Hero -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">ZERO TO PRODUCTION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Scaffold. Build. Deploy.<br><span style="color:rgba(255,255,255,0.25)">The framework for the AI era.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">From an empty directory to a live MCP server on Vinkius Cloud in under 40 seconds — with DLP, kill switch, and audit trail. You define the architecture. Your AI agent writes the code.</div>
+</div>
 
-```
-"Create an MCP server for invoice management with Presenters,
- PII redaction on customer_ssn, and middleware auth."
-```
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Scaffold a Vurb MCP server with a health tool, Presenter, and PII redaction — then deploy it to Vinkius Cloud."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-The agent produces idiomatic Vurb.ts — correct file-based routing, typed Presenters, `.redactPII()` paths, middleware chains — on the first pass. Works with Cursor, Claude Code, GitHub Copilot, Windsurf, and Cline.
-:::
+---
+
+<!-- Editorial break: SKILL.md -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:3px;font-weight:700">AI-FIRST DEVELOPMENT</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">You are the architect.<br><span style="color:rgba(255,255,255,0.25)">The AI writes the code.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Vurb.ts ships a <strong style="color:rgba(192,132,252,0.8)">SKILL.md</strong> — a machine-readable architectural contract your AI coding agent can ingest. Point Cursor, Claude Code, Copilot, or Windsurf at the spec and prompt what you need.</div>
+</div>
+
+<!-- Feature Grid: SKILL.md power -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:32px 0">
+
+<div style="border:1px solid rgba(192,132,252,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(192,132,252,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">What you say</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;font-family:Inter,sans-serif;font-style:italic">"Create an MCP server for invoice management with Presenters, PII redaction on customer_ssn, and middleware auth."</div>
+</div>
+
+<div style="border:1px solid rgba(52,211,153,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(52,211,153,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">What the AI produces</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;font-family:Inter,sans-serif">Idiomatic Vurb.ts — correct file-based routing, typed Presenters, <code style="font-size:10px">.redactPII()</code> paths, middleware chains — on the first pass.</div>
+</div>
+
+</div>
+
+The SKILL.md teaches the AI the entire framework architecture — MVA pattern, Presenter rules, middleware composition, file conventions.  Your job is to **define what your server does**. The AI's job is to **write the code that does it**. Works with Cursor, Claude Code, GitHub Copilot, Windsurf, and Cline.
+
+> [!TIP]
+> Explore more at [agentskills.io](https://agentskills.io) — the Agent Skills ecosystem for distributing domain expertise to AI agents.
+
+---
 
 ## Prerequisites {#prerequisites}
 
@@ -22,54 +58,198 @@ npm install @vurb/core @modelcontextprotocol/sdk zod
 ```
 
 ::: tip Already using a project?
-If you're adding Vurb.ts to an existing Node.js project, the install above is all you need — then skip to [Building Tools](/building-tools).
+If you're adding Vurb.ts to an existing Node.js project — skip to [Building Tools](/building-tools).
 :::
 
-## Scaffold {#scaffold}
+## From Zero to Live {#scaffold}
 
-The CLI creates a complete project with all dependencies pre-installed:
+Four commands. Under 40 seconds. Your MCP server on Vinkius Cloud's global edge.
+
+<!-- Numbered steps -->
+<div style="margin:32px 0">
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(52,211,153,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">01</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Scaffold</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">terminal</span>
+</div>
+<div style="padding:12px">
 
 ```bash
 vurb create my-server
 ```
 
-The interactive wizard runs:
+</div>
+</div>
+</div>
+</div>
 
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(129,140,248,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">02</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Develop locally</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">terminal</span>
+</div>
+<div style="padding:12px">
+
+```bash
+cd my-server
+vurb dev
 ```
-  Project name?  (my-mcp-server) › my-server
-  Transport?     [stdio, sse]    › stdio
-  Vector?        [vanilla, prisma, n8n, openapi, oauth] › vanilla
-  Include testing?               › yes
 
-  ● Scaffolding project — 14 files (6ms)
-  ● Installing dependencies...
-  ✔ Done
+</div>
+</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:8px;line-height:1.6;font-family:Inter,sans-serif">HMR — edit any tool, middleware, or Presenter and the server reloads instantly.</div>
+</div>
+</div>
 
-  $ cd my-server
-  $ Vurb.ts dev
-  $ npm test
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(34,211,238,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">03</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Test</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">terminal</span>
+</div>
+<div style="padding:12px">
+
+```bash
+npm test
 ```
 
-Skip the wizard with `--yes` for defaults, or pass flags directly. For example, if you want to give Claude Desktop or Cursor secure access to your database, you can automatically generate a **Postgres SQL Agent MCP** through Prisma schemas without risking raw SQL injection vulnerabilities:
+</div>
+</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:8px;line-height:1.6;font-family:Inter,sans-serif">In-memory harness — no transport, no network. All tests pass from scaffold.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;padding:20px 24px;border-left:2px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(245,158,11,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">04</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Deploy to Vinkius Cloud</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">terminal</span>
+</div>
+<div style="padding:12px">
+
+```bash
+vurb deploy
+```
+
+</div>
+</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:8px;line-height:1.6;font-family:Inter,sans-serif">Global edge. DLP redaction, V8 sandbox, rate limiting, kill switch, audit trail — all built in. Share the connection token with any MCP client.</div>
+</div>
+</div>
+
+</div>
+
+That's it. **Four commands. Your server is live.** Skip the wizard with `--yes` for defaults:
 
 ```bash
 vurb create my-api --vector prisma --transport sse --yes
 ```
 
-> **Pro-Tip**: `--vector prisma` is the fastest way to bridge **Prisma to MCP**. The Presenter's schema acts as a whitelist — internal columns like `password_hash` or `ssn` are stripped before they ever reach the LLM context window.
+> **Pro-Tip**: `--vector prisma` is the fastest way to bridge **Prisma to MCP**. The Presenter's schema strips internal columns before they ever reach the LLM.
 
-## What you get {#structure}
+### What Just Happened {#what-just-happened}
+
+When you ran `vurb deploy`, Vinkius Cloud activated **8 security layers** — automatically:
+
+<!-- Security grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:24px 0">
+
+<div style="border:1px solid rgba(52,211,153,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🛡️</div>
+<div style="font-size:10px;color:rgba(52,211,153,0.7);font-weight:600;font-family:Inter,sans-serif">DLP Engine</div>
+</div>
+
+<div style="border:1px solid rgba(129,140,248,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🔒</div>
+<div style="font-size:10px;color:rgba(129,140,248,0.7);font-weight:600;font-family:Inter,sans-serif">V8 Sandbox</div>
+</div>
+
+<div style="border:1px solid rgba(245,158,11,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">⚡</div>
+<div style="font-size:10px;color:rgba(245,158,11,0.7);font-weight:600;font-family:Inter,sans-serif">Rate Limiter</div>
+</div>
+
+<div style="border:1px solid rgba(239,68,68,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🚨</div>
+<div style="font-size:10px;color:rgba(239,68,68,0.7);font-weight:600;font-family:Inter,sans-serif">Kill Switch</div>
+</div>
+
+<div style="border:1px solid rgba(34,211,238,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">📋</div>
+<div style="font-size:10px;color:rgba(34,211,238,0.7);font-weight:600;font-family:Inter,sans-serif">Audit Trail</div>
+</div>
+
+<div style="border:1px solid rgba(192,132,252,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🧱</div>
+<div style="font-size:10px;color:rgba(192,132,252,0.7);font-weight:600;font-family:Inter,sans-serif">Egress Firewall</div>
+</div>
+
+<div style="border:1px solid rgba(52,211,153,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🔄</div>
+<div style="font-size:10px;color:rgba(52,211,153,0.7);font-weight:600;font-family:Inter,sans-serif">Circuit Breaker</div>
+</div>
+
+<div style="border:1px solid rgba(245,158,11,0.15);border-radius:8px;background:#09090f;padding:14px 16px;text-align:center">
+<div style="font-size:14px;margin-bottom:4px">🔐</div>
+<div style="font-size:10px;color:rgba(245,158,11,0.7);font-weight:600;font-family:Inter,sans-serif">Token Auth</div>
+</div>
+
+</div>
+
+> [!TIP]
+> Vurb blocks PII locally by default. Need compliance proof (SOC2/GDPR/HIPAA)? [Connect to Vinkius Cloud for tamper-proof Audit Logs →](https://docs.vinkius.com/getting-started)
+
+### Zero-Friction AI Integration {#skill-injection}
+
+`vurb create` auto-injects SKILL.md into your IDE's rule files — `.cursorrules`, `.windsurfrules`, `.clinerules`. **The moment you scaffold, your IDE becomes a framework-expert architect.** No manual setup.
+
+---
+
+## What You Get {#structure}
+
+<!-- Code screen: Project structure -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">project structure</span>
+</div>
+<div style="padding:20px">
 
 ```text
 my-server/
 ├── src/
-│   ├── vurb.ts          # initVurb<AppContext>()
-│   ├── context.ts         # AppContext type + factory
-│   ├── server.ts          # Bootstrap with autoDiscover
+│   ├── vurb.ts            # initVurb<AppContext>()
+│   ├── context.ts           # AppContext type + factory
+│   ├── server.ts            # Bootstrap with autoDiscover
 │   ├── tools/
 │   │   └── system/
-│   │       ├── health.ts  # Health check with Presenter
-│   │       └── echo.ts    # Echo for connectivity testing
+│   │       ├── health.ts    # Health check with Presenter
+│   │       └── echo.ts      # Connectivity test
 │   ├── presenters/
 │   │   └── SystemPresenter.ts
 │   ├── prompts/
@@ -79,33 +259,46 @@ my-server/
 ├── tests/
 │   ├── setup.ts
 │   └── system.test.ts
-├── .cursor/mcp.json       # Pre-configured for Cursor
-├── .env.example
+├── .cursor/mcp.json         # Pre-configured for Cursor
+├── .cursorrules             # SKILL.md → Cursor rules (auto-generated)
+├── .windsurfrules           # SKILL.md → Windsurf rules (auto-generated)
+├── SKILL.md                 # AI architectural contract
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
 ```
 
-Every file is real code — not stubs. The server boots, the tests pass, Cursor connects.
+</div>
+</div>
 
-## Run & Connect {#run}
+Every file is real code — not stubs. The server boots, the tests pass, Cursor connects. **Your AI agent already knows the conventions** — SKILL.md is injected into IDE rules automatically.
 
-```bash
-cd my-server
-Vurb.ts dev
-```
+---
 
-The server starts on stdio. Connect it to your MCP client:
+## Connect Your MCP Client {#run}
 
-### Cursor — Zero-Click Integration
+<!-- Feature Grid: Client configs -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-Already configured. The CLI generates `.cursor/mcp.json` automatically — open the project in Cursor and the MCP connection is live. No manual setup, no config editing. This is the fastest path from scaffold to working MCP server.
+<div style="border:1px solid rgba(52,211,153,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(52,211,153,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Cursor</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Zero-click. CLI generates <code style="font-size:10px">.cursor/mcp.json</code> automatically.</div>
+</div>
 
-### Claude Desktop
+<div style="border:1px solid rgba(129,140,248,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(129,140,248,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Claude Desktop</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Add to <code style="font-size:10px">claude_desktop_config.json</code></div>
+</div>
 
-Add to your `claude_desktop_config.json`:
+<div style="border:1px solid rgba(34,211,238,0.15);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:rgba(34,211,238,0.8);font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Claude Code</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif"><code style="font-size:10px">claude mcp add my-server npx tsx src/server.ts</code></div>
+</div>
 
-```json
+</div>
+
+::: code-group
+```json [Claude Desktop]
 {
   "mcpServers": {
     "my-server": {
@@ -115,48 +308,7 @@ Add to your `claude_desktop_config.json`:
   }
 }
 ```
-
-### Claude Code
-
-```bash
-claude mcp add my-server npx tsx src/server.ts
-```
-
-### Windsurf
-
-Add to your Windsurf MCP config (`~/.codeium/windsurf/mcp_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "npx",
-      "args": ["tsx", "src/server.ts"]
-    }
-  }
-}
-```
-
-### Cline (VS Code Extension)
-
-Add via Cline's MCP settings in VS Code — `cline_mcp_settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "npx",
-      "args": ["tsx", "src/server.ts"]
-    }
-  }
-}
-```
-
-### VS Code + GitHub Copilot
-
-Add to your `.vscode/mcp.json`:
-
-```json
+```json [VS Code + Copilot]
 {
   "servers": {
     "my-server": {
@@ -166,40 +318,66 @@ Add to your `.vscode/mcp.json`:
   }
 }
 ```
-
-### SSE transport
-
-For network-accessible servers (multi-client, remote deployment):
-
-```bash
-vurb create my-api --transport sse
-cd my-api
-Vurb.ts dev
-# Server running on http://localhost:3001/sse
+```json [Windsurf / Cline]
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["tsx", "src/server.ts"]
+    }
+  }
+}
 ```
+:::
 
-## autoDiscover — file-based routing {#autodiscover}
+For SSE transport (multi-client, remote): `vurb create my-api --transport sse`
 
-This is the scaffolded project's superpower. No `index.ts` with 50 imports. No manual `registry.register()` calls. Drop a file in `src/tools/` and it's a live MCP tool.
+---
 
-### How it works
+<!-- Editorial break: autoDiscover -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">FILE-BASED ROUTING</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Drop a file. It's a tool.<br><span style="color:rgba(255,255,255,0.25)">No imports, no registration.</span></div>
+</div>
 
-The generated `server.ts` calls `autoDiscover()` at startup:
+## autoDiscover {#autodiscover}
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">src/server.ts — scaffolded</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-// src/server.ts (scaffolded)
 import { ToolRegistry, autoDiscover } from '@vurb/core';
 
 const registry = f.registry();
-const discovered = await autoDiscover(registry, new URL('./tools', import.meta.url).pathname);
+const discovered = await autoDiscover(
+  registry,
+  new URL('./tools', import.meta.url).pathname
+);
 console.error(`📦 Discovered ${discovered.length} tool file(s)`);
 ```
 
-`autoDiscover` scans the entire `src/tools/` tree, imports every `.ts`/`.js` file, extracts the tool builder, and registers it. `.test.ts`, `.spec.ts`, and `.d.ts` files are skipped automatically.
+</div>
+</div>
 
-### Naming convention
+Directory structure becomes tool namespace:
 
-The directory structure becomes the tool namespace:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">naming convention</span>
+</div>
+<div style="padding:20px">
 
 ```text
 src/tools/
@@ -213,22 +391,28 @@ src/tools/
     └── health.ts         → system.health
 ```
 
-The tool's `name` field in the code is the source of truth — the directory just groups related files. Git diffs stay clean because adding a tool never touches a shared import file.
+</div>
+</div>
 
-### Export resolution
-
-`autoDiscover` resolves exports in priority order:
+### Export Resolution
 
 | Priority | What it looks for | Example |
-|----------|-------------------|---------|
+|:-:|---|---|
 | 1 | `export default` | `export default f.query('weather.get').handle(...)` |
-| 2 | Named `tool` export | `export const tool = f.query('weather.get').handle(...)` |
-| 3 | Any exported builder | Scans all exports for objects with `getName()` |
+| 2 | Named `tool` export | `export const tool = f.query(...)` |
+| 3 | Any exported builder | Scans all exports for `getName()` |
 
-The recommended pattern is `export default`:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">src/tools/weather/get.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-// src/tools/weather/get.ts
 import { f } from '../../vurb.js';
 
 export default f.query('weather.get')
@@ -239,87 +423,41 @@ export default f.query('weather.get')
   });
 ```
 
-Restart the dev server. `weather_get` is now callable by any MCP client.
+</div>
+</div>
 
-### Multiple tools in one file
+Multiple tools per file work too — all exported builders are discovered (Priority 3).
 
-Priority 3 enables exporting multiple tools from a single file:
-
-```typescript
-// src/tools/billing/crud.ts
-import { f } from '../../vurb.js';
-
-export const listInvoices = f.query('billing.list_invoices')
-  .describe('List all invoices')
-  .handle(async () => ({ invoices: [] }));
-
-export const createInvoice = f.mutation('billing.create_invoice')
-  .describe('Create an invoice')
-  .withNumber('amount', 'Invoice amount')
-  .handle(async (input) => ({ id: 'inv_1', amount: input.amount }));
-```
-
-Both tools are discovered and registered — no extra wiring.
-
-### Advanced options
-
-`autoDiscover` accepts an options object for fine-grained control:
-
-```typescript
-await autoDiscover(registry, './src/tools', {
-  pattern: /\.tool\.ts$/,   // only files ending in .tool.ts
-  recursive: true,          // scan subdirectories (default: true)
-  loader: 'esm',            // 'esm' (default) or 'cjs'
-  resolve: (mod) => {       // custom export resolver
-    return mod.myTool as ToolBuilderLike;
-  },
-});
-```
+### Advanced Options
 
 | Option | Default | Description |
-|--------|---------|-------------|
-| `pattern` | `/\.(ts\|js\|mjs\|mts)$/` | Regex filter for file names |
+|---|---|---|
+| `pattern` | `/(ts\|js\|mjs)$/` | Regex filter for file names |
 | `recursive` | `true` | Scan subdirectories |
-| `loader` | `'esm'` | Module system — `'esm'` uses `import()`, `'cjs'` uses `require()` |
-| `resolve` | Priority cascade (default → tool → any) | Custom function to extract builders from module exports |
+| `loader` | `'esm'` | Module system (`'esm'` or `'cjs'`) |
+| `resolve` | Priority cascade | Custom export resolver |
 
-## Test {#test}
-
-The scaffolded project includes Vitest with a system test that verifies tool registration:
-
-```bash
-npm test
-```
-
-The test harness uses `MVA_META_SYMBOL` to call tools in-memory — no transport layer, no network. Add your own:
-
-```typescript
-// tests/weather.test.ts
-import { describe, it, expect } from 'vitest';
-import { ToolRegistry, autoDiscover } from '@vurb/core';
-
-describe('weather.get', () => {
-  it('returns temperature for a city', async () => {
-    const registry = new ToolRegistry();
-    await autoDiscover(registry, new URL('../src/tools', import.meta.url).pathname);
-
-    const result = await registry.callTool('weather_get', { city: 'Tokyo' });
-    expect(result.content[0].text).toContain('Tokyo');
-  });
-});
-```
+---
 
 ## Vectors {#vectors}
 
-The `--vector` flag changes what gets scaffolded:
-
 | Vector | What it adds |
 |---|---|
-| `vanilla` | `autoDiscover()` file-based routing. Zero external deps |
-| `prisma` | `prisma/schema.prisma` + DB tool stubs + `@vurb/prisma-gen` generator |
-| `n8n` | `src/n8n.ts` — `N8nConnector` auto-discovers webhook workflows as MCP tools |
-| `openapi` | `openapi.yaml` + `SETUP.md` — generates Models/Views/Agents from spec |
-| `oauth` | `src/auth.ts` + `src/middleware/auth.ts` — RFC 8628 Device Flow with `requireAuth()` |
+| `vanilla` | `autoDiscover()` file routing. Zero deps |
+| `prisma` | Prisma schema + DB tool stubs + `@vurb/prisma-gen` |
+| `n8n` | `N8nConnector` — n8n workflows as MCP tools |
+| `openapi` | OpenAPI spec → Models/Views/Agents |
+| `oauth` | RFC 8628 Device Flow + `requireAuth()` |
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">different scaffolds</span>
+</div>
+<div style="padding:12px">
 
 ```bash
 # Database-driven MCP server
@@ -332,68 +470,102 @@ vurb create ops-bridge --vector n8n
 vurb create secure-api --vector oauth
 ```
 
+</div>
+</div>
+
 Each vector adds its dependencies to `package.json` and environment variables to `.env.example` automatically.
 
-## Next steps {#next}
+---
 
-| What | Where |
-|---|---|
-| Understand tool definitions, annotations, Zod schemas | [Building Tools](/building-tools) |
-| Shape what the LLM sees with Presenters | [Presenter Guide](/presenter) |
-| Add auth, rate limiting, logging | [Middleware](/middleware) |
-| Register prompts and dynamic manifests | [Prompt Engine](/prompts) |
-| Run the full test harness | [Testing](/testing) |
-| Lock your capability surface | [Capability Governance](/governance/) |
-| Manual setup without the CLI | [Quickstart — Traditional](/quickstart) |
+<!-- Editorial break: Self-hosted -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(34,211,238,0.6);letter-spacing:3px;font-weight:700">SELF-HOSTED</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Prefer your own infra?<br><span style="color:rgba(255,255,255,0.25)">Same code, any runtime.</span></div>
+</div>
 
-## Go Live {#go-live}
+## Self-Hosted Alternatives {#self-hosted}
 
-Your server runs locally over Stdio. To deploy it globally with built-in security, DLP, FinOps, and audit logging — use Vinkius Cloud.
+<!-- Deploy cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-### Vinkius Cloud — One Command Deploy
+<a href="https://docs.vinkius.com/getting-started" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">MANAGED</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Vinkius Cloud</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif"><code style="font-size:10px">vurb deploy</code> — global edge, DLP, kill switch.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Learn more →</span>
+</a>
 
-Deploy your MCP server to Vinkius Cloud's global edge with a single command. Your server gets DLP protection, kill switch, audit logging, and a managed MCP token — no infrastructure to manage.
+<a href="/vercel-adapter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">VERCEL</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Vercel Edge</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Next.js App Router — one line of code.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read guide →</span>
+</a>
 
-```bash
-vurb deploy
-```
+<a href="/cloudflare-adapter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">CLOUDFLARE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Cloudflare Workers</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Edge-native with D1, KV, and R2.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read guide →</span>
+</a>
 
-That's it. The CLI packages your server, deploys it to Vinkius Cloud, and returns a connection token. Share the token with any MCP client — Claude Desktop, Cursor, VS Code, Windsurf — and they connect instantly.
-
-```bash
-# Deploy with a custom server name
-vurb deploy --name my-weather-api
-
-# Deploy to a specific environment
-vurb deploy --env production
-```
-
-Every deployment is protected by eight layers of security out of the box: DLP redaction, V8 sandbox, rate limiting, credential vault, SSRF protection, kill switch, and full audit trail. [Learn more about Vinkius Cloud →](https://docs.vinkius.com/getting-started)
+</div>
 
 > [!TIP]
-> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your deployed servers directly from VS Code, Cursor, or Windsurf — live connections, logs, token management, and tool toggling without leaving your IDE.
+> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor servers from VS Code, Cursor, or Windsurf — live connections, logs, and tool toggling.
 
-### Self-Hosted Alternatives
+---
 
-If you prefer to self-host, drop your registry into Vercel or Cloudflare Workers. Both adapters bridge MCP's long-lived process model and serverless runtimes — registry compilation is cached at cold start, warm requests execute with near-zero overhead.
+## Next Steps {#next}
 
-#### Vercel — Next.js Edge Deployment
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-```typescript
-// app/api/mcp/route.ts
-import { vercelAdapter } from '@vurb/vercel';
+<a href="/building-tools" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">BUILD</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Building Tools</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Semantic verbs, parameters, annotations.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-export const POST = vercelAdapter({ registry, contextFactory });
-export const runtime = 'edge'; // optional — global edge distribution
-```
+<a href="/presenter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">VIEW</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Presenter</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Shape what the LLM sees.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-#### Cloudflare Workers — D1 & KV at the Edge
+<a href="/middleware" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">GUARD</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Middleware</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Auth, rate limiting, logging.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-```typescript
-// src/worker.ts
-import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
+</div>
 
-export default cloudflareWorkersAdapter({ registry, contextFactory });
-```
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 32px">
 
-Full guides: [Vercel Adapter](/vercel-adapter) · [Cloudflare Adapter](/cloudflare-adapter) · [Production Server](/cookbook/production-server)
+<a href="/testing" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">TESTING</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Test Harness</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">In-memory tool assertions.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/governance/" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(239,68,68,0.5);letter-spacing:2px;font-weight:600">GOVERNANCE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Capability Lockfile</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Lock your capability surface.</div>
+<span style="font-size:10px;color:rgba(239,68,68,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/quickstart" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">MANUAL</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Traditional Setup</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Step-by-step without scaffolding.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>

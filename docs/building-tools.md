@@ -4,26 +4,34 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Introduction](#introduction)
-- [Context Setup](#context)
-- [Semantic Verbs](#verbs)
-- [Parameter Declaration](#params)
-- [AI Instructions](#instructions)
-- [Semantic Overrides & Annotations](#annotations)
-- [Connecting a Presenter](#presenter)
-- [Middleware — Context Derivation](#middleware)
-- [State Sync — Cache & Invalidation](#state-sync)
-- [Runtime Guards](#runtime-guards)
-- [Streaming Progress](#streaming)
-- [Registering & Serving](#register)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create a query tool with Zod validation, runtime guards, semantic verb annotations, and a Presenter for the response schema."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-## Introduction {#introduction}
+---
 
-Most MCP servers force you to define tools via giant, nested JSON schemas or tangled Zod objects. A 10-line query requires 40 lines of boilerplate — hand-written schemas, manual parameter validation, explicit `success()` wrapping, and disconnected error handling. The result is code that nobody enjoys reading or maintaining.
+<!-- Editorial break: The problem -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(34,211,238,0.6);letter-spacing:3px;font-weight:700">FLUENT API</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Declare intent, not infrastructure.<br><span style="color:rgba(255,255,255,0.25)">Schema, validation, types — all automatic.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Semantic verbs, chainable builders, and a terminal <code style="font-size:12px;color:rgba(34,211,238,0.6);background:rgba(34,211,238,0.06);padding:1px 5px;border-radius:3px">.handle()</code>. Your AI agent produces this from SKILL.md — works with every MCP client.</div>
+</div>
 
-Vurb.ts's **Fluent API** eliminates all of that. You declare what your tool does, what it needs, and how it behaves — through semantic verbs, chainable builder methods, and a terminal `.handle()`. The framework handles schema generation, validation, response wrapping, and type inference automatically.
+## Quick Example {#introduction}
 
-The tools you build work with every MCP client — Cursor, Claude Desktop, Claude Code, Windsurf, Cline, VS Code with Copilot — and deploy unchanged to [Vercel](/vercel-adapter) or [Cloudflare Workers](/cloudflare-adapter).
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">agents/tasks.tool.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { initVurb } from '@vurb/core';
@@ -47,14 +55,26 @@ export const listTasks = f.query('tasks.list')
   });
 ```
 
-Everything — `input.status`, `ctx.db`, `ctx.tenantId` — is fully typed, zero annotations. The handler just returns raw data; the framework wraps it with `success()` automatically.
+</div>
+</div>
+
+Everything — `input.status`, `ctx.db`, `ctx.tenantId` — is fully typed, zero annotations. The handler returns raw data; the framework wraps it with `success()` automatically.
 
 ## Context Setup {#context}
 
-Before building tools, define the **application context** — the shared state every handler receives. Pass a generic to `initVurb()` and store the result in a shared file:
+Define the shared state every handler receives. Pass a generic to `initVurb()` and import `f` across all tool files:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">src/vurb.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-// src/vurb.ts
 import { initVurb } from '@vurb/core';
 
 interface AppContext {
@@ -66,12 +86,32 @@ interface AppContext {
 export const f = initVurb<AppContext>();
 ```
 
+</div>
+</div>
+
 > [!TIP]
-> Import `f` across all your tool files. The generic parameter flows through every builder, middleware, and Presenter — zero annotations needed downstream.
+> The generic parameter flows through every builder, middleware, and Presenter — zero annotations needed downstream.
+
+---
+
+<!-- Editorial break: Semantic Verbs -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">SEMANTIC VERBS</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Query. Action. Mutation.<br><span style="color:rgba(255,255,255,0.25)">The LLM knows the intent.</span></div>
+</div>
 
 ## Semantic Verbs {#verbs}
 
-Every tool starts with a **semantic verb** that tells the LLM (and your team) what kind of operation it is:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">three verbs, three intentions</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 // ── Query: Read-only, no side effects ──────────────────
@@ -79,52 +119,63 @@ const listUsers = f.query('users.list')
   .describe('List all users in the workspace')
   .handle(async (input, ctx) => { /* ... */ });
 
-// ── Action: Creates or updates data (reversible) ────────
+// ── Action: Creates or updates data (reversible) ───────
 const createUser = f.action('users.create')
   .describe('Create a new user in the workspace')
   .withString('email', 'User email address')
   .handle(async (input, ctx) => { /* ... */ });
 
-// ── Mutation: Destructive, irreversible ─────────────────
+// ── Mutation: Destructive, irreversible ────────────────
 const deleteUser = f.mutation('users.delete')
   .describe('Permanently delete a user and all their data')
   .withString('id', 'User ID to delete')
   .handle(async (input, ctx) => { /* ... */ });
 ```
 
-The LLM sees these annotations in tool descriptions: `f.query()` adds `[READ-ONLY]`, `f.mutation()` adds `[DESTRUCTIVE]`. MCP clients like Claude Desktop read the annotations and show confirmation dialogs before destructive operations — no prompt engineering needed.
+</div>
+</div>
 
 | Verb | MCP Annotations | When to Use |
 |---|---|---|
-| `f.query()` | `readOnly: true`, `destructive: false` | Fetching data — lists, searches, lookups |
-| `f.action()` | Neutral (no flags) | Creating or updating data — reversible side effects |
-| `f.mutation()` | `destructive: true` | Deleting, purging, revoking — irreversible changes |
+| `f.query()` | `readOnly: true` | Fetching data — lists, searches, lookups |
+| `f.action()` | Neutral (no flags) | Creating or updating — reversible side effects |
+| `f.mutation()` | `destructive: true` | Deleting, purging, revoking — irreversible |
+
+MCP clients like Claude Desktop read these annotations and show confirmation dialogs before destructive operations — no prompt engineering needed.
 
 ## Parameter Declaration {#params}
 
-Use chainable `with*()` methods instead of Zod schemas. Every method generates a proper JSON Schema under the hood:
+Chainable `with*()` methods replace Zod schemas. Every method generates proper JSON Schema under the hood:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">parameter declaration</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const semanticSearch = f.query('search.semantic')
   .describe('Search across workspace using embeddings')
   .withString('query', 'The natural language search term')
-  .withOptionalNumber('limit', 'Maximum number of results to return')
+  .withOptionalNumber('limit', 'Maximum results to return')
   .withOptionalEnum('priority', ['high', 'low', 'medium'] as const, 'Filter by priority')
-  .withOptionalArray('tags', 'string', 'Filter items by tags')
-  .withOptionalBoolean('active_only', 'Only search active items')
+  .withOptionalArray('tags', 'string', 'Filter by tags')
+  .withOptionalBoolean('active_only', 'Only active items')
   .handle(async (input, ctx) => {
     // input.query: string          ← required
     // input.limit: number | undefined  ← optional
-    // input.priority: 'high' | 'low' | 'medium' | undefined
-    // input.tags: string[] | undefined
-    // input.active_only: boolean | undefined
   });
 ```
 
-### Available `with*()` Methods
+</div>
+</div>
 
 | Method | Required | TypeScript Type |
-|--------|----------|-----------------|
+|---|:-:|---|
 | `.withString(name, desc)` | ✅ | `string` |
 | `.withOptionalString(name, desc)` | ❌ | `string \| undefined` |
 | `.withNumber(name, desc)` | ✅ | `number` |
@@ -132,13 +183,23 @@ const semanticSearch = f.query('search.semantic')
 | `.withBoolean(name, desc)` | ✅ | `boolean` |
 | `.withOptionalBoolean(name, desc)` | ❌ | `boolean \| undefined` |
 | `.withEnum(name, values, desc)` | ✅ | Union of values |
-| `.withOptionalEnum(name, values, desc)` | ❌ | Union of values \| undefined |
+| `.withOptionalEnum(name, values, desc)` | ❌ | Union \| undefined |
 | `.withArray(name, type, desc)` | ✅ | `T[]` |
 | `.withOptionalArray(name, type, desc)` | ❌ | `T[] \| undefined` |
 
-### Bulk Parameter Declaration <Badge type="tip" text="v3.5.0" />
+### Bulk Parameters <Badge type="tip" text="v3.5.0" />
 
-When a tool has many parameters of the same type, use the **plural** bulk variants. Each accepts a `Record<string, string>` where keys are parameter names and values are descriptions — zero repetition:
+When a tool has many parameters of the same type, bulk variants accept a `Record<string, string>`:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">bulk declaration — zero repetition</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const filterTasks = f.query('tasks.filter')
@@ -150,73 +211,37 @@ const filterTasks = f.query('tasks.filter')
   .withOptionalStrings({
     title:    'Filter by title (partial match)',
     workflow: 'Column name (e.g. "In Progress")',
-    labels:   'Comma-separated label names',
-    type:     'Task type (e.g. "Bug", "Feature")',
   })
   .withOptionalBooleans({
     is_blocker: 'Only blockers',
-    is_bug:     'Only bugs',
     unassigned: 'Only unassigned tasks',
   })
-  .withOptionalNumbers({
-    per_page: 'Results per page (default: 50)',
-  })
-  .withOptionalEnums({
-    priority: [['low', 'medium', 'high', 'critical'], 'Priority level'],
-  })
   .handle(async (input, ctx) => {
-    // All fields are fully typed ✅
-    // input.company_slug: string
-    // input.title?: string | undefined
-    // input.is_blocker?: boolean | undefined
-    // input.per_page?: number | undefined
-    // input.priority?: 'low' | 'medium' | 'high' | 'critical' | undefined
+    // All fields fully typed ✅
   });
 ```
 
-| Bulk Method | Singular Equivalent |
-|---|---|
-| `.withStrings({ ... })` | Multiple `.withString()` |
-| `.withOptionalStrings({ ... })` | Multiple `.withOptionalString()` |
-| `.withNumbers({ ... })` | Multiple `.withNumber()` |
-| `.withOptionalNumbers({ ... })` | Multiple `.withOptionalNumber()` |
-| `.withBooleans({ ... })` | Multiple `.withBoolean()` |
-| `.withOptionalBooleans({ ... })` | Multiple `.withOptionalBoolean()` |
-| `.withEnums({ k: [values, desc?] })` | Multiple `.withEnum()` |
-| `.withOptionalEnums({ k: [values, desc?] })` | Multiple `.withOptionalEnum()` |
-| `.withArrays(itemType, { ... })` | Multiple `.withArray()` |
-| `.withOptionalArrays(itemType, { ... })` | Multiple `.withOptionalArray()` |
+</div>
+</div>
 
 > [!TIP]
 > Mix singular and bulk methods freely. Use singular for one-off required fields and bulk for groups of optional filters.
 
 ### Model-Driven Parameters <Badge type="tip" text="v3.6.0" /> {#from-model}
 
-When a tool's input fields map to a domain entity, use `.fromModel()` instead of listing parameters manually. The method reads the Model's `fillable` profile and generates the correct Zod schema — required fields for `create`, all-optional for `update`, optional for `filter`:
+When input fields map to a domain entity, `.fromModel()` reads the Model's `fillable` profile and generates the schema:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">model-driven params</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-import { defineModel, initVurb } from '@vurb/core';
-
-const TaskModel = defineModel('Task', m => {
-  m.casts({
-    uuid:              m.uuid('Task unique identifier'),
-    title:             m.string('Task title'),
-    description:       m.text('Task description in markdown'),
-    status:            m.string('Task status'),
-    due_date:          m.date('Due date'),
-    estimated_minutes: m.number('Time estimate in minutes'),
-    is_blocker:        m.boolean('Blocker flag'),
-  });
-
-  m.fillable({
-    create: ['title', 'description', 'status', 'due_date', 'estimated_minutes', 'is_blocker'],
-    update: ['title', 'description', 'status', 'due_date', 'estimated_minutes', 'is_blocker'],
-    filter: ['status', 'is_blocker'],
-  });
-});
-
-const f = initVurb<AppContext>();
-
 // Create — all fillable('create') fields are required
 export const createTask = f.action('tasks.create')
   .describe('Create a new task')
@@ -230,33 +255,37 @@ export const createTask = f.action('tasks.create')
 export const updateTask = f.action('tasks.update')
   .describe('Update an existing task')
   .fromModel(TaskModel, 'update')
-  .withString('task_uuid', 'Task identifier')   // ← extra params outside the Model
+  .withString('task_uuid', 'Task identifier')
   .returns(TaskPresenter)
   .handle(async (input, ctx) => {
     return ctx.db.tasks.update(input.task_uuid, input);
   });
-
-// Filter — all fillable('filter') fields are optional
-export const listTasks = f.query('tasks.list')
-  .describe('List tasks with optional filters')
-  .fromModel(TaskModel, 'filter')
-  .returns(TaskPresenter)
-  .handle(async (input, ctx) => {
-    return ctx.db.tasks.findMany({ where: input });
-  });
 ```
+
+</div>
+</div>
 
 | Operation | Field Optionality | Use Case |
 |---|---|---|
-| `'create'` | All fields **required** | Creating a new entity |
-| `'update'` | All fields **optional** | Partial updates |
-| `'filter'` | All fields **optional** | Search / list filters |
+| `'create'` | All **required** | Creating a new entity |
+| `'update'` | All **optional** | Partial updates |
+| `'filter'` | All **optional** | Search / list filters |
 
-`.fromModel()` and `with*()` methods can be combined freely — use `.fromModel()` for entity fields and `with*()` for extra parameters like identifiers, pagination, or sort options.
+---
 
 ## AI Instructions {#instructions}
 
-`.instructions()` injects system-level guidance directly into the tool description. This is **Prompt Engineering embedded in the framework** — the LLM reads it before deciding whether and how to use the tool:
+`.instructions()` injects system-level guidance into the tool description — prompt engineering embedded in the framework:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">behavioral guidance</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 export const searchDocs = f.query('docs.search')
@@ -271,83 +300,51 @@ export const searchDocs = f.query('docs.search')
   });
 ```
 
-The LLM sees:
-
-```text
-[INSTRUCTIONS] Use ONLY when the user asks about internal policies or procedures.
-Do NOT use for general knowledge questions.
-
-Search internal documentation
-```
+</div>
+</div>
 
 > [!TIP]
-> Use `.instructions()` for behavioral guidance — when to use the tool, what to avoid, how to format the output. Use `.describe()` for what the tool does. Together they eliminate hallucinated tool calls.
+> Use `.instructions()` for **when to use** the tool. Use `.describe()` for **what** the tool does. Together they eliminate hallucinated tool calls.
 
 ## Semantic Overrides & Annotations {#annotations}
 
-### Fine-Grained Semantic Control
+<!-- Feature Grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-Each verb sets defaults, but you can override them on any tool:
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px"><code style="font-size:12px;color:rgba(129,140,248,0.7);background:rgba(129,140,248,0.08);padding:2px 6px;border-radius:3px">.readOnly()</code></div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Sets <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">readOnlyHint: true</code> — override any verb to declare no side effects.</div>
+</div>
 
-```typescript
-// An action that is safe to retry
-const updateConfig = f.action('config.update')
-  .describe('Update application configuration')
-  .idempotent()   // ← safe to retry, no duplicate side effects
-  .withString('key', 'Config key')
-  .withString('value', 'New value')
-  .handle(async (input, ctx) => { /* ... */ });
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px"><code style="font-size:12px;color:rgba(239,68,68,0.7);background:rgba(239,68,68,0.08);padding:2px 6px;border-radius:3px">.destructive()</code></div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Sets <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">destructiveHint: true</code> — triggers confirmation dialogs in MCP clients.</div>
+</div>
 
-// An action that is also read-only (despite being an action verb)
-const healthCheck = f.action('system.health')
-  .describe('Run a system health check')
-  .readOnly()     // ← override: no side effects
-  .handle(async (input, ctx) => { /* ... */ });
-```
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px"><code style="font-size:12px;color:rgba(52,211,153,0.7);background:rgba(52,211,153,0.08);padding:2px 6px;border-radius:3px">.idempotent()</code></div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Sets <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">idempotentHint: true</code> — safe to retry, no duplicate side effects.</div>
+</div>
 
-| Override | Effect |
-|----------|--------|
-| `.readOnly()` | Sets `readOnlyHint: true` in MCP annotations |
-| `.destructive()` | Sets `destructiveHint: true` — triggers confirmation dialogs |
-| `.idempotent()` | Sets `idempotentHint: true` — safe to retry |
+</div>
 
-### Custom MCP Annotations
-
-For tool-specific metadata beyond the standard hints, use `.annotations()`:
-
-```typescript
-const betaFeature = f.query('beta.experimental')
-  .describe('Access experimental beta features')
-  .annotations({
-    openWorldHint: true,
-    title: 'Beta Features',
-  })
-  .handle(async (input, ctx) => { /* ... */ });
-```
-
-### Capability Tags
-
-Use `.tags()` for selective tool exposure. Tags let you filter tools at registration time — exposing different sets to different clients:
-
-```typescript
-const adminTool = f.mutation('admin.reset')
-  .describe('Reset all user sessions')
-  .tags('internal', 'admin')
-  .handle(async (input, ctx) => { /* ... */ });
-
-// Later, at registration:
-registry.attachToServer(server, {
-  filter: { exclude: ['internal'] }, // hides admin tools from public clients
-});
-```
+Use `.tags('internal', 'admin')` for selective tool exposure and `.annotations({ openWorldHint: true })` for custom MCP metadata.
 
 ## Connecting a Presenter {#presenter}
 
-The `.returns()` method attaches an MVA [Presenter](/presenter) that controls exactly what the agent sees:
+`.returns()` attaches a [Presenter](/presenter) that controls exactly what the agent sees:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">Presenter + Tool integration</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-import { createPresenter, t } from '@vurb/core';
-
 const ProjectPresenter = createPresenter('Project')
   .schema({
     id:     t.string,
@@ -366,19 +363,33 @@ export const listProjects = f.query('projects.list')
   });
 ```
 
-The handler returns the raw database result — a massive array with internal fields, timestamps, and IDs. The Presenter:
+</div>
+</div>
 
-1. **Strips** undeclared fields (egress firewall)
-2. **Validates** against the schema (Zod `.parse()`)
-3. **Truncates** to 50 items with a warning (cognitive guardrail)
-4. **Attaches** system rules, UI blocks, and suggested actions
+The handler returns raw database data. The Presenter **strips** undeclared fields, **validates** with Zod, **truncates** to 50 items, and **attaches** rules and affordances. See the full [Presenter guide](/presenter).
 
-> [!NOTE]
-> The handler's only job is to fetch data. The Presenter does all the heavy lifting — validation, stripping, rules, affordances. This is the [MVA pattern](/mva-pattern) in action.
+---
+
+<!-- Editorial break: Middleware & Guards -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">PRODUCTION FEATURES</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Middleware. Guards. Streaming.<br><span style="color:rgba(255,255,255,0.25)">All inline on the builder.</span></div>
+</div>
 
 ## Middleware — Context Derivation {#middleware}
 
-Use `.use()` to enrich context before it reaches the handler. The middleware receives `{ ctx, next }` and can add properties, enforce guards, or halt execution:
+`.use()` enriches context before it reaches the handler. Derived properties are automatically typed:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">auth middleware</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 export const adminStats = f.query('admin.stats')
@@ -389,90 +400,105 @@ export const adminStats = f.query('admin.stats')
     return next({ ...ctx, session });
   })
   .handle(async (input, ctx) => {
-    // ctx.session is fully typed — verified and ready
+    // ctx.session is fully typed ✅
     return ctx.db.getStats(ctx.session.orgId);
   });
 ```
 
-The derived `ctx.session` is automatically typed in the handler. Stack multiple `.use()` calls for layered derivations (auth → permissions → tenant resolution).
+</div>
+</div>
 
-See the full [Middleware guide](/middleware) for `f.middleware()`, `defineMiddleware()`, and composition patterns.
+Stack multiple `.use()` calls for layered derivations (auth → permissions → tenant). See the full [Middleware guide](/middleware).
 
 ## State Sync — Cache & Invalidation {#state-sync}
 
-LLMs have no sense of time. After calling `sprints.list` and then `sprints.create`, the agent still believes the list is unchanged. Inline state sync methods on the builder solve this:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">cache directives</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-// Query: reference data that never changes
+// Reference data — safe to cache forever
 const listCountries = f.query('countries.list')
   .describe('List all country codes')
-  .cached()    // ← immutable, safe to cache forever
-  .handle(async (input, ctx) => {
-    return ctx.db.countries.findMany();
-  });
+  .cached()
+  .handle(async (input, ctx) => ctx.db.countries.findMany());
 
-// Query: volatile data that may change at any time
+// Volatile data — always re-fetch
 const listSprints = f.query('sprints.list')
   .describe('List workspace sprints')
-  .stale()     // ← no-store, re-fetch before using
-  .handle(async (input, ctx) => {
-    return ctx.db.sprints.findMany({ where: { tenantId: ctx.tenantId } });
-  });
+  .stale()
+  .handle(async (input, ctx) => ctx.db.sprints.findMany());
 
-// Mutation: invalidates cached data on success
+// Mutation — tells the agent what changed
 const createSprint = f.mutation('sprints.create')
   .describe('Create a new sprint')
-  .invalidates('sprints.*')  // ← tells the agent to re-read sprints
+  .invalidates('sprints.*')
   .withString('name', 'Sprint name')
-  .handle(async (input, ctx) => {
-    return ctx.db.sprints.create({ data: { name: input.name } });
-  });
+  .handle(async (input, ctx) => ctx.db.sprints.create({ data: input }));
 ```
 
-| Method | Cache Directive | Use When |
-|--------|-----------------|----------|
-| `.cached()` | `immutable` | Reference data — country codes, timezones, enums |
-| `.stale()` | `no-store` | Volatile data — always re-fetch before acting |
-| `.invalidates(...patterns)` | Causal signal | Mutations — tell the agent what data changed |
+</div>
+</div>
 
-See the full [State Sync guide](/state-sync) for registry-level policies, cross-domain invalidation, and observability.
+| Method | Cache Directive | Use When |
+|---|---|---|
+| `.cached()` | `immutable` | Reference data — country codes, timezones |
+| `.stale()` | `no-store` | Volatile data — always re-fetch |
+| `.invalidates(...)` | Causal signal | Mutations — tell agent what data changed |
+
+See the full [State Sync guide](/state-sync) for registry-level policies and cross-domain invalidation.
 
 ## Runtime Guards {#runtime-guards}
 
-### Concurrency Limits
+<!-- Feature Grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:32px 0">
 
-Prevent expensive tools from overwhelming your backend:
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(245,158,11,0.8);padding:3px 10px;border:1px solid rgba(245,158,11,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">CONCURRENCY</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Concurrency Limits</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Prevent expensive tools from overwhelming your backend. <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.concurrency({ max: 2, queueSize: 5 })</code></div>
+</div>
 
-```typescript
-const heavyReport = f.query('analytics.heavy_report')
-  .describe('Generate a comprehensive analytics report')
-  .concurrency({ max: 2, queueSize: 5 })  // ← max 2 concurrent, 5 queued
-  .handle(async (input, ctx) => { /* ... */ });
-```
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(239,68,68,0.8);padding:3px 10px;border:1px solid rgba(239,68,68,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">EGRESS</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Egress Guards</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Cap max response payload to protect the LLM's context window. <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.egress(1_000_000)</code></div>
+</div>
 
-### Egress Guards
+</div>
 
-Cap the maximum response payload to protect the LLM's context window:
-
-```typescript
-const bulkExport = f.query('data.export')
-  .describe('Export dataset as JSON')
-  .egress(1_000_000)  // ← max 1 MB response
-  .handle(async (input, ctx) => { /* ... */ });
-```
-
-See the [Runtime Guards guide](/runtime-guards) for the full configuration reference.
+See the [Runtime Guards guide](/runtime-guards) for the full reference.
 
 ## Streaming Progress {#streaming}
 
-Long-running operations report progress via generator handlers. Each `yield progress()` becomes an MCP `notifications/progress` event:
+Long-running operations report progress via generator handlers:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">async generator + progress</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { progress } from '@vurb/core';
 
 export const deploy = f.mutation('infra.deploy')
   .describe('Deploy infrastructure to the target environment')
-  .withEnum('env', ['staging', 'production'] as const, 'Target environment')
+  .withEnum('env', ['staging', 'production'] as const, 'Target')
   .handle(async function* (input, ctx) {
     yield progress(10, 'Cloning repository...');
     await cloneRepo(ctx.repoUrl);
@@ -485,14 +511,32 @@ export const deploy = f.mutation('infra.deploy')
   });
 ```
 
-> [!TIP]
-> The final `return` value goes through the normal Presenter pipeline. The `yield` calls are side-channel progress notifications — they don't affect the response.
+</div>
+</div>
 
-See the [Streaming Progress cookbook](/cookbook/streaming) for real-world examples and cancellation support.
+> [!TIP]
+> The final `return` goes through the normal Presenter pipeline. `yield` calls are side-channel progress notifications.
+
+---
+
+<!-- Editorial break: Deploy -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">DEPLOYMENT</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Register. Serve. Deploy.<br><span style="color:rgba(255,255,255,0.25)">Same code, any runtime.</span></div>
+</div>
 
 ## Registering & Serving {#register}
 
-Once your tools are built, registration is straightforward:
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">src/server.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { ToolRegistry } from '@vurb/core';
@@ -516,43 +560,99 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
-> [!TIP]
-> Use `autoDiscover()` for file-based routing — drop tool files in a directory and they're registered automatically. See [Routing & Groups](/routing) for the full guide.
+</div>
+</div>
 
 > [!TIP]
-> Test your tools with [@vurb/testing](/testing) — assert tool responses, measure blast radius of changes, and snapshot test Presenter output. See [Testing](/testing) for the full harness.
+> Use `autoDiscover()` for file-based routing — drop tool files in a directory and they're registered automatically. See [Routing & Groups](/routing).
 
 ## Deploy Your Tools {#deploy}
 
-Every tool you built above is transport-agnostic. The Fluent API compiles tool metadata — Zod schemas, Presenter bindings, middleware chains — into a `ToolRegistry` that works identically on Stdio, SSE, and serverless runtimes. Moving from local development to production requires no tool code changes.
+Every tool is transport-agnostic. The same `ToolRegistry` works on Stdio, SSE, and serverless runtimes.
 
-### Vinkius Cloud — One Command Deploy
+<!-- Deploy cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-The fastest path to production. `vurb deploy` publishes your server to Vinkius Cloud's global edge with built-in DLP, kill switch, audit logging, and a managed MCP token:
+<a href="https://docs.vinkius.com/getting-started" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">MANAGED</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Vinkius Cloud</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif"><code style="font-size:10px;color:rgba(192,132,252,0.6);background:rgba(192,132,252,0.06);padding:1px 5px;border-radius:3px">vurb deploy</code> — global edge, built-in DLP, kill switch.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Learn more →</span>
+</a>
 
-```bash
-vurb deploy
-```
+<a href="/vercel-adapter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">VERCEL</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Vercel Edge</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">App Router endpoint — one line of code.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read guide →</span>
+</a>
 
-No infrastructure to manage. Share the connection token with any MCP client and they connect instantly. [Learn more →](https://docs.vinkius.com/getting-started)
+<a href="/cloudflare-adapter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">CLOUDFLARE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Cloudflare Workers</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Edge-native with D1, KV, and R2 access.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read guide →</span>
+</a>
 
-> [!TIP]
-> Install the [Vinkius extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) to monitor your deployed servers directly from VS Code, Cursor, or Windsurf.
+</div>
 
-### Self-Hosted Alternatives
+---
 
-#### Vercel — App Router Endpoint
+## Related Guides {#related}
 
-```typescript
-import { vercelAdapter } from '@vurb/vercel';
-export const POST = vercelAdapter({ registry, contextFactory });
-```
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-#### Cloudflare Workers — Edge-Native SQL & KV
+<a href="/tool-exposition" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">EXPOSITION</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Tool Exposition</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Flat vs grouped strategies for tool registration.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-```typescript
-import { cloudflareWorkersAdapter } from '@vurb/cloudflare';
-export default cloudflareWorkersAdapter({ registry, contextFactory });
-```
+<a href="/result-monad" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">ERRORS</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Result Monad</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Typed error unions with ok() / err().</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-Full deployment guides: [Vercel Adapter](/vercel-adapter) · [Cloudflare Adapter](/cloudflare-adapter) · [Production Server](/cookbook/production-server)
+<a href="/context" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">CONTEXT</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Context & State</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Context derivation and request state management.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 32px">
+
+<a href="/cancellation" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">LIFECYCLE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Cancellation</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Abort signal propagation and cleanup.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/dynamic-manifest" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">MANIFEST</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Dynamic Manifest</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">User-conditional prompts and tool lists.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/observability" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(239,68,68,0.5);letter-spacing:2px;font-weight:600">MONITORING</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Observability</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Production monitoring and tracing.</div>
+<span style="font-size:10px;color:rgba(239,68,68,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>
+
+### Cookbook Recipes
+
+- [CRUD Operations](/cookbook/crud) · [Hierarchical Groups](/cookbook/hierarchical-groups) · [Functional Groups](/cookbook/functional-groups)
+- [Streaming](/cookbook/streaming) · [Cancellation](/cookbook/cancellation) · [Auth Middleware](/cookbook/auth-middleware)
+- [Transactional Workflows](/cookbook/transactional-workflows) · [TOON Encoding](/cookbook/toon) · [Runtime Guards](/cookbook/runtime-guards)

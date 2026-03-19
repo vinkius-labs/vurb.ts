@@ -1,8 +1,21 @@
 # Zero-Trust Sandbox Engine
 
-The Sandbox Engine lets an LLM send JavaScript logic to your MCP server instead of forcing you to send data to the model. The provided code runs inside a sealed V8 isolate — powered by [`isolated-vm`](https://github.com/laverdet/isolated-vm) — with **zero access** to Node.js APIs.
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add a sandboxed computation tool that lets the LLM send JavaScript filter functions to execute on server-side data inside a sealed V8 isolate."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-The data stays on your machine. Only the computed result crosses the boundary.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">COMPUTATION DELEGATION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Data stays on your machine.<br><span style="color:rgba(255,255,255,0.25)">Only the result crosses the boundary.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">The LLM sends JavaScript logic to your server. It runs inside a sealed V8 isolate — zero access to <code style="font-size:12px;color:rgba(239,68,68,0.6)">process</code>, <code style="font-size:12px;color:rgba(239,68,68,0.6)">fs</code>, <code style="font-size:12px;color:rgba(239,68,68,0.6)">net</code>. Powered by isolated-vm.</div>
+</div>
 
 ## The Problem
 

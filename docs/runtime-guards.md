@@ -4,12 +4,22 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Introduction](#introduction)
-- [Concurrency Guard](#concurrency)
-- [Egress Guard](#egress)
-- [Intent Mutex](#intent-mutex)
-- [Combined Configuration](#combined)
-- [Testing](#testing)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add concurrency(max:5, queue:20) and egress(2MB) guards to the analytics tool, and use f.mutation() for all destructive actions to enable intent mutex."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">INFRASTRUCTURE SAFETY</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Agents burst. Systems crash.<br><span style="color:rgba(255,255,255,0.25)">Three guards prevent it.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Concurrency semaphore, egress byte limiter, and intent mutex — three built-in guards that protect your infra without touching the hot path when unconfigured.</div>
+</div>
 
 ## Introduction {#introduction}
 

@@ -5,32 +5,127 @@
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/dt/@vurb/core" alt="Downloads"></a>
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/dw/@vurb/core" alt="Weekly Downloads"></a>
 <a href="https://www.npmjs.com/package/@vurb/core"><img src="https://img.shields.io/npm/v/@vurb/core.svg?style=flat-square&color=0ea5e9" alt="npm version"></a>
-<a href="https://bundlephobia.com/package/@vurb/core"><img src="https://img.shields.io/bundlephobia/minzip/@vurb/core" alt="Package Size"></a>
 <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7+-blue.svg?style=flat-square&logo=typescript" alt="TypeScript"></a>
 <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Standard-purple.svg?style=flat-square" alt="MCP SDK"></a>
 <a href="https://github.com/vinkius-labs/vurb.ts/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-green.svg?style=flat-square" alt="License"></a>
-<a href="https://github.com/vinkius-labs/vurb.ts/stargazers"><img src="https://img.shields.io/github/stars/vinkius-labs/vurb.ts?style=flat-square&color=gold" alt="GitHub Stars"></a>
 <img src="https://img.shields.io/badge/Built%20with-%F0%9F%9A%80%20by%20Vinkius-%23000000" alt="Built with 🚀 by Vinkius">
 </div>
 
-Vurb.ts is an architecture layer for the Model Context Protocol. It separates three concerns that every raw MCP server mixes into a single handler: **who can call what** (middleware pipeline), **what the agent sees** (Presenter with Zod schema), and **whether the surface is trustworthy** (governance lockfile + HMAC attestation).
+---
 
-This separation is the **MVA (Model-View-Agent)** pattern. The handler returns raw data (Model). The Presenter shapes perception (View). The middleware governs access (Agent). The resulting server works with any MCP client — Cursor, Claude Desktop, Claude Code, Windsurf, Cline, and VS Code with GitHub Copilot.
+<!-- Trojan Horse Hero -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">THE EXPRESS.JS FOR MCP SERVERS</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Stop writing raw, chaotic MCP servers.<br><span style="color:rgba(255,255,255,0.25)">Your AI agent already knows Vurb.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:560px;line-height:1.7;font-family:Inter,sans-serif">Routes, data shaping, and security in one framework. Zero new syntax — if you know Zod and TypeScript, you already know Vurb. Your AI agent implements it via <strong style="color:rgba(192,132,252,0.7)">SKILL.md</strong>.</div>
+</div>
 
-### Native Framework Integration
-## Does Vurb.ts work with Vercel AI SDK and LangChain? {#frontend-integrations}
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create an MCP server for invoice management with Presenters, PII redaction on customer_ssn, tenant isolation middleware, and deploy to Vinkius Cloud."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Yes. **Vurb.ts is a natural backend for any AI client application.**
+---
 
-If you are building a frontend or orchestration layer using the **Vercel AI SDK**, **LangChain**, or **LlamaIndex**, you can connect them directly to your `Vurb.ts` backend via standard `stdio` or HTTP transports. 
+<!-- Pain-as-Trust: Split-Screen -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">THE REAL PROBLEM</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Your LLM is reading your database.<br><span style="color:rgba(255,255,255,0.25)">What is it seeing?</span></div>
+</div>
 
-Because Vurb.ts provides a structured perception layer, your Vercel AI SDK or LangChain agents get typed tool names, validated inputs, and truncated payloads out of the box. You get the rich frontend capabilities of those frameworks combined with a backend that's built for production from day one.
+<!-- Split-screen: Without vs With Vurb -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin:32px 0;border-radius:12px;overflow:hidden">
 
-## How It Looks {#in-practice}
+<!-- LEFT: danger -->
+<div style="border:1px solid rgba(239,68,68,0.2);border-right:none;background:rgba(239,68,68,0.03);padding:24px">
+<span style="font-size:9px;color:rgba(239,68,68,0.7);letter-spacing:2px;font-weight:700">WITHOUT VURB — RAW MCP</span>
+<div style="margin-top:16px;border:1px solid rgba(239,68,68,0.1);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(239,68,68,0.3)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(239,68,68,0.3)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(239,68,68,0.3)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">raw-handler.ts</span>
+</div>
+<div style="padding:12px">
 
-A complete invoice tool with authentication, AI instructions, field-level protection, and action affordances.
+```typescript
+server.setRequestHandler(async (req) => {
+  const user = await db.user.findUnique({
+    where: { id: req.params.id },
+  });
+  // ⚠️ password_hash, ssn, tenant_id
+  //    ALL sent directly to the LLM
+  return { content: [{ type: 'text',
+    text: JSON.stringify(user) }] };
+});
+```
 
-### 1. Context Init
+</div>
+</div>
+<div style="font-size:11px;color:rgba(239,68,68,0.5);margin-top:12px;line-height:1.6;font-family:Inter,sans-serif">The LLM sees <code style="font-size:10px">password_hash</code>, <code style="font-size:10px">ssn</code>, <code style="font-size:10px">tenant_id</code> — everything. No validation. No redaction. One migration adds a column → instant data leak.</div>
+</div>
+
+<!-- RIGHT: safe -->
+<div style="border:1px solid rgba(52,211,153,0.2);background:rgba(52,211,153,0.03);padding:24px">
+<span style="font-size:9px;color:rgba(52,211,153,0.7);letter-spacing:2px;font-weight:700">WITH VURB</span>
+<div style="margin-top:16px;border:1px solid rgba(52,211,153,0.1);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(52,211,153,0.3)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(52,211,153,0.3)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(52,211,153,0.3)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">tools/users/get.ts</span>
+</div>
+<div style="padding:12px">
+
+```typescript
+export default f.query('users.get')
+  .withString('id', 'User ID')
+  .returns(UserPresenter)
+  .redactPII(['ssn', 'password_hash'])
+  .handle(async (input, ctx) => {
+    return ctx.db.user.findUnique({
+      where: { id: input.id },
+    });
+  });
+```
+
+</div>
+</div>
+<div style="font-size:11px;color:rgba(52,211,153,0.5);margin-top:12px;line-height:1.6;font-family:Inter,sans-serif">The LLM sees <code style="font-size:10px">[REDACTED]</code>. Schema allowlists fields. New columns are invisible unless declared. GDPR/HIPAA/SOC2 — built in.</div>
+</div>
+
+</div>
+
+::: warning Architect's Check
+Verify that `.redactPII()` is chained BEFORE `.handle()`. If your AI agent forgot the Presenter, undeclared fields still leak. The schema is your security boundary — always audit it.
+:::
+
+---
+
+## What You Tell the AI {#in-practice}
+
+The code below is what your AI agent produces when you give it the prompt above. Vurb ships a **[SKILL.md](https://agentskills.io)** — your AI reads it and produces idiomatic architecture on the first pass.
+
+<!-- Numbered steps flow -->
+<div style="margin:32px 0">
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(129,140,248,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">01</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Context — standard TypeScript</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">This is a regular TypeScript interface. Nothing proprietary.</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">src/vurb.ts</span>
+</div>
+<div style="padding:12px">
 
 ```typescript
 import { initVurb } from '@vurb/core';
@@ -42,31 +137,58 @@ interface AppContext {
 const f = initVurb<AppContext>();
 ```
 
-`initVurb<T>()` takes your context shape as a generic. This type propagates through every builder — fully inferred. The `f` instance is your entry point for semantic verbs: `f.query()`, `f.mutation()`, and `f.action()`.
+</div>
+</div>
+</div>
+</div>
 
-### 2. Presenter (The View)
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(34,211,238,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">02</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Presenter — shapes what the LLM perceives</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Schema is a Zod allowlist. Rules and affordances tell the agent exactly how to act.</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">views/InvoicePresenter.ts</span>
+</div>
+<div style="padding:12px">
 
 ```typescript
 const InvoicePresenter = f.presenter({
   name: 'Invoice',
   schema: InvoiceModel,
   rules: (inv) => [
-    inv.status === 'overdue' ? 'invoice is overdue. Mention it to the user.' : null,
+    inv.status === 'overdue' ? 'Invoice is overdue. Mention it.' : null,
   ],
   suggest: (inv) => [
-    inv.status === 'draft' ? suggest('billing.send', 'Send invoice', { id: inv.id }) : null,
+    inv.status === 'draft'
+      ? suggest('billing.send', 'Send invoice', { id: inv.id })
+      : null,
   ].filter(Boolean),
 });
 ```
 
-The `schema` is an allowlist. Only declared fields reach the agent. `rules` and `suggest` provide **Agentic HATEOAS** — the AI doesn't guess; it follows explicit affordances.
+</div>
+</div>
+</div>
+</div>
 
-> [!TIP]
-> In production, the schema comes from a `defineModel()` definition — the framework's standard [Model layer](/mva-convention#model). Define your entity once with `defineModel()` and feed `Model.schema` into the Presenter. See [Building Tools — Model-Driven Parameters](/building-tools#from-model) for the full workflow.
-
-### 3. Tool (The Agentic API)
-
-We use **Semantic Verbs** to define the behavior. `f.query()` is read-only, while `f.mutation()` signals destructive side-effects.
+<div style="display:flex;align-items:flex-start;gap:20px;padding:20px 24px;border-left:2px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(52,211,153,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">03</span>
+<div style="flex:1">
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Tool — the agentic API</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Semantic verbs define intent. <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">f.query()</code> = read-only. <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">f.mutation()</code> = destructive.</div>
+<div style="margin-top:12px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.3)">
+<div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px">
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.12)"></span>
+<span style="font-size:9px;color:rgba(255,255,255,0.25);margin-left:6px;letter-spacing:1px">tools/billing/get.ts</span>
+</div>
+<div style="padding:12px">
 
 ```typescript
 export const getInvoice = f.query('billing.get')
@@ -75,17 +197,22 @@ export const getInvoice = f.query('billing.get')
   .withString('id', 'The unique invoice identifier')
   .returns(InvoicePresenter)
   .use(async ({ ctx, next }) => {
-     // middleware: auth, tenant injection, etc.
      const user = await auth.verify(ctx.token);
      return next({ ...ctx, user });
   })
   .handle(async (input, ctx) => {
-    // Handler receives typed input and enriched ctx
     return ctx.db.invoice.findUnique({
       where: { id: input.id, tenantId: ctx.user.tenantId },
     });
   });
 ```
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
 
 ---
 
@@ -97,40 +224,169 @@ npm install @vurb/core @modelcontextprotocol/sdk zod
 
 Node.js 18+. Works with any MCP SDK-compatible transport (Stdio, HTTP/SSE, WebSocket).
 
+### Built on Standards You Trust {#standards}
+
+<!-- Standards grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin:24px 0">
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:16px 20px;text-align:center">
+<div style="font-size:14px;color:rgba(129,140,248,0.8);font-weight:700;font-family:Inter,sans-serif">MCP</div>
+<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;font-family:Inter,sans-serif">Anthropic standard</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:16px 20px;text-align:center">
+<div style="font-size:14px;color:rgba(34,211,238,0.8);font-weight:700;font-family:Inter,sans-serif">Zod</div>
+<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;font-family:Inter,sans-serif">Validation</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:16px 20px;text-align:center">
+<div style="font-size:14px;color:rgba(52,211,153,0.8);font-weight:700;font-family:Inter,sans-serif">TypeScript</div>
+<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;font-family:Inter,sans-serif">Full type inference</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:16px 20px;text-align:center">
+<div style="font-size:14px;color:rgba(245,158,11,0.8);font-weight:700;font-family:Inter,sans-serif">WinterCG</div>
+<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;font-family:Inter,sans-serif">Edge-native</div>
+</div>
+
+</div>
+
+<div style="font-size:12px;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:32px;font-family:Inter,sans-serif">Zero new syntax to learn. Write once, deploy to any cloud. Your AI already speaks Zod and TypeScript — SKILL.md teaches it the architecture.</div>
+
+### Native Framework Integration {#frontend-integrations}
+
+Vurb.ts is a natural backend for **Vercel AI SDK**, **LangChain**, and **LlamaIndex**. Connect via standard `stdio` or HTTP transports — your agents get typed tool names, validated inputs, and truncated payloads out of the box.
+
+---
+
+<!-- Why it matters -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">COMPLIANCE & ZERO RISK</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Security by design.<br><span style="color:rgba(255,255,255,0.25)">Not by afterthought.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">The biggest CTO/CISO panic in 2026: LLMs leaking <code style="font-size:12px;color:rgba(239,68,68,0.6)">password_hash</code>, SSNs, and medical data. Vurb guarantees the LLM sees <code style="font-size:12px;color:rgba(52,211,153,0.6)">[REDACTED]</code>.</div>
+</div>
+
+<!-- Security-first feature grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:32px 0">
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(239,68,68,0.8);padding:3px 10px;border:1px solid rgba(239,68,68,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">EGRESS</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Egress Firewall</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Zod schema strips undeclared fields at RAM level. <code style="font-size:10px">password_hash</code> never reaches the wire. New columns are invisible unless declared.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(192,132,252,0.8);padding:3px 10px;border:1px solid rgba(192,132,252,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">DLP</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">PII Redaction</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">V8-optimized via <code style="font-size:10px">fast-redact</code>. GDPR, LGPD, HIPAA — impossible to bypass. The developer cannot accidentally skip it.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(245,158,11,0.8);padding:3px 10px;border:1px solid rgba(245,158,11,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">FSM</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">State Gate</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Removes tools from <code style="font-size:10px">tools/list</code> based on workflow state. Empty cart → <code style="font-size:10px">cart.pay</code> doesn't exist. Anti-hallucination.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(34,211,238,0.8);padding:3px 10px;border:1px solid rgba(34,211,238,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">SANDBOX</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Zero-Trust V8 Isolate</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">LLM sends JavaScript to your data. Sealed isolate — zero access to <code style="font-size:10px">process</code>, <code style="font-size:10px">fs</code>, <code style="font-size:10px">net</code>.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(52,211,153,0.8);padding:3px 10px;border:1px solid rgba(52,211,153,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">SKILLS</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Agent Skills</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Progressive three-layer disclosure — domain expertise on demand. Zero context window waste.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(129,140,248,0.8);padding:3px 10px;border:1px solid rgba(129,140,248,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">DEPLOY</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">One Command Deploy</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif"><code style="font-size:10px">vurb deploy</code> → <a href="https://docs.vinkius.com/getting-started" style="color:rgba(129,140,248,0.6);text-decoration:none">Vinkius Cloud</a> with tamper-proof audit logs. Or self-host on <a href="/vercel-adapter" style="color:rgba(129,140,248,0.6);text-decoration:none">Vercel</a> / <a href="/cloudflare-adapter" style="color:rgba(129,140,248,0.6);text-decoration:none">Cloudflare</a>.</div>
+</div>
+
+</div>
+
+> [!TIP]
+> Vurb blocks PII locally by default. Need to prove it in a compliance audit (SOC2/GDPR/HIPAA)? [Connect to Vinkius Cloud for tamper-proof Audit Logs →](https://docs.vinkius.com/getting-started)
+
 ### Ecosystem Packages
 
 | Package | Purpose |
 |---|---|
-| [@vurb/vercel](/vercel-adapter) | Deploy to Vercel — App Router, Edge or Node.js Runtime |
-| [@vurb/cloudflare](/cloudflare-adapter) | Deploy to Cloudflare Workers — D1, KV, R2 bindings |
-| [@vurb/aws](/aws-connector) | AWS Lambda & Step Functions connector |
-| [@vurb/oauth](/oauth) | OAuth Device Flow (RFC 8628) — enterprise authentication |
-| [@vurb/prisma-gen](/prisma-gen) | Auto-generate MCP tools from Prisma schema |
+| [@vurb/vercel](/vercel-adapter) | Deploy to Vercel — App Router, Edge or Node.js |
+| [@vurb/cloudflare](/cloudflare-adapter) | Deploy to Cloudflare Workers — D1, KV, R2 |
+| [@vurb/oauth](/oauth) | OAuth Device Flow (RFC 8628) |
+| [@vurb/prisma-gen](/prisma-gen) | Auto-generate tools from Prisma schema |
 | [@vurb/openapi-gen](/openapi-gen) | Generate tools from OpenAPI/Swagger specs |
-| [@vurb/n8n](/n8n-connector) | Bridge n8n workflows as MCP tools |
-| [@vurb/skills](/skills) | Progressive instruction distribution for AI agents |
-| [@vurb/testing](/testing) | Test harness — assertions, blast radius, snapshot testing |
-| [@vurb/inspector](/inspector) | Real-time TUI dashboard via Shadow Socket |
-| [Vinkius Extension](https://marketplace.visualstudio.com/items?itemName=vinkius.cloud-extension) | IDE extension — manage Vinkius Cloud servers from VS Code, Cursor, or Windsurf |
+| [@vurb/skills](/skills) | Progressive instruction distribution |
+| [@vurb/testing](/testing) | Test harness — blast radius, snapshots |
+| [@vurb/inspector](/inspector) | Real-time TUI dashboard |
 
-## Why This Matters {#benefits}
+---
 
-**Data stays private by default.** Raw MCP servers leak `password_hashes` directly to the LLM. The Presenter's Zod schema acts as an Egress Firewall — Vurb.ts strips undeclared sensitive fields at RAM level before they hit the wire. A database migration that adds a column doesn't change what the agent sees — the new column is invisible unless you declare it.
+## Explore Further {#explore}
 
-**DLP compliance built in.** `.redactPII()` compiles V8-optimized redaction (via `fast-redact`) that masks sensitive fields after UI and rules have been computed (Late Guillotine). GDPR, LGPD, HIPAA — the developer cannot accidentally bypass redaction.
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-**Temporal anti-hallucination.** The FSM State Gate physically removes tools from `tools/list` based on workflow state. If the cart is empty, `cart.pay` doesn't exist — the LLM literally cannot call it.
+<a href="/quickstart-lightspeed" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">START</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Quickstart</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Zero to Vinkius Cloud in under 40 seconds.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-**Zero-Trust Sandbox.** The LLM sends JavaScript to your data instead of the other way around. Sealed V8 isolate — zero access to `process`, `require`, `fs`, `net`, `fetch`.
+<a href="/enterprise-quickstart" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">ENTERPRISE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Enterprise Quickstart</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">DLP, SSO, audit trails — production setup.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-**Agent Skills.** No other MCP framework has this. Distribute domain expertise to AI agents on demand: progressive three-layer disclosure (search → load → read auxiliary files), zero context window waste.
+<a href="/comparison" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">COMPARISON</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Vurb vs Raw MCP</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Side-by-side — see the difference in 3 seconds.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-**AI-First DX.** `.instructions()` embeds prompt engineering directly into the tool definition. The agent gets context, not just data.
+</div>
 
-**Deterministic Recovery.** `suggest` sends valid next actions with pre-populated arguments. No hallucinated tool names.
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 32px">
 
-**Auto-generate from what you have.** `npx prisma generate` → CRUD tools with field-level security from your Prisma schema. `npx openapi-gen generate` → typed tools from any REST API. `createN8nConnector()` → n8n workflows as MCP tools.
+<a href="/architecture" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">INTERNALS</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Architecture</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Registry, pipeline, compilation details.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-**Deploy with One Command.** `vurb deploy` publishes your server to [Vinkius Cloud](https://docs.vinkius.com/getting-started) — global edge, built-in DLP, kill switch, audit logging, and a managed MCP token. No infrastructure to manage. For self-hosted setups, the same `ToolRegistry` runs on [Vercel Edge Functions](/vercel-adapter) or [Cloudflare Workers](/cloudflare-adapter) without code changes.
+<a href="/migration" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">UPGRADE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Migration Guide</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Upgrading from a previous version.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-**Audit & Governance.** `vurb.lock` captures every tool's behavioral contract — 9 modules for SOC2-auditable AI deployments. PR diffs show what changed. See [Governance](/governance/).
+<a href="/mva-convention" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(239,68,68,0.5);letter-spacing:2px;font-weight:600">CONVENTION</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">MVA Convention</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">File and folder conventions.</div>
+<span style="font-size:10px;color:rgba(239,68,68,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>

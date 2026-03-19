@@ -415,6 +415,6 @@ const InvoicePresenter = createPresenter('Invoice')
 <div class="ms-cta">
 <div class="ms-label">GET STARTED</div>
 <h2 class="ms-cta-headline">Build MCP servers<br>that actually work in production.</h2>
-<p class="ms-cta-sub"><strong>Vurb.ts</strong> gives you typed schemas, structured AI perception, built-in security, and observability — all out of the box. Skip the boilerplate and ship your first MCP server in minutes.</p>
+<p class="ms-cta-sub"><strong>Vurb.ts</strong> gives you typed schemas, structured AI perception, built-in security, and observability — all out of the box. The framework for the AI era: you define the architecture, your AI agent writes the code.</p>
 <a href="/quickstart-lightspeed" class="ms-cta-button">BUILD YOUR FIRST MCP SERVER →</a>
 </div>

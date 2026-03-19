@@ -1,8 +1,21 @@
 # DLP Compliance Engine — PII Redaction
 
-Every MCP server that touches user data faces a critical risk: if a tool returns raw database records, **Personally Identifiable Information (PII)** flows through JSON-RPC directly to the LLM provider's servers. One leaked field — a Social Security number, a credit card, a medical diagnosis — can trigger **millions in GDPR / LGPD / HIPAA fines**.
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add PII redaction to the PatientPresenter — mask ssn, diagnosis, and email fields so the LLM receives [REDACTED] instead of real values."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Vurb.ts's DLP engine makes data leakage **physically impossible** at the framework level. Sensitive fields are structurally masked before the JSON ever leaves the Presenter — the LLM receives `[REDACTED]` instead of the real value.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">ZERO-LEAK GUARANTEE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">PII never leaves the server.<br><span style="color:rgba(255,255,255,0.25)">Structurally impossible.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">One leaked field — a Social Security number, a credit card — can trigger millions in GDPR / LGPD / HIPAA fines. Vurb's DLP engine makes data leakage physically impossible at the framework level.</div>
+</div>
 
 > [!IMPORTANT]
 > **GDPR / LGPD / HIPAA Compliant by Design.**

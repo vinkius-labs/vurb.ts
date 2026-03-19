@@ -248,7 +248,7 @@ describe('collectConfig — fast-path (--yes)', () => {
             transport: 'stdio',
             vector: 'vanilla',
             testing: true,
-            target: 'node',
+            target: 'vinkius',
         });
     });
 
@@ -273,7 +273,7 @@ describe('collectConfig — fast-path (--yes)', () => {
             transport: 'sse',
             vector: 'prisma',
             testing: false,
-            target: 'node',
+            target: 'vinkius',
         });
     });
 
@@ -1203,7 +1203,7 @@ describe('collectConfig — error paths & boundary conditions', () => {
             transport: 'stdio',
             vector: 'vanilla',
             testing: true,
-            target: 'node',
+            target: 'vinkius',
         });
     });
 });
@@ -2171,7 +2171,7 @@ describe('collectConfig — interactive path with pre-filled args', () => {
             projectName: 'wizard-test',
             transport: 'sse',
             vector: 'prisma',
-            target: 'node',
+            target: 'vinkius',
             testing: true,
             yes: false,
         };

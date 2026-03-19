@@ -4,17 +4,22 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Introduction](#introduction)
-- [Inline Fluent API](#inline)
-- [Registry-Level Policies](#registry)
-- [How It Works](#how)
-- [Cache Directives](#directives)
-- [Cross-Domain Invalidation](#cross-domain)
-- [Glob Patterns](#globs)
-- [Observability](#observability)
-- [Overlap Detection](#overlaps)
-- [Performance](#performance)
-- [API Reference](#api)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Mark 'sprints.list' as stale (no-store), 'countries.list' as cached (immutable), and make 'sprints.create' invalidate all sprints.* data."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">TEMPORAL AWARENESS</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">LLMs have no sense of time.<br><span style="color:rgba(255,255,255,0.25)">State Sync fixes that.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">After calling <code style="font-size:12px">sprints.list</code> and then <code style="font-size:12px">sprints.create</code>, the agent still believes the list is unchanged. State Sync injects RFC 7234-inspired cache signals into MCP responses.</div>
+</div>
 
 ## Introduction {#introduction}
 

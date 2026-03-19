@@ -9,13 +9,22 @@ description: "Cryptographic surface integrity, behavioral lockfiles, and zero-tr
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [What the Protocol Cannot Answer](#the-gap)
-- [Surface Drift Is Silent](#surface-drift)
-- [The Governance Stack](#modules)
-- [Try It in 60 Seconds](#quick-start)
-- [How Contracts Materialize](#contracts)
-- [Observability Integration](#observability)
-- [Where to Go Next](#next-steps)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add governance to my MCP server: generate a vurb.lock, add lockfile check to CI, configure contract diffing, and enable zero-trust attestation."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(99,102,241,0.6);letter-spacing:3px;font-weight:700">BEHAVIORAL GOVERNANCE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">You approved the server.<br><span style="color:rgba(255,255,255,0.25)">Then a dependency changed it.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Cryptographic surface integrity, behavioral lockfiles, contract diffing, and zero-trust attestation — a full governance stack that makes MCP server drift un-deployable.</div>
+</div>
 
 You review an MCP server. You trust its declared tools. You approve it for production.
 

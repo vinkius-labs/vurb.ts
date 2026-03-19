@@ -4,36 +4,53 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Introduction](#introduction)
-- [error() — Simple Errors](#simple)
-- [required() — Missing Parameters](#required)
-- [toolError() — Self-Healing Errors](#tool-error)
-- [ErrorBuilder — Fluent Error Chain](#error-builder)
-- [Severity Levels](#severity)
-- [Structured Details & Retry Hints](#details)
-- [Automatic Validation Errors](#validation)
-- [Automatic Routing Errors](#routing)
-- [Composing Errors with Result](#pipelines)
-- [The Error Protocol](#protocol)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add self-healing error handling to my billing tool — if the invoice is not found, return a recovery path pointing to billing.list_invoices."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-## Introduction {#introduction}
+---
 
-When an AI agent hits an error, the default behavior is to give up or hallucinate a workaround. A generic `"Not found"` message leaves the LLM guessing — it might retry with the same invalid input, apologize to the user, or invent a tool name that doesn't exist.
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">SELF-HEALING ERRORS</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Errors that fix themselves.<br><span style="color:rgba(255,255,255,0.25)">Not just "Not found".</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">A generic <code style="font-size:12px;color:rgba(239,68,68,0.6)">Not found</code> leaves the LLM guessing. Vurb errors carry structured recovery paths — the agent reads <code style="font-size:12px;color:rgba(52,211,153,0.6)">&lt;recovery&gt;</code> and self-corrects instantly.</div>
+</div>
 
-Vurb.ts makes errors **self-healing**. Every error carries structured XML with a code, message, recovery instructions, and available next actions. The agent reads the structured envelope and immediately follows the recovery path — no human intervention needed.
+<!-- Split-screen: give up vs self-heal -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin:32px 0;border-radius:12px;overflow:hidden">
+<div style="border:1px solid rgba(239,68,68,0.2);border-right:none;background:rgba(239,68,68,0.03);padding:24px">
+<span style="font-size:9px;color:rgba(239,68,68,0.7);letter-spacing:2px;font-weight:700">RAW MCP — THE AI GIVES UP</span>
+<div style="margin-top:12px">
 
 ```text
-Without structured errors:
-  AI: "I encountered an error. The project was not found."  ← gives up
-
-With Vurb.ts errors:
-  AI reads: <recovery>Call projects.list first</recovery>
-  AI: → calls projects.list → finds the correct ID → retries successfully
+AI: "I encountered an error.
+     The project was not found." ← gives up
 ```
+
+</div>
+</div>
+<div style="border:1px solid rgba(52,211,153,0.2);background:rgba(52,211,153,0.03);padding:24px">
+<span style="font-size:9px;color:rgba(52,211,153,0.7);letter-spacing:2px;font-weight:700">VURB — THE AI SELF-HEALS</span>
+<div style="margin-top:12px">
+
+```text
+AI reads: <recovery>Call projects.list first</recovery>
+AI: → calls projects.list → finds correct ID
+   → retries successfully ✓
+```
+
+</div>
+</div>
+</div>
 
 ## error() — Simple Errors {#simple}
 
-For straightforward failures, the `error()` helper wraps your message in a standard MCP `isError: true` response:
+For straightforward failures:
 
 ```typescript
 import { initVurb, error, success } from '@vurb/core';
@@ -50,17 +67,11 @@ export const getProject = f.query('projects.get')
   });
 ```
 
-```xml
-<tool_error>
-  <message>Project "proj_xyz" not found</message>
-</tool_error>
-```
-
-This works, but the AI only sees a text message — it doesn't know what to try next. For recovery guidance, use `toolError()` or the `ErrorBuilder`.
+This works, but the AI only sees text — no recovery path. For guidance, use `toolError()` or `f.error()`.
 
 ## required() — Missing Parameters {#required}
 
-Shortcut for missing fields — tells the agent exactly which parameter to provide:
+Tells the agent exactly which parameter to provide:
 
 ```typescript
 import { required } from '@vurb/core';
@@ -80,11 +91,19 @@ import { required } from '@vurb/core';
 
 ## toolError() — Self-Healing Errors {#tool-error}
 
-`toolError()` creates a rich error envelope with everything the AI needs to self-correct:
+Rich error envelope with everything the AI needs to self-correct:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">tools/billing/get.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-import { toolError, success } from '@vurb/core';
-
 export const getInvoice = f.query('billing.get_invoice')
   .describe('Get an invoice by its ID')
   .withString('id', 'Invoice ID')
@@ -105,32 +124,29 @@ export const getInvoice = f.query('billing.get_invoice')
   });
 ```
 
-```xml
-<tool_error code="InvoiceNotFound" severity="error">
-  <message>Invoice "INV-999" does not exist.</message>
-  <recovery>Call billing.list_invoices first to find valid IDs.</recovery>
-  <available_actions>
-    <action>billing.list_invoices</action>
-  </available_actions>
-</tool_error>
-```
+</div>
+</div>
 
 The agent reads `<available_actions>` and calls `billing.list_invoices` instead of retrying with the same invalid ID.
 
-### Error Codes {#codes}
-
-`toolError()` accepts canonical codes or any custom string: `NOT_FOUND`, `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `TIMEOUT`, `INTERNAL_ERROR`, `DEPRECATED`, `SERVER_BUSY`, or domain-specific codes like `'InvoiceAlreadyPaid'`.
-
 > [!TIP]
-> Use domain-specific codes (`InvoiceNotFound`, `AlreadyPaid`, `OverPayment`) instead of generic ones. They're far more useful for debugging and make error logs self-documenting.
+> Use domain-specific codes (`InvoiceNotFound`, `AlreadyPaid`) instead of generic ones. They make error logs self-documenting.
 
 ## ErrorBuilder — Fluent Error Chain {#error-builder}
 
-For maximum readability, use the fluent `ErrorBuilder` via `f.error()`. It chains naturally and returns directly from handlers:
+For maximum readability, use the fluent `f.error()`:
+
+<!-- Code screen -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">tools/billing/charge.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-const f = initVurb<AppContext>();
-
 export const chargeInvoice = f.mutation('billing.charge')
   .describe('Process a payment for an invoice')
   .withString('invoice_id', 'Invoice ID')
@@ -165,6 +181,9 @@ export const chargeInvoice = f.mutation('billing.charge')
   });
 ```
 
+</div>
+</div>
+
 ### ErrorBuilder Methods
 
 | Method | Purpose |
@@ -177,9 +196,11 @@ export const chargeInvoice = f.mutation('billing.charge')
 | `.details(data)` | Structured metadata (`Record<string, string>`) |
 | `.retryAfter(seconds)` | Suggest delay for transient errors |
 
-## Severity Levels {#severity}
+::: warning Architect's Check
+When your AI agent generates error handlers, verify that every `NOT_FOUND` error includes an `availableActions` array or `.actions()` call. Without recovery paths, the agent falls back to "I encountered an error" — the worst possible UX.
+:::
 
-Default severity is `'error'`. Use `'warning'` for non-fatal advisories and `'critical'` for system-level failures:
+## Severity Levels {#severity}
 
 ```typescript
 // Warning — non-fatal advisory (isError: false)
@@ -195,42 +216,15 @@ return f.error('INTERNAL_ERROR', 'Database connection pool exhausted')
   .critical();
 ```
 
-Warnings set `isError: false` in the MCP response — the agent treats them as advisories rather than failures.
-
-## Structured Details & Retry Hints {#details}
-
-Add machine-readable metadata for richer error context:
-
-```typescript
-return f.error('NOT_FOUND', 'Invoice not found')
-  .details({
-    entity_id: 'inv_123',
-    entity_type: 'invoice',
-    searched_workspace: 'ws_42',
-  });
-
-return f.error('RATE_LIMITED', 'Too many requests')
-  .retryAfter(30);
-```
-
 ## Automatic Validation Errors {#validation}
 
-When the agent sends arguments that fail Zod validation, the framework generates per-field correction prompts automatically — no code needed:
+Invalid Zod arguments auto-generate per-field corrections — no code needed:
 
 ```xml
 <validation_error action="users/create">
-  <field name="email">Invalid email. You sent: 'bad-email'. Expected: a valid email address (e.g. user@example.com).</field>
-  <field name="role">Invalid enum value. Expected 'admin' | 'user', received 'superadmin'. You sent: 'superadmin'. Valid options: 'admin', 'user'.</field>
-  <recovery>Fix the fields above and call the tool again. Do not explain the error.</recovery>
-</validation_error>
-```
-
-Per-field `You sent:` values let the agent diff against expectations. The `<recovery>` tag instructs immediate retry. Unrecognized keys are explicitly rejected:
-
-```xml
-<validation_error action="billing/create">
-  <field name="(root)">Unrecognized key(s) in object: 'hallucinated_param'. Remove or correct unrecognized fields: 'hallucinated_param'. Check for typos.</field>
-  <recovery>Fix the fields above and call the tool again. Do not explain the error.</recovery>
+  <field name="email">Invalid email. You sent: 'bad-email'. Expected: a valid email address.</field>
+  <field name="role">Invalid enum value. Expected 'admin' | 'user', received 'superadmin'.</field>
+  <recovery>Fix the fields above and call the tool again.</recovery>
 </validation_error>
 ```
 
@@ -239,24 +233,16 @@ Per-field `You sent:` values let the agent diff against expectations. The `<reco
 Missing or misspelled discriminators produce structured corrections:
 
 ```xml
-<tool_error code="MISSING_DISCRIMINATOR">
-  <message>The required field "action" is missing.</message>
-  <available_actions>list, create, delete</available_actions>
-  <recovery>Add the "action" field and call the tool again.</recovery>
-</tool_error>
-```
-
-```xml
 <tool_error code="UNKNOWN_ACTION">
   <message>The action "destory" does not exist.</message>
   <available_actions>list, create, delete</available_actions>
-  <recovery>Choose a valid action from available_actions and call the tool again.</recovery>
+  <recovery>Choose a valid action from available_actions.</recovery>
 </tool_error>
 ```
 
 ## Composing Errors with Result {#pipelines}
 
-For multi-step operations, use the [Result monad](/result-monad) to compose validation chains:
+For multi-step operations, use the [Result monad](/result-monad):
 
 ```typescript
 import { succeed, fail, error, success, type Result } from '@vurb/core';
@@ -264,12 +250,6 @@ import { succeed, fail, error, success, type Result } from '@vurb/core';
 function findUser(db: Database, id: string): Result<User> {
   const user = db.users.get(id);
   return user ? succeed(user) : fail(error(`User "${id}" not found`));
-}
-
-function checkPermission(user: User, action: string): Result<User> {
-  return user.can(action)
-    ? succeed(user)
-    : fail(error(`User "${user.id}" cannot ${action}`));
 }
 
 .handle(async (input, ctx) => {
@@ -284,6 +264,8 @@ function checkPermission(user: User, action: string): Result<User> {
 })
 ```
 
+---
+
 ## The Error Protocol {#protocol}
 
 | Error Type | Source | Root Element | Trigger |
@@ -292,7 +274,37 @@ function checkPermission(user: User, action: string): Result<User> {
 | `required()` | Handler | `<tool_error code="MISSING_REQUIRED_FIELD">` | Missing arguments |
 | `toolError()` | Handler | `<tool_error code="...">` | Recoverable business errors |
 | `f.error()` | Handler | `<tool_error code="...">` | Fluent builder chain |
-| Validation | Automatic | `<validation_error action="...">` | Invalid arguments |
-| Routing | Automatic | `<tool_error code="MISSING_DISCRIMINATOR\|UNKNOWN_ACTION">` | Bad discriminator |
+| Validation | Automatic | `<validation_error>` | Invalid arguments |
+| Routing | Automatic | `<tool_error code="MISSING_DISCRIMINATOR">` | Bad discriminator |
 
 All user-controlled data is XML-escaped automatically.
+
+---
+
+## Next Steps {#next}
+
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
+
+<a href="/result-monad" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">PIPELINE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Result Monad</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Compose validation chains.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/middleware" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">GUARD</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Middleware</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Auth, rate limiting, logging.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/presenter" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">VIEW</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Presenter</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Shape what the LLM sees.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>

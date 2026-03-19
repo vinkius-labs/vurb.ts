@@ -4,16 +4,22 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Why Audit Trails Matter](#why)
-- [How It Works](#how-it-works)
-- [Configuration](#configuration)
-- [Audit Event Structure](#event-structure)
-- [SHA-256 Argument Hashing](#hashing)
-- [Identity Extraction](#identity)
-- [Status Detection](#status-detection)
-- [SOC2 Mapping](#soc2)
-- [GDPR Mapping](#gdpr)
-- [API Reference](#api)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add audit trail middleware to all billing tools with SHA-256 argument hashing, identity extraction from ctx.user, and a sink that writes to Prisma."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">COMPLIANCE EVIDENCE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Who called what. When. Why.<br><span style="color:rgba(255,255,255,0.25)">SOC2 and GDPR — automatic.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Every tool call is logged with identity, hashed arguments, outcome, and duration. Arguments are SHA-256 hashed — never persisted raw. SOC2 and GDPR evidence, automatically.</div>
+</div>
 
 The Audit Trail middleware wraps every tool call with compliance-ready logging. It captures who called what, when, with what arguments (hashed), and what happened — without leaking sensitive data.
 

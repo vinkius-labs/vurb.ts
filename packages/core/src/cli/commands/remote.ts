@@ -13,15 +13,16 @@ export async function commandRemote(args: CliArgs): Promise<void> {
     // vurb remote <url> [--server-id <id>] [--token <tok>] — set one or more at once
     // vurb remote --server-id <id>        — uses default Vinkius Cloud URL
     if (args.remoteUrl || args.serverId || args.token) {
-        const remote = args.remoteUrl ?? VINKIUS_CLOUD_URL;
+        const explicitRemote = args.remoteUrl;
 
         writeVurbRc(cwd, {
-            remote,
+            ...(explicitRemote ? { remote: explicitRemote } : {}),
             ...(args.serverId ? { serverId: args.serverId } : {}),
             ...(args.token ? { token: args.token } : {}),
         });
 
-        process.stderr.write(`  ${ansi.green('✓')} Remote set to ${ansi.cyan(remote)}${remote === VINKIUS_CLOUD_URL ? ansi.dim(' (default)') : ''}\n`);
+        const displayRemote = explicitRemote ?? readVurbRc(cwd).remote ?? VINKIUS_CLOUD_URL;
+        process.stderr.write(`  ${ansi.green('✓')} Remote set to ${ansi.cyan(displayRemote)}${displayRemote === VINKIUS_CLOUD_URL ? ansi.dim(' (default)') : ''}\n`);
         if (args.serverId) {
             process.stderr.write(`  ${ansi.green('✓')} Server ID set to ${ansi.cyan(args.serverId)}\n`);
         }

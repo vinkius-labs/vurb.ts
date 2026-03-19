@@ -2,17 +2,22 @@
 
 <a href="https://www.npmjs.com/package/@vurb/cloudflare"><img src="https://img.shields.io/npm/v/@vurb/cloudflare?color=blue" alt="npm" /></a>
 
-- [Why This Matters](#why-this-matters)
-- [Installation](#installation)
-- [Architecture](#architecture)
-- [Step-by-Step Setup](#setup)
-- [Adding Middleware](#middleware)
-- [Adding Presenters](#presenters)
-- [Configuration Reference](#config)
-- [What Works on the Edge](#edge-compatibility)
-- [Compatible Clients](#clients)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Create a Cloudflare Worker that deploys my Vurb registry to 300+ edge locations using cloudflareWorkersAdapter with D1 and KV bindings."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Deploy your Vurb.ts server to Cloudflare Workers in one line. No transport hacks, no session workarounds, no infrastructure config. Your existing tools, middleware, Presenters, and governance lockfile run at the edge — unchanged.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(245,158,11,0.6);letter-spacing:3px;font-weight:700">GLOBAL EDGE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">300+ edge locations.<br><span style="color:rgba(255,255,255,0.25)">One line deployment.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Deploy your Vurb server to Cloudflare Workers. No transport hacks, no session workarounds. Your existing tools, middleware, Presenters, and governance lockfile run at the edge — unchanged.</div>
+</div>
 
 ```typescript
 // worker.ts — the entire file

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.9] - 2026-03-19
+
+### Fixed
+
+- **`vurb remote --server-id` overwrites existing remote URL** — Running `vurb remote --server-id <uuid>` without an explicit `--remote` URL would overwrite the existing remote (e.g. `http://localhost:8080`) with the default production URL (`https://cloud.vinkius.com`), causing deploy failures with "unexpected non-JSON response". Now only writes the `remote` key when the user explicitly provides a URL; otherwise preserves the existing value from `.vurbrc`.
+- **`vurb token` does not update `serverId`** — Setting a new token via `vurb token <value>` saved the token but left the old `serverId` in `.vurbrc`. When the new token belonged to a different server, subsequent `vurb deploy` failed with "connection token does not belong to this server". Now auto-resolves `serverId` by calling `GET /api/token/info` with the new token and updating `.vurbrc` automatically.
+
 ## [3.7.7] - 2026-03-19
 
 ### Fixed

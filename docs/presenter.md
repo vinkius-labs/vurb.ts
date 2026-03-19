@@ -4,55 +4,63 @@
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-The Presenter separates what the agent sees from how data is fetched. Your handler returns raw data. The Presenter validates, strips, enriches, truncates, and governs the response. Define `InvoicePresenter` once — every tool and prompt that touches invoices uses the same schema, rules, and affordances. 
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Add a Presenter to my invoice tool — schema allowlist, PII redaction on customer SSN, business rules for overdue status, and affordances for payment actions."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-By enforcing strict Zod schemas on every response, the Presenter makes sure internal fields never leak to the agent. Dynamic rule tree-shaking and truncation keep token usage under control without relying on the LLM to paginate on its own.
+---
 
-This is the **View** in the [MVA (Model-View-Agent)](/mva-pattern) pattern. Presenters can also be [auto-generated from OpenAPI response schemas](/openapi-gen) via `@vurb/openapi-gen`.
+<!-- Editorial break: What is the Presenter -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(129,140,248,0.6);letter-spacing:3px;font-weight:700">THE VIEW LAYER</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Shape what the agent sees.<br><span style="color:rgba(255,255,255,0.25)">Nothing more.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Your handler returns raw data. The Presenter validates, strips, enriches, truncates, and governs the response — all in one place.</div>
+</div>
+
+The **V** in [MVA (Model-View-Agent)](/mva-pattern). Define `InvoicePresenter` once — every tool and prompt that touches invoices uses the same schema, rules, and affordances. Internal fields never leak. Token usage stays under control.
 
 ## Defining a Presenter {#minimal}
 
-::: code-group
-```typescript [Fluent (recommended)]
+<!-- Code screen: Minimal Presenter -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">views/UserPresenter.ts</span>
+</div>
+<div style="padding:20px">
+
+```typescript
 import { createPresenter, t } from '@vurb/core';
 
 export const UserPresenter = createPresenter('User')
   .schema({
     id:    t.string,
     name:  t.string,
-    email: t.zod.string().email(),  // t.zod escape hatch for advanced Zod
+    email: t.zod.string().email(),
     role:  t.enum('admin', 'member', 'guest'),
   });
 ```
-```typescript [Declarative]
-import { definePresenter } from '@vurb/core';
-import { UserModel } from '../models/UserModel.js';
 
-export const UserPresenter = definePresenter({
-  name: 'User',
-  schema: UserModel,
-});
-```
+</div>
+</div>
+
+That's it. Any field not in the schema is stripped from the response. The agent never sees `passwordHash`, `tenantId`, or anything else you didn't declare.
+
+::: tip Declarative alternative
+`definePresenter({ name: 'User', schema: UserModel })` — same result, config-object style.
 :::
 
 ## Schema — The `t` Namespace {#schema}
 
-The `t` namespace provides Zod-backed type helpers that eliminate `import { z } from 'zod'` for 95% of use cases. Every `t.*` value IS a real ZodType — `.describe()`, `.optional()`, `.nullable()` all work.
+The `t` namespace provides Zod-backed type helpers. Every `t.*` IS a real ZodType — `.describe()`, `.optional()`, `.nullable()` all work.
 
-```typescript
-import { createPresenter, t } from '@vurb/core';
-
-const InvoicePresenter = createPresenter('Invoice')
-  .schema({
-    id:           t.string,
-    amount_cents: t.number.describe('Value in CENTS. Divide by 100 for display.'),
-    status:       t.enum('paid', 'pending', 'overdue'),
-    tags:         t.array(t.string),
-    metadata:     t.optional(t.record(t.string)),
-  });
-```
-
-| Helper | Equivalent Zod | Example |
+| Helper | Zod Equivalent | Example |
 |---|---|---|
 | `t.string` | `z.string()` | `t.string.describe('User ID')` |
 | `t.number` | `z.number()` | `t.number` |
@@ -67,77 +75,100 @@ const InvoicePresenter = createPresenter('Invoice')
 | `t.zod` | `z` | `t.zod.string().email()` |
 
 ::: tip Escape Hatch
-Need regex, transforms, or unions? Use `t.zod` for direct Zod access:
-```typescript
-.schema({
-  id:    t.string,
-  email: t.zod.string().email().min(5),  // Full Zod power
-})
-```
+Need regex, transforms, or unions? Use `t.zod` for direct Zod access — full power, zero limits.
 :::
 
-::: info Model-driven schemas
-In production, schemas come from `defineModel()` — the framework's standard [Model layer](/mva-convention#model). The `t` namespace and raw `z.object()` remain fully supported for quick prototyping.
-:::
+---
 
-## Auto-Extracted Rules {#auto-rules}
+<!-- Editorial break: What can the Presenter do -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(34,211,238,0.6);letter-spacing:3px;font-weight:700">CAPABILITIES</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">Schema. Rules. Charts.<br><span style="color:rgba(255,255,255,0.25)">All from one builder.</span></div>
+</div>
 
-Zod `.describe()` annotations generate system rules that travel with the data:
+<!-- Feature Grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:32px 0">
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(129,140,248,0.8);padding:3px 10px;border:1px solid rgba(129,140,248,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">RULES</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">System Rules</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Static or dynamic directives that travel with the data. Context-aware: adapt to user role, tenant, locale.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(34,211,238,0.8);padding:3px 10px;border:1px solid rgba(34,211,238,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">UI</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">UI Blocks</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Server-rendered charts, tables, markdown, diagrams. Displayed by MCP clients that support rich content.</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(52,211,153,0.8);padding:3px 10px;border:1px solid rgba(52,211,153,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">LIMIT</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Agent Limit</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Truncates arrays before validation. Auto-injects guidance: "50 shown, N hidden. Use filters."</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:#09090f;padding:20px 24px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:8px;color:rgba(245,158,11,0.8);padding:3px 10px;border:1px solid rgba(245,158,11,0.2);border-radius:4px;font-weight:600;letter-spacing:1px">HATEOAS</span>
+</div>
+<div style="font-size:13px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-bottom:6px">Suggested Actions</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;font-family:Inter,sans-serif">Data-driven hints: "Invoice overdue → suggest billing.escalate." The agent gets valid next actions, not a tools/list scan.</div>
+</div>
+
+</div>
+
+## System Rules {#rules}
+
+<!-- Code screen: Rules -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">views/InvoicePresenter.ts — dynamic rules</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const InvoicePresenter = createPresenter('Invoice')
   .schema({
     id: t.string,
     amount_cents: t.number.describe('Value in CENTS. Divide by 100 for display.'),
-    status: t.enum('paid', 'pending', 'overdue').describe('Use emoji: ✅ paid, ⏳ pending, 🔴 overdue'),
-  });
-```
-
-The agent sees these rules only when invoice data is in the response — zero wasted tokens.
-
-## System Rules {#rules}
-
-::: code-group
-```typescript [Shorthand — .rules()]
-// Static
-const InvoicePresenter = createPresenter('Invoice')
-  .schema({ /* ... */ })
-  .rules([
-    'Use currency format: $XX,XXX.00',
-    'Always show both the cents value and the formatted amount.',
-  ]);
-
-// Dynamic — adapts to context (RBAC, tenant, locale)
-const InvoicePresenter = createPresenter('Invoice')
-  .schema({ /* ... */ })
+    status: t.enum('paid', 'pending', 'overdue'),
+  })
   .rules((invoice, ctx) => [
     'Use currency format: $XX,XXX.00',
     ctx?.user?.role !== 'admin'
       ? 'RESTRICTED: Do not reveal exact totals to non-admin users.'
       : null,
-    `Format dates using ${ctx?.tenant?.locale ?? 'en-US'}.`,
   ]);
 ```
-```typescript [Full control — .systemRules()]
-// Identical behavior, longer name
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .systemRules((invoice, ctx) => [
-    'CRITICAL: amount_cents is in CENTS. Divide by 100.',
-    ctx?.user?.role !== 'admin'
-      ? 'RESTRICTED: Mask exact totals for non-admin users. Show ranges only.'
-      : null,
-    `Format dates using ${ctx?.tenant?.locale ?? 'en-US'}.`,
-  ]);
-```
-:::
 
-`null` values are filtered automatically. When both `autoRules` and rules are set, they merge.
+</div>
+</div>
+
+Zod `.describe()` annotations auto-generate rules. `null` values are filtered. Static and dynamic rules merge.
 
 ## UI Blocks {#ui-blocks}
 
-::: code-group
-```typescript [Shorthand — .ui()]
+<!-- Code screen: UI Blocks -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">views/InvoicePresenter.ts — charts & tables</span>
+</div>
+<div style="padding:20px">
+
+```typescript
 import { createPresenter, t, ui } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
@@ -148,73 +179,58 @@ const InvoicePresenter = createPresenter('Invoice')
     }),
   ]);
 ```
-```typescript [Full control — .uiBlocks()]
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .uiBlocks((invoice) => [
-    ui.echarts({
-      series: [{ type: 'gauge', data: [{ value: invoice.amount_cents / 100 }] }],
-    }),
-  ]);
-```
-:::
 
-Available helpers:
+</div>
+</div>
 
-```typescript
-ui.echarts({ /* ECharts config */ })    // Interactive charts
-ui.mermaid('graph TD; A-->B')           // Diagrams
-ui.markdown('**Bold** text')            // Rich text
-ui.codeBlock('json', '{"key": "val"}')  // Fenced code
-ui.table(['ID', 'Amount'], rows)        // Markdown tables
-ui.list(['Item 1', 'Item 2'])           // Bullet lists
-ui.json({ key: 'value' })              // Formatted JSON
-ui.summary('3 invoices found.')         // Collection summaries
-```
+| Helper | What it renders |
+|---|---|
+| `ui.echarts({...})` | Interactive charts |
+| `ui.mermaid('graph TD; A-->B')` | Diagrams |
+| `ui.markdown('**Bold** text')` | Rich text |
+| `ui.table(['ID', 'Amount'], rows)` | Markdown tables |
+| `ui.summary('3 invoices found.')` | Collection summaries |
+| `ui.json({ key: 'value' })` | Formatted JSON |
 
-For arrays, use `.collectionUiBlocks()` to get aggregate visualizations instead of N individual charts:
-
-```typescript
-.collectionUiBlocks((invoices) => [
-  ui.echarts({
-    xAxis: { data: invoices.map(i => i.id) },
-    series: [{ type: 'bar', data: invoices.map(i => i.amount_cents / 100) }],
-  }),
-  ui.summary(`${invoices.length} invoices found.`),
-])
-```
+For arrays, use `.collectionUiBlocks()` to get aggregate visualizations instead of N individual charts.
 
 ## Agent Limit {#agent-limit}
 
-Slices arrays before validation and injects guidance about what was omitted.
+<!-- Code screen: Agent Limit -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">cognitive guardrail</span>
+</div>
+<div style="padding:20px">
 
-::: code-group
-```typescript [Shorthand — .limit()]
+```typescript
 const InvoicePresenter = createPresenter('Invoice')
   .schema({ id: t.string, status: t.enum('paid', 'pending', 'overdue') })
   .limit(50);
-// → Auto-generated: "⚠️ Dataset truncated. 50 shown, {N} hidden. Use filters."
+// → "⚠️ Dataset truncated. 50 shown, {N} hidden. Use filters."
 ```
-```typescript [Full control — .agentLimit()]
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .agentLimit(50, (omitted) =>
-    ui.summary(
-      `⚠️ Showing 50 of ${50 + omitted} results. ` +
-      `Use status or date_range filters to narrow results.`
-    )
-  );
-```
-:::
 
-The agent receives kept items plus a UI block that tells it how to get more specific results.
+</div>
+</div>
+
+Slices arrays **before** validation. The agent receives kept items plus a UI block telling it how to narrow results.
 
 ## Suggested Actions {#affordances}
 
-HATEOAS-style hints based on the data's current state. Use the `suggest()` helper for maximum fluency.
+<!-- Code screen: HATEOAS -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">HATEOAS affordances</span>
+</div>
+<div style="padding:20px">
 
-::: code-group
-```typescript [Shorthand — suggest()]
+```typescript
 import { createPresenter, t, suggest } from '@vurb/core';
 
 const InvoicePresenter = createPresenter('Invoice')
@@ -226,29 +242,23 @@ const InvoicePresenter = createPresenter('Invoice')
       : null,
   ].filter(Boolean));
 ```
-```typescript [Full control — .suggestActions()]
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .suggestActions((invoice) => {
-    if (invoice.status === 'pending') {
-      return [
-        { tool: 'billing.pay', reason: 'Process immediate payment' },
-        { tool: 'billing.send_reminder', reason: 'Send payment reminder' },
-      ];
-    }
-    if (invoice.status === 'overdue') {
-      return [{ tool: 'billing.escalate', reason: 'Escalate to collections' }];
-    }
-    return [];
-  });
-```
-:::
 
-The agent receives valid next actions with reasons instead of scanning the full `tools/list`.
+</div>
+</div>
+
+The agent receives valid next actions with reasons — no need to scan the full `tools/list`.
 
 ## Embeds — Nested Presenters {#embeds}
 
-When data has nested objects, each entity gets its own Presenter. Rules, UI blocks, and affordances from children merge into the parent:
+<!-- Code screen: Embeds -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">multi-level composition</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const ClientPresenter = createPresenter('Client')
@@ -261,9 +271,22 @@ export const InvoicePresenter = createPresenter('Invoice')
   .embed('line_items', LineItemPresenter);
 ```
 
-Embeds nest to any depth.
+</div>
+</div>
+
+Rules, UI blocks, and affordances from children merge into the parent. Embeds nest to any depth.
 
 ## Tool Integration {#tool-integration}
+
+<!-- Code screen: Tool Integration -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">agents/billing.tool.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 const getInvoice = f.query('billing.get_invoice')
@@ -278,60 +301,108 @@ const getInvoice = f.query('billing.get_invoice')
   });
 ```
 
+</div>
+</div>
+
 The handler's only job is to query data. The framework calls `presenter.make(data, ctx).build()` automatically.
 
-## Prompt Integration {#prompt-integration}
+---
 
-`PromptMessage.fromView()` decomposes a Presenter's output into prompt messages:
-
-```typescript
-import { definePrompt, PromptMessage } from '@vurb/core';
-
-const AuditPrompt = definePrompt<AppContext>('audit', {
-  args: { invoiceId: 'string' } as const,
-  handler: async (ctx, { invoiceId }) => {
-    const invoice = await ctx.db.getInvoice(invoiceId);
-    return {
-      messages: [
-        PromptMessage.system('You are a Senior Financial Auditor.'),
-        ...PromptMessage.fromView(InvoicePresenter.make(invoice, ctx)),
-        PromptMessage.user('Begin the audit for this invoice.'),
-      ],
-    };
-  },
-});
-```
-
-Same Presenter, same schema, same rules — in both tools and prompts.
+<!-- Editorial break: The Pipeline -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(52,211,153,0.6);letter-spacing:3px;font-weight:700">EXECUTION</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">The Presenter Pipeline.<br><span style="color:rgba(255,255,255,0.25)">Seven stages, all automatic.</span></div>
+</div>
 
 ## Execution Pipeline {#pipeline}
 
-```text
-handler return value
-    ↓
-1. Array Detection         → single-item or collection path
-2. agentLimit (arrays)     → slice BEFORE validation, inject guidance
-3. Zod .parse() (strict)   → strip undeclared fields, validate types
-4. Embed Resolution        → run child Presenters on nested keys
-5. System Rules            → autoRules + static + dynamic rules
-6. UI Blocks               → uiBlocks (single) or collectionUi (array)
-7. Suggested Actions       → HATEOAS affordances per item
-8. ResponseBuilder.build() → final ToolResponse
-```
-
 Every stage is optional. A Presenter with only `name` and `schema` is a pure egress whitelist.
+
+<!-- Numbered steps -->
+<div style="margin:32px 0">
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(129,140,248,0.3);background:rgba(129,140,248,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(129,140,248,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">01</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Array Detection</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Determines if the handler returned a single item or a collection — routes to the correct processing path.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(34,211,238,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">02</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Agent Limit</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Slices arrays <strong style="color:rgba(255,255,255,0.55)">before</strong> validation. Injects truncation guidance so the agent knows what was hidden.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(52,211,153,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">03</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Zod Validation</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Strict <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.parse()</code> — undeclared fields are stripped, types are validated. Internal data never leaks.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(245,158,11,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">04</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Embed Resolution</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Runs child Presenters on nested keys. Rules, UI blocks, and affordances from children merge into the parent response.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(192,132,252,0.3);background:rgba(192,132,252,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(192,132,252,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">05</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">System Rules</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Auto-rules from <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.describe()</code> + static rules + dynamic context-aware rules — all merged, nulls filtered.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:24px;padding:20px 24px;border-left:2px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(34,197,94,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">06</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">UI Blocks</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">Per-item <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.ui()</code> or aggregate <code style="font-size:10px;color:rgba(129,140,248,0.6);background:rgba(129,140,248,0.06);padding:1px 5px;border-radius:3px">.collectionUiBlocks()</code> — charts, tables, summaries.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:flex-start;gap:20px;padding:20px 24px;border-left:2px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.02);border-radius:0 8px 8px 0">
+<span style="font-size:22px;color:rgba(239,68,68,0.5);font-weight:700;font-family:Inter,sans-serif;min-width:32px">07</span>
+<div>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif">Suggested Actions</div>
+<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.6;font-family:Inter,sans-serif">HATEOAS affordances per item — the agent receives what to do <strong style="color:rgba(255,255,255,0.55)">next</strong>, not the full tools/list.</div>
+</div>
+</div>
+
+</div>
+
+---
 
 ## Builder API {#builder-api}
 
-The fluent `createPresenter()` is the recommended API. Both shorthand aliases and full method names are supported:
+Both shorthand aliases and full method names work:
 
 | Shorthand | Full control | Purpose |
 |---|---|---|
-| `.schema({ id: t.string })` | `.schema(InvoiceModel)` | Define the validation schema |
+| `.schema({ id: t.string })` | `.schema(InvoiceModel)` | Validation schema |
 | `.rules([...])` | `.systemRules([...])` | JIT system rules |
 | `.ui((item) => [...])` | `.uiBlocks((item) => [...])` | Per-item UI blocks |
 | `.limit(50)` | `.agentLimit(50, onTruncate)` | Cognitive guardrail |
 | `.suggest((item) => [...])` | `.suggestActions((item) => {...})` | HATEOAS suggestions |
+
+<!-- Code screen: Complete example -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">complete example</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
 import { createPresenter, t, suggest, ui } from '@vurb/core';
@@ -358,21 +429,45 @@ export const InvoicePresenter = createPresenter('Invoice')
   .limit(50);
 ```
 
-The declarative `definePresenter({ ... })` API is also supported for config-object style.
+</div>
+</div>
 
 After the first `.make()` call, the Presenter is sealed — configuration methods throw if called.
 
-## Manual Usage {#manual}
+## Prompt Integration {#prompt-integration}
+
+`PromptMessage.fromView()` decomposes a Presenter's output into prompt messages — same schema, same rules, in both tools and prompts:
+
+<!-- Code screen: Prompt Integration -->
+<div style="margin:24px 0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:#09090f">
+<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)"></span>
+<span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:8px;letter-spacing:1px">prompts/audit.ts</span>
+</div>
+<div style="padding:20px">
 
 ```typescript
-const builder = InvoicePresenter.make(invoiceData, ctx);
+import { definePrompt, PromptMessage } from '@vurb/core';
 
-builder
-  .llmHint('This is a high-priority invoice.')
-  .uiBlock(ui.mermaid('graph TD; A-->B'));
-
-return builder.build();
+const AuditPrompt = definePrompt<AppContext>('audit', {
+  args: { invoiceId: 'string' } as const,
+  handler: async (ctx, { invoiceId }) => {
+    const invoice = await ctx.db.getInvoice(invoiceId);
+    return {
+      messages: [
+        PromptMessage.system('You are a Senior Financial Auditor.'),
+        ...PromptMessage.fromView(InvoicePresenter.make(invoice, ctx)),
+        PromptMessage.user('Begin the audit for this invoice.'),
+      ],
+    };
+  },
+});
 ```
+
+</div>
+</div>
 
 ## Error Handling {#errors}
 
@@ -391,33 +486,62 @@ try {
 }
 ```
 
-## Composition Patterns {#patterns}
+---
 
-### Shared Base Schema {#base-schema}
+## Deep Dives {#deep-dives}
 
-```typescript
-const baseEntity = z.object({
-  id: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
-});
+<!-- Navigation cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0">
 
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(baseEntity.extend({
-    amount_cents: z.number().describe('Value in CENTS. Divide by 100.'),
-    status: z.enum(['paid', 'pending', 'overdue']),
-  }));
-```
+<a href="/mva/presenter-anatomy" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(129,140,248,0.5);letter-spacing:2px;font-weight:600">LIFECYCLE</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Anatomy & Lifecycle</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Parse → validate → enrich → seal. Internal pipeline in detail.</div>
+<span style="font-size:10px;color:rgba(129,140,248,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-### Multi-Level Embeds {#multi-embed}
+<a href="/mva/perception-package" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(34,211,238,0.5);letter-spacing:2px;font-weight:600">OUTPUT</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Perception Package</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">What the agent actually receives — data + rules + UI + affordances.</div>
+<span style="font-size:10px;color:rgba(34,211,238,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-```typescript
-const LineItemPresenter = createPresenter('LineItem')
-  .schema(lineItemSchema)
-  .limit(20);
+<a href="/mva/affordances" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(52,211,153,0.5);letter-spacing:2px;font-weight:600">HATEOAS</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Affordances</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">How data-driven hints guide the agent's next actions.</div>
+<span style="font-size:10px;color:rgba(52,211,153,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
 
-const InvoicePresenter = createPresenter('Invoice')
-  .schema(InvoiceModel)
-  .embed('client', ClientPresenter)
-  .embed('line_items', LineItemPresenter);
-```
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 0 32px">
+
+<a href="/mva/context-tree-shaking" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(245,158,11,0.5);letter-spacing:2px;font-weight:600">RULES</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Context Tree-Shaking</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Rules attach only to the data that needs them — zero wasted tokens.</div>
+<span style="font-size:10px;color:rgba(245,158,11,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/mva/cognitive-guardrails" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(192,132,252,0.5);letter-spacing:2px;font-weight:600">LIMITS</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Cognitive Guardrails</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Truncation, limits, and token protection strategies.</div>
+<span style="font-size:10px;color:rgba(192,132,252,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+<a href="/mva/select-reflection" style="text-decoration:none;display:block;padding:24px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:rgba(255,255,255,0.02)">
+<span style="font-size:8px;color:rgba(239,68,68,0.5);letter-spacing:2px;font-weight:600">DYNAMIC</span>
+<div style="font-size:14px;color:#fff;font-weight:600;font-family:Inter,sans-serif;margin-top:8px">Select Reflection</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;line-height:1.5;font-family:Inter,sans-serif">Dynamic field selection from query context.</div>
+<span style="font-size:10px;color:rgba(239,68,68,0.6);margin-top:12px;display:block;font-family:Inter,sans-serif">Read more →</span>
+</a>
+
+</div>
+
+### Cookbook Recipes
+
+- [Presenter Composition](/cookbook/presenter-composition) · [Custom Responses](/cookbook/custom-responses) · [Context-Aware Rules](/cookbook/context-aware-rules)
+- [Context Tree-Shaking](/cookbook/context-tree-shaking) · [Select Reflection](/cookbook/select-reflection) · [Cognitive Guardrails](/cookbook/cognitive-guardrails)

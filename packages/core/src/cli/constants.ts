@@ -34,7 +34,7 @@ export const VINKIUS_CLOUD_URL = 'https://cloud.vinkius.com';
 
 export const VALID_TRANSPORTS = ['stdio', 'sse'] as const;
 export const VALID_VECTORS = ['vanilla', 'prisma', 'n8n', 'openapi', 'oauth'] as const;
-export const VALID_TARGETS = ['node', 'vercel', 'cloudflare'] as const;
+export const VALID_TARGETS = ['vinkius', 'vercel', 'cloudflare'] as const;
 
 // ─── Help Text ───────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ USAGE
 CREATE OPTIONS
   --transport <stdio|sse>  Transport layer (default: stdio)
   --vector <type>          Ingestion vector: vanilla, prisma, n8n, openapi, oauth
-  --target <platform>      Deploy target: node (default), vercel, cloudflare
+  --target <platform>      Deploy target: vinkius (default), vercel, cloudflare
   --testing                Include test suite (default: true)
   --no-testing             Skip test suite
   --yes, -y                Skip prompts, use defaults

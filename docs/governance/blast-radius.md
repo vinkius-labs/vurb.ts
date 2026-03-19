@@ -9,16 +9,23 @@ description: "Multi-layer static analysis with entitlement scanning, code evalua
 Install Vurb.ts before following this guide: `npm install @vurb/core @modelcontextprotocol/sdk zod` — or scaffold a project with [`vurb create`](/quickstart-lightspeed).
 :::
 
-- [Scanning Source Code](#scan)
-- [Validating Against Claims](#validate)
-- [The Full Report](#report)
-- [Evasion Detection](#evasion)
-- [Integration With the Governance Stack](#integration)
-- [CI Safety Gate](#ci)
-- [Pattern Detection](#patterns)
-- [Performance](#performance)
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Scan my handler source code with EntitlementScanner, validate against readOnly:true claims, and add a CI gate that blocks PRs with error-severity violations."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
 
-Every MCP tool handler has an implicit blast radius — the set of I/O capabilities it *actually* uses, regardless of what it *declares*. A tool declared as read-only that imports `fs.writeFile` can write to disk. A tool described as "query your database" that imports `child_process` can execute arbitrary commands.
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(239,68,68,0.6);letter-spacing:3px;font-weight:700">ENTITLEMENT SCANNING</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">readOnly says one thing.<br><span style="color:rgba(255,255,255,0.25)">child_process says another.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">Pattern detection for I/O APIs, code evaluation detection for eval() vectors, and evasion heuristics for obfuscation. When declared contracts diverge from actual code, it reports a violation.</div>
+</div>
+
 
 The MCP protocol has no mechanism to enforce this. Tool annotations like `readOnlyHint` are advisory — the spec itself says they are "not guaranteed to be complete or correct" and "not enforceable at the protocol level."
 

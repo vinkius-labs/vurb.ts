@@ -14,7 +14,7 @@ export type IngestionVector = 'vanilla' | 'prisma' | 'n8n' | 'openapi' | 'oauth'
 export type TransportLayer = 'stdio' | 'sse';
 
 /** Deploy target platform for scaffold generation */
-export type DeployTarget = 'node' | 'vercel' | 'cloudflare';
+export type DeployTarget = 'vinkius' | 'vercel' | 'cloudflare';
 
 /**
  * Project scaffold configuration.
@@ -35,7 +35,7 @@ export interface ProjectConfig {
     /** Include @vurb/testing + Vitest */
     readonly testing: boolean;
 
-    /** Deploy target platform (default: 'node') */
+    /** Deploy target platform (default: 'vinkius') */
     readonly target?: DeployTarget;
 }
 

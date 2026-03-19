@@ -1,5 +1,22 @@
 # Agent Skills — Progressive Instruction Distribution
 
+<!-- Prompt Card -->
+<div style="margin:32px 0;padding:28px 32px;background:rgba(192,132,252,0.04);border:1px solid rgba(192,132,252,0.15);border-radius:12px;position:relative">
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:2px;font-weight:700">TELL YOUR AI AGENT</span>
+<div style="font-size:16px;color:rgba(255,255,255,0.7);margin-top:12px;line-height:1.6;font-style:italic;font-family:Inter,sans-serif">"Register all SKILL.md files from ./skills and expose them as searchable MCP tools with progressive disclosure."</div>
+<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px">Works with Cursor · Claude Code · Copilot · Windsurf · Cline — via SKILL.md</div>
+</div>
+
+---
+
+<!-- Editorial break -->
+<div style="margin:48px 0;padding:56px 40px;background:#09090f;border:1px solid rgba(255,255,255,0.05);border-radius:12px;position:relative;overflow:hidden">
+<div style="position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.3),transparent)"></div>
+<span style="font-size:9px;color:rgba(192,132,252,0.6);letter-spacing:3px;font-weight:700">PROGRESSIVE DISCLOSURE</span>
+<div style="font-size:36px;color:#fff;font-weight:700;font-family:Inter,system-ui,sans-serif;letter-spacing:-1.5px;margin-top:12px;line-height:1.1">50 skills. Zero token waste.<br><span style="color:rgba(255,255,255,0.25)">Load only what you need.</span></div>
+<div style="font-size:14px;color:rgba(255,255,255,0.4);margin-top:16px;max-width:540px;line-height:1.7;font-family:Inter,sans-serif">The agent searches a lightweight index (~50 tokens/skill), loads only the relevant SKILL.md, and reads auxiliary files on demand. Three layers — each consuming tokens only when needed.</div>
+</div>
+
 AI agents are powerful, but they lack domain expertise. Every team solves this the same way: stuff instructions into the system prompt. This works — until the context window fills up with 50 skills worth of instructions for a task that needs one.
 
 Vurb.ts's Agent Skills system makes this waste **structurally impossible**: skills are distributed on demand via MCP, and only the instructions the agent actually needs enter the context window.
