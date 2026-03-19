@@ -326,22 +326,13 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         g.__vurb_introspect_resolve = resolveIntrospect;
         process.env['VURB_INTROSPECT'] = '1';
 
-        // Write the already-compiled esbuild bundle to a temp file and import
-        // it directly. This is pure JS — no tsx loader, no TypeScript compilation,
-        // no module resolution overhead. Near-instant evaluation.
-        const { tmpdir } = await import('node:os');
-        const { join } = await import('node:path');
-        const { writeFileSync, unlinkSync } = await import('node:fs');
-        const { pathToFileURL } = await import('node:url');
-
-        const tmpBundle = join(tmpdir(), `vurb-introspect-${Date.now()}.mjs`);
-        writeFileSync(tmpBundle, rawCode, 'utf-8');
-
-        try {
-            await import(pathToFileURL(tmpBundle).href);
-        } finally {
-            try { unlinkSync(tmpBundle); } catch { /* ignore cleanup errors */ }
-        }
+        // Execute the original (unsanitized) esbuild IIFE bundle in the current
+        // process context via vm.runInThisContext(). We use rawCodeUnsanitized
+        // because the edge sanitizer is only needed for the deploy payload —
+        // introspection runs locally in Node. The bundle format is 'iife', not
+        // ESM, so dynamic import() would fail with syntax errors.
+        const vm = await import('node:vm');
+        vm.runInThisContext(rawCodeUnsanitized, { filename: 'vurb-introspect-bundle.js' });
 
         // Wait for startServer to fire (it resolves via globalThis)
         const result = await Promise.race([
