@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.5] - 2026-03-19
+
+### Fixed
+
+- **Node-compatible introspection build** — `vurb deploy` introspection now uses a separate esbuild pass (`platform: 'node'`, `format: 'esm'`) instead of re-executing the edge bundle. The edge bundle stubs Node builtins via `edgeStubPlugin` (e.g. `os.tmpdir` → noop), which caused `(0, an.tmpdir) is not a function` when running introspection locally. The second build is near-instant since esbuild is already loaded.
+
 ## [3.7.4] - 2026-03-19
 
 ### Fixed

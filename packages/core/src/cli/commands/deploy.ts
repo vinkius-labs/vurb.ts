@@ -326,13 +326,37 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         g.__vurb_introspect_resolve = resolveIntrospect;
         process.env['VURB_INTROSPECT'] = '1';
 
-        // Execute the original (unsanitized) esbuild IIFE bundle in the current
-        // process context via vm.runInThisContext(). We use rawCodeUnsanitized
-        // because the edge sanitizer is only needed for the deploy payload —
-        // introspection runs locally in Node. The bundle format is 'iife', not
-        // ESM, so dynamic import() would fail with syntax errors.
-        const vm = await import('node:vm');
-        vm.runInThisContext(rawCodeUnsanitized, { filename: 'vurb-introspect-bundle.js' });
+        // Build a separate Node-compatible ESM bundle for introspection.
+        // The edge bundle uses platform:'browser' + edgeStubPlugin which stubs
+        // Node builtins (os, fs, etc.) — running it locally fails because the
+        // user's code needs real Node APIs. This second esbuild pass is near-
+        // instant since esbuild is already loaded and files are cached.
+        const introspectBuild = await esbuild.build({
+            entryPoints: [absEntry],
+            bundle: true,
+            format: 'esm',
+            platform: 'node',
+            target: 'es2022',
+            treeShaking: true,
+            minify: false,
+            write: false,
+            logLevel: 'silent',
+        });
+        const introspectCode = new TextDecoder().decode(introspectBuild.outputFiles![0]!.contents);
+
+        const { tmpdir } = await import('node:os');
+        const { join } = await import('node:path');
+        const { writeFileSync, unlinkSync } = await import('node:fs');
+        const { pathToFileURL } = await import('node:url');
+
+        const tmpBundle = join(tmpdir(), `vurb-introspect-${Date.now()}.mjs`);
+        writeFileSync(tmpBundle, introspectCode, 'utf-8');
+
+        try {
+            await import(pathToFileURL(tmpBundle).href);
+        } finally {
+            try { unlinkSync(tmpBundle); } catch { /* ignore cleanup errors */ }
+        }
 
         // Wait for startServer to fire (it resolves via globalThis)
         const result = await Promise.race([
