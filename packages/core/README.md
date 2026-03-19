@@ -117,7 +117,12 @@ This works on Cursor, Claude Code, GitHub Copilot, Windsurf, Cline — any agent
 
 ```bash
 vurb create my-server
-cd my-server && vurb dev
+```
+```bash
+vurb dev
+```
+```bash
+vurb deploy
 ```
 
 That's it. A production-ready MCP server with file-based routing, Presenters, middleware, tests, and pre-configured connections for **Cursor**, **Claude Desktop**, **Claude Code**, **Windsurf**, **Cline**, and **VS Code + GitHub Copilot**.

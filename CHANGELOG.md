@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.7] - 2026-03-19
+
+### Fixed
+
+- **Build fix for action expansion** — Fixed TS2352 in `deploy.ts` caused by casting `LockfileToolSurface.actions` (which is `readonly string[]`) to a `Record<string, ...>`. Now uses the pre-lockfile `contracts` object (`ToolContract.surface.actions`) which has per-action `ActionContract` with description fields, providing both correct types and richer data.
+
 ## [3.7.6] - 2026-03-19
 
 ### Fixed

@@ -383,25 +383,24 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         manifest = lockfile as unknown as Record<string, unknown>;
 
         // Extract tool names + descriptions for CLI display and dashboard sync.
-        // Grouped tools (multiple actions) are expanded into individual entries
-        // (e.g. compliance → compliance.obligations, compliance.timeline, ...).
-        // Flat tools (single action) keep their tool-level name.
-        const lockTools = (lockfile.capabilities as { tools: Record<string, { surface: { description: string | null; actions: Record<string, { description: string | null }> } }> }).tools;
+        // Uses `contracts` (pre-lockfile ToolContract) which has per-action
+        // descriptions. Grouped tools (multiple actions) are expanded into
+        // individual entries; flat tools keep their namespace name.
         toolNames = [];
-        for (const [namespace, tool] of Object.entries(lockTools)) {
-            const actionEntries = Object.entries(tool.surface.actions);
+        for (const [namespace, contract] of Object.entries(contracts)) {
+            const actionEntries = Object.entries(contract.surface.actions);
             if (actionEntries.length <= 1) {
                 // Flat tool — single action or no actions: use namespace name
                 toolNames.push({
                     name: namespace,
-                    description: tool.surface.description ?? '',
+                    description: contract.surface.description ?? '',
                 });
             } else {
                 // Grouped tool — expand each action as namespace.action
                 for (const [actionKey, action] of actionEntries) {
                     toolNames.push({
                         name: `${namespace}.${actionKey}`,
-                        description: action.description ?? tool.surface.description ?? '',
+                        description: action.description ?? contract.surface.description ?? '',
                     });
                 }
             }

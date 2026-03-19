@@ -22,7 +22,7 @@ export function readme(config: ProjectConfig): string {
 
     return `# ${config.name}
 
-MCP Server built with [Vurb](https://vurb.vinkius.com/) — the MVA framework for the Model Context Protocol.
+MCP Server built with [Vurb](https://vurb.vinkius.com/) — the MCP framework with MVA architecture.
 
 ## Quick Start
 
