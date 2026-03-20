@@ -96,77 +96,77 @@ export class FieldDef {
 
 // ── Compile FieldDef → Zod ──────────────────────────────
 
-function compileField(def: FieldDef): ZodType {
-    let schema: ZodType;
-
+/**
+ * Build the raw Zod base schema for a field type, with no label or optionality applied.
+ *
+ * Accepts a `childCompiler` callback so callers can choose the correct
+ * recursion strategy for nested `object` / `list` fields:
+ *  - `compileField` uses itself (output schema semantics)
+ *  - `compileFieldForInput` uses itself with `forceOptional` = false
+ *
+ * @internal
+ */
+function fieldTypeToZod(def: FieldDef, childCompiler: (child: FieldDef) => ZodType): ZodType {
     switch (def._type) {
         case 'string':
         case 'text':
-            schema = z.string();
-            break;
-        case 'number':
-            schema = z.number();
-            break;
-        case 'boolean':
-            schema = z.boolean();
-            break;
-        case 'date':
-            schema = z.string();
-            break;
-        case 'timestamp':
-            schema = z.string();
-            break;
         case 'uuid':
-            schema = z.string();
-            break;
+        case 'date':
+        case 'timestamp':
+            return z.string();
+        case 'number':
         case 'id':
-            // IDs are always required — return early with describe if present
-            schema = z.number();
-            if (def._label) schema = schema.describe(def._label);
-            return schema;
+            return z.number();
+        case 'boolean':
+            return z.boolean();
         case 'enum':
-            schema = z.enum(def._enumValues as [string, ...string[]]);
-            break;
+            return z.enum(def._enumValues as [string, ...string[]]);
         case 'object': {
             const shape: ZodRawShape = {};
             if (def._shape) {
                 for (const [key, childDef] of Object.entries(def._shape)) {
-                    shape[key] = compileField(childDef);
+                    shape[key] = childCompiler(childDef);
                 }
             }
-            schema = z.object(shape);
-            break;
+            return z.object(shape);
         }
         case 'list': {
             const itemShape: ZodRawShape = {};
             if (def._shape) {
                 for (const [key, childDef] of Object.entries(def._shape)) {
-                    itemShape[key] = compileField(childDef);
+                    itemShape[key] = childCompiler(childDef);
                 }
             }
-            schema = z.array(z.object(itemShape));
-            break;
+            return z.array(z.object(itemShape));
         }
     }
+}
+
+/** Add a date format hint to a label when relevant. @internal */
+function labelFor(def: FieldDef): string | undefined {
+    if (!def._label) return undefined;
+    return def._type === 'date' ? `${def._label} (YYYY-MM-DD)` : def._label;
+}
+
+function compileField(def: FieldDef): ZodType {
+    // `id` is always required — skip optionality and return immediately.
+    if (def._type === 'id') {
+        const schema = z.number();
+        return def._label ? schema.describe(def._label) : schema;
+    }
+
+    let schema = fieldTypeToZod(def, compileField);
 
     // Add description (label) — Drizzle + Django verbose_name
-    if (def._label) {
-        // Add format hint for date fields — automatically hint YYYY-MM-DD
-        const label = def._type === 'date'
-            ? `${def._label} (YYYY-MM-DD)`
-            : def._label;
-        schema = schema.describe(label);
-    }
+    const label = labelFor(def);
+    if (label) schema = schema.describe(label);
 
-    // Everything except `id` is optional + nullable by default
-    // (API responses may omit fields)
+    // Output schemas: boolean / list → optional only; everything else → optional + nullable
+    // (API responses may omit or nullify any field except required IDs)
     if (def._type === 'boolean' || def._type === 'list') {
-        schema = (schema as ReturnType<typeof z.boolean>).optional();
-    } else {
-        schema = (schema as ReturnType<typeof z.string>).optional().nullable();
+        return (schema as ReturnType<typeof z.boolean>).optional();
     }
-
-    return schema;
+    return (schema as ReturnType<typeof z.string>).optional().nullable();
 }
 
 /**
@@ -174,7 +174,7 @@ function compileField(def: FieldDef): ZodType {
  *
  * Unlike `compileField()` (which defaults everything to optional for output schemas),
  * this function produces schemas suitable for tool input parameters:
- * - For **create**: string/text fields become required `z.string()`, number fields become optional
+ * - For **create**: fields are required by default
  * - For **update/filter** (`forceOptional = true`): all fields become optional
  *
  * @param def - Field definition to compile
@@ -182,57 +182,11 @@ function compileField(def: FieldDef): ZodType {
  * @returns Zod schema for input validation
  */
 export function compileFieldForInput(def: FieldDef, forceOptional: boolean): ZodType {
-    let schema: ZodType;
-
-    switch (def._type) {
-        case 'string':
-        case 'text':
-        case 'uuid':
-        case 'date':
-        case 'timestamp':
-            schema = z.string();
-            break;
-        case 'number':
-            schema = z.number();
-            break;
-        case 'boolean':
-            schema = z.boolean();
-            break;
-        case 'id':
-            schema = z.number();
-            break;
-        case 'enum':
-            schema = z.enum(def._enumValues as [string, ...string[]]);
-            break;
-        case 'object': {
-            const shape: ZodRawShape = {};
-            if (def._shape) {
-                for (const [key, childDef] of Object.entries(def._shape)) {
-                    shape[key] = compileFieldForInput(childDef, false);
-                }
-            }
-            schema = z.object(shape);
-            break;
-        }
-        case 'list': {
-            const itemShape: ZodRawShape = {};
-            if (def._shape) {
-                for (const [key, childDef] of Object.entries(def._shape)) {
-                    itemShape[key] = compileFieldForInput(childDef, false);
-                }
-            }
-            schema = z.array(z.object(itemShape));
-            break;
-        }
-    }
+    let schema = fieldTypeToZod(def, child => compileFieldForInput(child, false));
 
     // Add description (label)
-    if (def._label) {
-        const label = def._type === 'date'
-            ? `${def._label} (YYYY-MM-DD)`
-            : def._label;
-        schema = schema.describe(label);
-    }
+    const label = labelFor(def);
+    if (label) schema = schema.describe(label);
 
     // Apply optionality: forceOptional makes everything optional
     if (forceOptional) {

@@ -65,7 +65,9 @@ export interface ConcurrencyConfig {
 
 /** Pending waiter: resolved when a slot becomes available, rejected on abort/shed */
 interface PendingWaiter {
-    readonly resolve: () => void;
+    // `resolve` is intentionally mutable: the abort handler patches it to inject
+    // an event-listener cleanup step before calling the original resolve.
+    resolve: () => void;
     readonly reject: (reason: Error) => void;
 }
 
@@ -135,7 +137,7 @@ export class ConcurrencyGuard {
 
                 // Clean up listener when waiter resolves normally
                 const originalResolve = waiter.resolve;
-                (waiter as { resolve: () => void }).resolve = () => {
+                waiter.resolve = () => {
                     signal.removeEventListener('abort', onAbort);
                     originalResolve();
                 };

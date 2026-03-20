@@ -51,6 +51,20 @@ function resolveArrayItemType(itemType: 'string' | 'number' | 'boolean'): ZodTyp
     }
 }
 
+// ── Schema Description Helper ─────────────────────────────
+
+/**
+ * Apply a `.describe()` annotation to a Zod schema only when a description
+ * is provided. Eliminates the repeated ternary in every `with*()` method:
+ *   `description ? z.X().describe(description) : z.X()`
+ * → `withDesc(z.X(), description)`
+ *
+ * @internal
+ */
+function withDesc<T extends ZodType>(schema: T, description?: string): T {
+    return description ? (schema.describe(description) as T) : schema;
+}
+
 // ── FluentToolBuilder ────────────────────────────────────
 
 /**
@@ -182,7 +196,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, string>, TCtx> {
-        this._addParam(name, description ? z.string().describe(description) : z.string());
+        this._addParam(name, withDesc(z.string(), description));
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, string>, TCtx>;
     }
 
@@ -197,8 +211,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, string>>, TCtx> {
-        const base = description ? z.string().describe(description) : z.string();
-        this._addParam(name, base.optional());
+        this._addParam(name, withDesc(z.string(), description).optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, string>>, TCtx>;
     }
 
@@ -213,7 +226,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, number>, TCtx> {
-        this._addParam(name, description ? z.number().describe(description) : z.number());
+        this._addParam(name, withDesc(z.number(), description));
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, number>, TCtx>;
     }
 
@@ -228,8 +241,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, number>>, TCtx> {
-        const base = description ? z.number().describe(description) : z.number();
-        this._addParam(name, base.optional());
+        this._addParam(name, withDesc(z.number(), description).optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, number>>, TCtx>;
     }
 
@@ -244,7 +256,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, boolean>, TCtx> {
-        this._addParam(name, description ? z.boolean().describe(description) : z.boolean());
+        this._addParam(name, withDesc(z.boolean(), description));
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, boolean>, TCtx>;
     }
 
@@ -259,8 +271,7 @@ export class FluentToolBuilder<
         name: K,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, boolean>>, TCtx> {
-        const base = description ? z.boolean().describe(description) : z.boolean();
-        this._addParam(name, base.optional());
+        this._addParam(name, withDesc(z.boolean(), description).optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, boolean>>, TCtx>;
     }
 
@@ -298,7 +309,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: string }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            this._addParam(name, description ? z.string().describe(description) : z.string());
+            this._addParam(name, withDesc(z.string(), description));
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: string }, TCtx>;
     }
@@ -325,8 +336,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: string | undefined }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            const base = description ? z.string().describe(description) : z.string();
-            this._addParam(name, base.optional());
+            this._addParam(name, withDesc(z.string(), description).optional());
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: string | undefined }, TCtx>;
     }
@@ -341,7 +351,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: number }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            this._addParam(name, description ? z.number().describe(description) : z.number());
+            this._addParam(name, withDesc(z.number(), description));
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: number }, TCtx>;
     }
@@ -367,8 +377,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: number | undefined }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            const base = description ? z.number().describe(description) : z.number();
-            this._addParam(name, base.optional());
+            this._addParam(name, withDesc(z.number(), description).optional());
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: number | undefined }, TCtx>;
     }
@@ -383,7 +392,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: boolean }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            this._addParam(name, description ? z.boolean().describe(description) : z.boolean());
+            this._addParam(name, withDesc(z.boolean(), description));
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: boolean }, TCtx>;
     }
@@ -411,8 +420,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: boolean | undefined }, TCtx> {
         for (const [name, description] of Object.entries(fields)) {
-            const base = description ? z.boolean().describe(description) : z.boolean();
-            this._addParam(name, base.optional());
+            this._addParam(name, withDesc(z.boolean(), description).optional());
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: boolean | undefined }, TCtx>;
     }
@@ -438,8 +446,7 @@ export class FluentToolBuilder<
         values: readonly [V, ...V[]],
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, V>, TCtx> {
-        const schema = z.enum(values as [V, ...V[]]);
-        this._addParam(name, description ? schema.describe(description) : schema);
+        this._addParam(name, withDesc(z.enum(values as [V, ...V[]]), description));
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, V>, TCtx>;
     }
 
@@ -456,8 +463,7 @@ export class FluentToolBuilder<
         values: readonly [V, ...V[]],
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, V>>, TCtx> {
-        const schema = z.enum(values as [V, ...V[]]);
-        this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
+        this._addParam(name, withDesc(z.enum(values as [V, ...V[]]), description).optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, V>>, TCtx>;
     }
 
@@ -483,8 +489,7 @@ export class FluentToolBuilder<
         itemType: I,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>, TCtx> {
-        const schema = z.array(resolveArrayItemType(itemType));
-        this._addParam(name, description ? schema.describe(description) : schema);
+        this._addParam(name, withDesc(z.array(resolveArrayItemType(itemType)), description));
         return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>, TCtx>;
     }
 
@@ -501,8 +506,7 @@ export class FluentToolBuilder<
         itemType: I,
         description?: string,
     ): FluentToolBuilder<TContext, TInput & Partial<Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>>, TCtx> {
-        const schema = z.array(resolveArrayItemType(itemType));
-        this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
+        this._addParam(name, withDesc(z.array(resolveArrayItemType(itemType)), description).optional());
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>>, TCtx>;
     }
 
@@ -531,8 +535,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: R[K][0][number] }, TCtx> {
         for (const [name, [values, description]] of Object.entries(fields)) {
-            const schema = z.enum(values as [string, ...string[]]);
-            this._addParam(name, description ? schema.describe(description) : schema);
+            this._addParam(name, withDesc(z.enum(values as [string, ...string[]]), description));
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: R[K][0][number] }, TCtx>;
     }
@@ -560,8 +563,7 @@ export class FluentToolBuilder<
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: R[K][0][number] | undefined }, TCtx> {
         for (const [name, [values, description]] of Object.entries(fields)) {
-            const schema = z.enum(values as [string, ...string[]]);
-            this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
+            this._addParam(name, withDesc(z.enum(values as [string, ...string[]]), description).optional());
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: R[K][0][number] | undefined }, TCtx>;
     }
@@ -589,9 +591,9 @@ export class FluentToolBuilder<
         itemType: I,
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: (I extends 'string' ? string : I extends 'number' ? number : boolean)[] }, TCtx> {
+        const base = z.array(resolveArrayItemType(itemType));
         for (const [name, description] of Object.entries(fields)) {
-            const schema = z.array(resolveArrayItemType(itemType));
-            this._addParam(name, description ? schema.describe(description) : schema);
+            this._addParam(name, withDesc(base, description));
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]: (I extends 'string' ? string : I extends 'number' ? number : boolean)[] }, TCtx>;
     }
@@ -618,9 +620,9 @@ export class FluentToolBuilder<
         itemType: I,
         fields: R,
     ): FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: (I extends 'string' ? string : I extends 'number' ? number : boolean)[] | undefined }, TCtx> {
+        const base = z.array(resolveArrayItemType(itemType));
         for (const [name, description] of Object.entries(fields)) {
-            const schema = z.array(resolveArrayItemType(itemType));
-            this._addParam(name, description ? schema.describe(description).optional() : schema.optional());
+            this._addParam(name, withDesc(base, description).optional());
         }
         return this as unknown as FluentToolBuilder<TContext, TInput & { [K in keyof R & string]?: (I extends 'string' ? string : I extends 'number' ? number : boolean)[] | undefined }, TCtx>;
     }

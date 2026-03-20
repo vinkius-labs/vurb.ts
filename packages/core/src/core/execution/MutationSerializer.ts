@@ -87,10 +87,23 @@ export class MutationSerializer {
         this._chains.set(key, lock);
 
         try {
-            // Wait for previous operation on this key to complete
-            await prev;
+            // Wait for previous operation on this key to complete.
+            // Race against the AbortSignal so a cancelled request is rejected
+            // immediately rather than silently queuing behind a long mutation.
+            if (signal && !signal.aborted) {
+                const abortPromise = new Promise<never>((_, reject) => {
+                    const onAbort = () =>
+                        reject(new Error('Request cancelled while waiting for mutation lock.'));
+                    signal.addEventListener('abort', onAbort, { once: true });
+                    // Clean up listener when prev resolves without abort
+                    void prev.then(() => signal.removeEventListener('abort', onAbort));
+                });
+                await Promise.race([prev, abortPromise]);
+            } else {
+                await prev;
+            }
 
-            // Check if cancelled while waiting in the serialization queue
+            // Re-check after the race in case abort fired at the same time
             if (signal?.aborted) {
                 throw new Error('Request cancelled while waiting for mutation lock.');
             }

@@ -64,9 +64,12 @@ export interface EgressConfig {
 
 const MIN_PAYLOAD_BYTES = 1024;
 
-const TRUNCATION_SUFFIX =
-    '\n\n[SYSTEM INTERVENTION: Payload truncated at {limit} to prevent memory crash. ' +
-    'You MUST use pagination (limit/offset) or filters to retrieve smaller result sets.]';
+function buildTruncationSuffix(formattedLimit: string): string {
+    return (
+        `\n\n[SYSTEM INTERVENTION: Payload truncated at ${formattedLimit} to prevent memory crash. ` +
+        `You MUST use pagination (limit/offset) or filters to retrieve smaller result sets.]`
+    );
+}
 
 // ── Guard Implementation ─────────────────────────────────
 
@@ -101,7 +104,7 @@ export function applyEgressGuard(
     }
 
     // Truncation path: find how much to cut
-    const suffix = TRUNCATION_SUFFIX.replace('{limit}', formatBytes(limit));
+    const suffix = buildTruncationSuffix(formatBytes(limit));
     const suffixBytes = byteLength(suffix);
     const targetBytes = limit - suffixBytes;
 

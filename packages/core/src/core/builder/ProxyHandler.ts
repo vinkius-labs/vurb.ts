@@ -24,6 +24,21 @@ interface HttpClient {
     delete: <R>(url: string, params?: Record<string, unknown>) => Promise<R>;
 }
 
+// ── HTTP Method Dispatch Table ───────────────────────────
+
+type Dispatcher = (
+    client: HttpClient,
+    url: string,
+    params: Record<string, unknown>,
+) => Promise<unknown>;
+
+const HTTP_DISPATCH: Readonly<Record<'GET' | 'POST' | 'PUT' | 'DELETE', Dispatcher>> = {
+    GET:    (client, url, params) => client.get(url, params),
+    POST:   (client, url, params) => client.post(url, params),
+    PUT:    (client, url, params) => client.put(url, params),
+    DELETE: (client, url, params) => client.delete(url, params),
+};
+
 /**
  * Create a handler function that proxies to `ctx.client`.
  *
@@ -44,8 +59,15 @@ export function createProxyHandler(
         let url = endpoint;
         const consumedKeys = new Set<string>();
         url = url.replace(/:([a-zA-Z_]+)/g, (_match, key: string) => {
+            if (!(key in input) || input[key] === undefined) {
+                throw new Error(
+                    `Proxy endpoint "${endpoint}" requires path parameter ":${key}" ` +
+                    `but it was not found in the tool input. ` +
+                    `Add .withString('${key}', '...') to the tool builder.`,
+                );
+            }
             consumedKeys.add(key);
-            return String(input[key] ?? '');
+            return String(input[key]);
         });
 
         // Build clean params (strip undefined + consumed path params)
@@ -62,21 +84,8 @@ export function createProxyHandler(
         // Access the HTTP client from context
         const client = (ctx as Record<string, unknown>)['client'] as HttpClient;
 
-        let response: unknown;
-        switch (httpMethod) {
-            case 'GET':
-                response = await client.get(url, params);
-                break;
-            case 'POST':
-                response = await client.post(url, params);
-                break;
-            case 'PUT':
-                response = await client.put(url, params);
-                break;
-            case 'DELETE':
-                response = await client.delete(url, params);
-                break;
-        }
+        const dispatch = HTTP_DISPATCH[httpMethod];
+        const response = await dispatch(client, url, params);
 
         // Auto-unwrap { data: ... } envelope
         if (shouldUnwrap

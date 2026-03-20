@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.10] - 2026-03-20
+
+### Changed
+
+- **`defineModel` — shared `fieldTypeToZod` compiler** — Extracted a private `fieldTypeToZod(def, childCompiler)` helper and `labelFor(def)` util to eliminate ~50 lines of duplicated `switch/case` logic that existed independently in both `compileField` (output schema) and `compileFieldForInput` (tool input schema). Both functions now delegate to the shared base, making type mappings a single source of truth.
+- **`FluentToolBuilder` — `withDesc()` schema helper** — Introduced a module-level `withDesc<T extends ZodType>(schema, description?)` helper that applies `.describe()` only when a description is provided. Replaced the repeated `description ? z.X().describe(description) : z.X()` ternary across all 20+ `with*()` and `withOptional*()` methods (scalar, bulk, enum, array variants). Bulk array methods (`withArrays`, `withOptionalArrays`) now also create the base array schema once outside the loop.
+- **`ProxyHandler` — HTTP dispatch table** — Replaced the `switch/case` over HTTP methods with a typed `HTTP_DISPATCH` lookup object (`Record<'GET' | 'POST' | 'PUT' | 'DELETE', Dispatcher>`). Added an early guard for missing URL path parameters — previously a missing `:param` value was silently coerced to an empty string; now throws a descriptive error naming the exact `with*()` call needed to fix it.
+- **`ConcurrencyGuard` — remove unsafe `readonly` cast** — `PendingWaiter.resolve` was declared `readonly` but the abort-listener cleanup code was forced to mutate it via `(waiter as { resolve: () => void }).resolve = ...`. Changed the field to mutable (with a comment explaining the intent) and removed the illegal type assertion.
+- **`MutationSerializer` — cooperative abort during queue wait** — The previous implementation checked `signal.aborted` only *after* `await prev` resolved. A cancellation that fired while the caller was waiting behind a long mutation was silently ignored until the predecessor finished. Now uses `Promise.race([prev, abortPromise])` so the wait is interrupted immediately on abort. The abort event listener is cleaned up when `prev` resolves normally to prevent memory leaks.
+- **`EgressGuard` — type-safe truncation suffix** — Replaced the `TRUNCATION_SUFFIX` string constant (with an implicit `{limit}` placeholder substituted via `.replace()`) with a `buildTruncationSuffix(formattedLimit: string)` function. The limit value is now a typed required argument, making the contract explicit and eliminating a class of silent template errors.
+
 ## [3.7.9] - 2026-03-19
 
 ### Fixed
