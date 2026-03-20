@@ -30,10 +30,8 @@
  *
  * @module
  */
-import { type ZodType, type ZodObject, type ZodRawShape } from 'zod';
-import { GroupedToolBuilder } from './builder/GroupedToolBuilder.js';
-import { type ToolResponse } from './response.js';
-import { type MiddlewareFn } from './types.js';
+import { type ZodTypeAny } from 'zod';
+import type { GroupedToolBuilder } from './builder/GroupedToolBuilder.js';
 import { ToolRegistry } from './registry/ToolRegistry.js';
 import { type Presenter } from '../presenter/Presenter.js';
 import { definePresenter, type PresenterConfig } from '../presenter/definePresenter.js';
@@ -141,7 +139,7 @@ export interface VurbInstance<TContext> {
      * });
      * ```
      */
-    presenter<TSchema extends ZodType<any, any, any>>(
+    presenter<TSchema extends ZodTypeAny>(
         config: Omit<PresenterConfig<TSchema['_output']>, 'schema'> & { schema: TSchema },
     ): Presenter<TSchema['_output']>;
 
@@ -361,7 +359,7 @@ export function initVurb<TContext = void>(): VurbInstance<TContext> {
 
         // ── MVA Presenter ────────────────────────────────
 
-        presenter<TSchema extends ZodType<any, any, any>>(
+        presenter<TSchema extends ZodTypeAny>(
             config: Omit<PresenterConfig<TSchema['_output']>, 'schema'> & { schema: TSchema },
         ): Presenter<TSchema['_output']> {
             return definePresenter(config);
@@ -371,7 +369,7 @@ export function initVurb<TContext = void>(): VurbInstance<TContext> {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         prompt(name: string, config?: any): any {
-            if (!config) {
+            if (config == null) {
                 return new FluentPromptBuilder<TContext>(name);
             }
             return definePrompt<TContext>(name, config as never);

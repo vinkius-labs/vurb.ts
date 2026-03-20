@@ -219,7 +219,7 @@ export class SandboxEngine {
         this._maxOutputBytes = config?.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
 
         const ivm = getIvm();
-        if (!ivm) {
+        if (ivm == null) {
             throw new Error(
                 'SandboxEngine requires the "isolated-vm" package. ' +
                 'Install it with: npm install isolated-vm',
@@ -482,7 +482,7 @@ export class SandboxEngine {
         const ivm = getIvm();
         // Check if isolate is still usable
         try {
-            if (this._isolate?.isDisposed) {
+            if (this._isolate?.isDisposed === true) {
                 this._isolate = new ivm.Isolate({ memoryLimit: this._memoryLimit });
             }
         } catch {

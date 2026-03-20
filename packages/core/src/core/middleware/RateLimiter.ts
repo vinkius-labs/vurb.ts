@@ -180,7 +180,7 @@ export class InMemoryStore implements RateLimitStore {
         // Bug #8 fix: When the window is empty (all timestamps pruned),
         // resetMs should be 0 (window already reset), not windowMs.
         const oldestInWindow = entry.timestamps[0];
-        const resetMs = oldestInWindow ? (oldestInWindow + windowMs) - now : 0;
+        const resetMs = oldestInWindow != null ? (oldestInWindow + windowMs) - now : 0;
 
         return {
             count: currentCount,

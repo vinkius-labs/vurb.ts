@@ -35,7 +35,7 @@ export class PolicyBuilder {
     }
 
     /** @internal */
-    build() {
+    build(): { cacheControl?: CacheDirective; invalidates?: string[] } {
         const result: { cacheControl?: CacheDirective; invalidates?: string[] } = {};
         if (this._cacheControl) result.cacheControl = this._cacheControl;
         if (this._invalidates.length > 0) result.invalidates = this._invalidates;
@@ -141,5 +141,5 @@ export class StateSyncBuilder {
      * Shortcut for build() to align with other builders.
      * Bug #114 fix: cache the result so `sync.layer === sync.layer` is true.
      */
-    get layer() { return this._cachedLayer ??= this.build(); }
+    get layer(): StateSyncLayer { return this._cachedLayer ??= this.build(); }
 }

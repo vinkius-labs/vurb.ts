@@ -329,7 +329,7 @@ const ENCODING_DENSITY_THRESHOLD = 0.15;
  */
 export function scanSource(
     source: string,
-    fileName?: string,
+    _fileName?: string,
 ): readonly EntitlementMatch[] {
     const matches: EntitlementMatch[] = [];
     const lines = source.split('\n');

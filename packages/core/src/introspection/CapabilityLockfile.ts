@@ -42,7 +42,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { ToolContract } from './ToolContract.js';
-import type { ServerDigest, BehaviorDigestResult } from './BehaviorDigest.js';
+import type { BehaviorDigestResult } from './BehaviorDigest.js';
 import { computeServerDigest } from './BehaviorDigest.js';
 import { sha256, canonicalize } from './canonicalize.js';
 
@@ -497,9 +497,9 @@ export function parseLockfile(content: string): CapabilityLockfile | null {
         if (typeof parsed['integrityDigest'] !== 'string') return null;
         if (typeof parsed['generatedAt'] !== 'string') return null;
         if (typeof parsed['vurbVersion'] !== 'string') return null;
-        if (!parsed['capabilities'] || typeof parsed['capabilities'] !== 'object') return null;
+        if (parsed['capabilities'] == null || typeof parsed['capabilities'] !== 'object') return null;
         const caps = parsed['capabilities'] as Record<string, unknown>;
-        if (!caps['tools'] || typeof caps['tools'] !== 'object') return null;
+        if (caps['tools'] == null || typeof caps['tools'] !== 'object') return null;
         return parsed as unknown as CapabilityLockfile;
     } catch {
         /* malformed JSON or unexpected structure — treat as missing */

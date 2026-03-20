@@ -90,7 +90,7 @@ export function emitPresenterTelemetry(opts: PresenterTelemetryOpts): void {
             guardrailHint: 'Results truncated by agentLimit. Use pagination or filters.',
         } : {}),
         timestamp: Date.now(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
     } as any);
 
     // ── 2. presenter.rules ──────────────────────────────
@@ -112,7 +112,7 @@ export function emitPresenterTelemetry(opts: PresenterTelemetryOpts): void {
             action,
             rules: rulesFromResponse,
             timestamp: Date.now(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
         } as any);
     }
 
@@ -126,7 +126,7 @@ export function emitPresenterTelemetry(opts: PresenterTelemetryOpts): void {
             fieldsRedacted: redactPaths.length,
             paths: [...redactPaths],
             timestamp: Date.now(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
         } as any);
     }
 }

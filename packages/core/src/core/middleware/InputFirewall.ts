@@ -153,7 +153,7 @@ export function inputFirewall(config: InputFirewallConfig): MiddlewareFn<unknown
         next: () => Promise<unknown>,
     ): Promise<unknown> => {
         // Skip if no args to evaluate
-        if (!args || Object.keys(args).length === 0) {
+        if (Object.keys(args).length === 0) {
             return next();
         }
 

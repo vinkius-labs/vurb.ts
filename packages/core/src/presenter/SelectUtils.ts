@@ -52,7 +52,7 @@ export function extractZodKeys(schema: ZodType): string[] {
     // Safety: iterate up to 20 layers to prevent infinite loops
     // on pathological or circular Zod constructions.
     for (let depth = 0; depth < 20; depth++) {
-        if (!current || typeof current !== 'object') return [];
+        if (current == null || typeof current !== 'object') return [];
 
         const def = (current as { _def?: Record<string, unknown> })._def;
         if (!def) return [];

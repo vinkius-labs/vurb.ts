@@ -52,10 +52,9 @@
  *
  * @module
  */
-import { z, ZodType, type ZodRawShape, ZodError } from 'zod';
-import { ResponseBuilder } from './ResponseBuilder.js';
+import { z, ZodType, type ZodTypeAny, type ZodRawShape } from 'zod';
+import type { ResponseBuilder } from './ResponseBuilder.js';
 import { type UiBlock } from './ui.js';
-import { PresenterValidationError } from './PresenterValidationError.js';
 import { extractZodKeys } from './SelectUtils.js';
 import { defaultSerializer, type StringifyFn } from '../core/serialization/JsonSerializer.js';
 import { compileRedactor, type RedactConfig, type RedactFn } from './RedactEngine.js';
@@ -157,7 +156,7 @@ export class Presenter<T> {
     /** @internal Human-readable domain name (for debugging) */
     readonly name: string;
 
-    private _schema?: ZodType<any, any, any>;
+    private _schema?: ZodTypeAny;
     private _rules: RulesConfig<T> = [];
     private _itemUiBlocks?: ItemUiBlocksFn<T>;
     private _collectionUiBlocks?: CollectionUiBlocksFn<T>;
@@ -221,7 +220,7 @@ export class Presenter<T> {
      * // Presenter<{ id: string; amount_cents: number }>
      * ```
      */
-    schema<TSchema extends ZodType<any, any, any>>(
+    schema<TSchema extends ZodTypeAny>(
         zodSchema: TSchema,
     ): Presenter<TSchema['_output']>;
 
@@ -242,7 +241,7 @@ export class Presenter<T> {
      *     .schema(InvoiceModel)
      * ```
      */
-    schema(model: { readonly schema: ZodType<any, any, any>; readonly fields: Record<string, unknown> }): Presenter<any>;
+    schema(model: { readonly schema: ZodTypeAny; readonly fields: Record<string, unknown> }): Presenter<unknown>;
 
     /**
      * Set the schema from an object of ZodTypes (enables `t.*` shorthand).
@@ -270,13 +269,13 @@ export class Presenter<T> {
     ): Presenter<z.infer<z.ZodObject<TShape>>>;
 
     // Implementation — accepts ZodType, plain object shapes, or Model objects
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
     schema(schemaOrShape: any): Presenter<any> {
         this._assertNotSealed();
         const narrowed = this as unknown as Presenter<unknown>;
 
         // Detect Model object (duck typing via `fields` + `schema` properties)
-        if (schemaOrShape && typeof schemaOrShape === 'object' && 'fields' in schemaOrShape && 'schema' in schemaOrShape && schemaOrShape.schema instanceof ZodType) {
+        if (schemaOrShape != null && typeof schemaOrShape === 'object' && 'fields' in schemaOrShape && 'schema' in schemaOrShape && schemaOrShape.schema instanceof ZodType) {
             narrowed._schema = schemaOrShape.schema;
         } else if (schemaOrShape instanceof ZodType) {
             // Detect if it's an already-constructed ZodType (has _def property)

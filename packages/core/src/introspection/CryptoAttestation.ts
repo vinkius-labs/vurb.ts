@@ -28,9 +28,7 @@
  *
  * @module
  */
-import type { ToolContract } from './ToolContract.js';
-import type { ServerDigest, BehaviorDigestResult } from './BehaviorDigest.js';
-
+import type { ServerDigest } from './BehaviorDigest.js';
 // Bug #55: Lazy resolution instead of top-level await (breaks CJS consumers)
 let _subtle: SubtleCrypto | undefined;
 async function getSubtle(): Promise<SubtleCrypto> {

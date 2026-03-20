@@ -181,7 +181,7 @@ function invalidateModule(filePath: string): void {
     const absolutePath = resolve(filePath);
 
     // CJS cache invalidation (when running in CJS mode)
-    if (typeof require !== 'undefined' && require.cache) {
+    if (typeof require !== 'undefined') {
         invalidateCjsTree(absolutePath);
     }
 
@@ -219,7 +219,7 @@ function invalidateCjsTree(entryPath: string): void {
         // Find all cached modules that imported `current`
         for (const [key, mod] of Object.entries(require.cache)) {
             if (!mod) continue;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — require.cache module type lacks .children in @types/node
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- require.cache module type lacks .children in @types/node
             const children: Array<{ id: string }> = (mod as any).children ?? [];
             if (children.some(c => c.id === current)) {
                 queue.push(key);

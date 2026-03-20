@@ -32,7 +32,7 @@
  *
  * @module
  */
-import { type ZodType } from 'zod';
+import { type ZodType, type ZodTypeAny } from 'zod';
 import { Presenter, type ActionSuggestion } from './Presenter.js';
 import { type UiBlock } from './ui.js';
 import { extractZodDescriptions } from './ZodDescriptionExtractor.js';
@@ -69,7 +69,7 @@ export interface PresenterConfig<T> {
     readonly name: string;
 
     /** Zod schema for data validation and field filtering */
-    readonly schema?: ZodType<any, any, any>;
+    readonly schema?: ZodTypeAny;
 
     /**
      * System rules that travel with the data.
@@ -262,7 +262,7 @@ export interface PresenterConfig<T> {
  * @see {@link createPresenter} for the legacy fluent builder API
  * @see {@link Presenter} for the full Presenter class documentation
  */
-export function definePresenter<TSchema extends ZodType<any, any, any>>(
+export function definePresenter<TSchema extends ZodTypeAny>(
     config: Omit<PresenterConfig<TSchema['_output']>, 'schema'> & { schema: TSchema },
 ): Presenter<TSchema['_output']>;
 
@@ -287,9 +287,9 @@ export function definePresenter(config: PresenterConfig<unknown>): Presenter<unk
     let resolvedSchema: ZodType | undefined;
     if (config.schema) {
         // Support passing a Model object directly (duck-type detection)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any — duck-type detection for Model vs raw ZodType
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- duck-type detection for Model vs raw ZodType
         const schemaVal = config.schema as any;
-        if (schemaVal && typeof schemaVal === 'object' && 'fields' in schemaVal && 'schema' in schemaVal) {
+        if (schemaVal != null && typeof schemaVal === 'object' && 'fields' in schemaVal && 'schema' in schemaVal) {
             resolvedSchema = schemaVal.schema;
         } else {
             resolvedSchema = config.schema;
@@ -422,8 +422,8 @@ export function definePresenter(config: PresenterConfig<unknown>): Presenter<unk
  * // → rules from BaseFinancial + schema/ui from overrides
  * ```
  */
-export function extendPresenter<TSchema extends ZodType<any, any, any>>(
-    base: Partial<PresenterConfig<any>>,
+export function extendPresenter<TSchema extends ZodTypeAny>(
+    base: Partial<PresenterConfig<unknown>>,
     overrides: Partial<PresenterConfig<TSchema['_output']>> & { schema: TSchema; name: string },
 ): Presenter<TSchema['_output']>;
 
@@ -431,7 +431,7 @@ export function extendPresenter<TSchema extends ZodType<any, any, any>>(
  * Extend without a schema (the override must still provide `name`).
  */
 export function extendPresenter(
-    base: Partial<PresenterConfig<any>>,
+    base: Partial<PresenterConfig<unknown>>,
     overrides: Partial<PresenterConfig<unknown>> & { name: string; schema?: undefined },
 ): Presenter<unknown>;
 
@@ -485,14 +485,14 @@ export function extendPresenter(
 
     // Schema: override wins, set only if defined (exactOptionalPropertyTypes)
     const schema = overrides.schema ?? base.schema;
-    if (schema) merged['schema'] = schema;
+    if (schema != null) merged['schema'] = schema;
 
     // Remove undefined values to satisfy exactOptionalPropertyTypes
     for (const key of Object.keys(merged)) {
         if (merged[key] === undefined) delete merged[key];
     }
 
-    return definePresenter(merged as unknown as PresenterConfig<unknown> & { schema: any });
+    return definePresenter(merged as unknown as PresenterConfig<unknown> & { schema: ZodTypeAny });
 }
 
 /**

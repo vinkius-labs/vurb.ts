@@ -57,7 +57,7 @@ export function createDefaultReporter(): ProgressReporter {
         render();
         spinnerTimer = setInterval(render, SPINNER_INTERVAL_MS);
         // Don't let the spinner timer prevent process exit (important in tests)
-        if (spinnerTimer && typeof spinnerTimer === 'object' && 'unref' in spinnerTimer) {
+        if (typeof spinnerTimer === 'object' && spinnerTimer !== null && 'unref' in spinnerTimer) {
             spinnerTimer.unref();
         }
     }

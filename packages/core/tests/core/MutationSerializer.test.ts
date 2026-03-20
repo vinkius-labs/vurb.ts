@@ -324,3 +324,113 @@ describe('Builder Integration: Auto MutationSerializer', () => {
         expect(firstResult.isError).toBeUndefined();
     });
 });
+
+// ============================================================================
+// Extended Coverage
+// ============================================================================
+
+describe('MutationSerializer: distinct keys are independent', () => {
+    it('chains for different keys are tracked independently', async () => {
+        const serializer = new MutationSerializer();
+        const timeline: string[] = [];
+
+        // key-A has a slow op, key-B is fast — they must not block each other
+        const pA = serializer.serialize('delete-user', async () => {
+            await new Promise(r => setTimeout(r, 60));
+            timeline.push('A');
+        });
+
+        const pB = serializer.serialize('delete-org', async () => {
+            timeline.push('B');
+        });
+
+        await Promise.all([pA, pB]);
+
+        // B should finish first (no delay, separate chain)
+        expect(timeline[0]).toBe('B');
+        expect(timeline[1]).toBe('A');
+    });
+
+    it('GC of key-A does not affect key-B chain', async () => {
+        const serializer = new MutationSerializer();
+
+        await serializer.serialize('key-a', async () => 'a-done');
+        // After GC, key-a is gone
+        expect(serializer.activeChains).toBe(0);
+
+        // key-b should still work correctly
+        const result = await serializer.serialize('key-b', async () => 'b-done');
+        expect(result).toBe('b-done');
+        expect(serializer.activeChains).toBe(0);
+    });
+
+    it('error in key-A does not block key-B', async () => {
+        const serializer = new MutationSerializer();
+
+        try {
+            await serializer.serialize('key-a', async () => { throw new Error('A failed'); });
+        } catch { /* expected */ }
+
+        const result = await serializer.serialize('key-b', async () => 'b-ok');
+        expect(result).toBe('b-ok');
+        expect(serializer.activeChains).toBe(0);
+    });
+});
+
+describe('MutationSerializer: AbortSignal while fn is running', () => {
+    it('aborting signal while fn IS running does not cancel the running call', async () => {
+        const serializer = new MutationSerializer();
+        const controller = new AbortController();
+
+        let fnStarted = false;
+        let fnCompleted = false;
+
+        // This fn is already running — abort won't cancel it
+        const p = serializer.serialize(
+            'the-key',
+            async () => {
+                fnStarted = true;
+                await new Promise(r => setTimeout(r, 50));
+                fnCompleted = true;
+                return 'done';
+            },
+            controller.signal,
+        );
+
+        // Wait until fn has started
+        await new Promise(r => setTimeout(r, 10));
+        expect(fnStarted).toBe(true);
+
+        // Abort while it's running
+        controller.abort();
+
+        const result = await p;
+        // Running fn completes despite abort (only QUEUED waiters are aborted)
+        expect(fnCompleted).toBe(true);
+        expect(result).toBe('done');
+    });
+});
+
+describe('MutationSerializer: sequential calls after abort', () => {
+    it('after a queued call is aborted, subsequent calls succeed normally', async () => {
+        const serializer = new MutationSerializer();
+        const controller = new AbortController();
+
+        // First call occupies the chain
+        const p1 = serializer.serialize('action', async () => {
+            await new Promise(r => setTimeout(r, 60));
+            return 'first';
+        });
+
+        // Second call queued and aborted
+        setTimeout(() => controller.abort(), 10);
+        const p2 = serializer.serialize('action', async () => 'aborted-fn', controller.signal);
+        await expect(p2).rejects.toThrow('cancelled');
+
+        // Third call (no abort) should succeed after p1 finishes
+        const p3 = serializer.serialize('action', async () => 'third');
+        await p1;
+        const r3 = await p3;
+        expect(r3).toBe('third');
+    });
+});

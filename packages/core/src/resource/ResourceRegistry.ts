@@ -30,7 +30,7 @@
  *
  * @module
  */
-import { type ResourceBuilder, type McpResourceDef, type ResourceContent } from './ResourceBuilder.js';
+import { type ResourceBuilder, type McpResourceDef } from './ResourceBuilder.js';
 import { SubscriptionManager, type ResourceNotificationSink } from './SubscriptionManager.js';
 
 // ── Types ────────────────────────────────────────────────

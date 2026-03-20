@@ -176,15 +176,15 @@ export function buildTelemetryHooks(emit: TelemetrySink, ctx: HookContext): Pipe
 
     return {
         onValidateError: (action, durationMs) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit({ type: 'validate', tool: toolName, action, valid: false, error: 'Validation failed', durationMs, timestamp: Date.now() } as any);
         },
         onValidateOk: (action, durationMs) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit({ type: 'validate', tool: toolName, action, valid: true, durationMs, timestamp: Date.now() } as any);
         },
         onMiddleware: (action, chainLength) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit({ type: 'middleware', tool: toolName, action, chainLength, timestamp: Date.now() } as any);
         },
         onExecuteOk: (action, response) => {
@@ -206,12 +206,12 @@ export function buildTelemetryHooks(emit: TelemetrySink, ctx: HookContext): Pipe
                 ...(recovery ? { recovery } : {}),
                 ...(recoveryActions && recoveryActions.length > 0 ? { recoveryActions } : {}),
                 timestamp: Date.now(),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             } as any);
         },
         onExecuteError: (action, err) => {
             const message = toErrorMessage(err);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit({ type: 'error', tool: toolName, action, error: message, step: 'execute', timestamp: Date.now() } as any);
         },
     };

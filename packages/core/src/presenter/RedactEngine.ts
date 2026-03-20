@@ -146,7 +146,7 @@ function getFastRedact(): FastRedactFactory | null {
  * ```
  */
 export function compileRedactor(config: RedactConfig): RedactFn | undefined {
-    if (!config.paths || config.paths.length === 0) return undefined;
+    if (config.paths.length === 0) return undefined;
 
     const factory = getFastRedact();
     if (!factory) return undefined;
@@ -174,6 +174,7 @@ export function compileRedactor(config: RedactConfig): RedactFn | undefined {
                 throw new Error(
                     `[Vurb] PII redaction failed: ${toErrorMessage(err)}. ` +
                     'Data withheld to prevent PII leak.',
+                    { cause: err },
                 );
             }
         };

@@ -12,7 +12,7 @@
  * @module
  */
 
-import { type ZodObject, type ZodRawShape } from 'zod';
+import { type ZodObject, type ZodRawShape, type ZodType } from 'zod';
 import { z } from 'zod';
 import { GroupedToolBuilder } from './GroupedToolBuilder.js';
 import { type ToolResponse, type MiddlewareFn } from '../types.js';
@@ -31,7 +31,7 @@ export interface FluentBuildConfig<TContext, TCtx> {
     name: string;
     description: string | undefined;
     instructions: string | undefined;
-    withParams: Record<string, import('zod').ZodType>;
+    withParams: Record<string, ZodType>;
     inputSchema?: ZodObject<ZodRawShape>;
     tags: string[];
     middlewares: MiddlewareFn<TContext>[];
@@ -149,7 +149,7 @@ export function buildToolFromFluent<TContext, TCtx>(
         builder.invalidates(...config.invalidatesPatterns);
     }
     if (config.cacheControl) {
-        config.cacheControl === 'immutable' ? builder.cached() : builder.stale();
+        if (config.cacheControl === 'immutable') { builder.cached(); } else { builder.stale(); }
     }
 
     // Propagate runtime guards

@@ -108,6 +108,6 @@ export class ErrorBuilder {
     }
 
     /** Implementation of ToolResponse for direct return in handlers */
-    get content() { return this._ensureBuilt().content; }
-    get isError() { return this._ensureBuilt().isError; }
+    get content(): ToolResponse['content'] { return this._ensureBuilt().content; }
+    get isError(): ToolResponse['isError'] { return this._ensureBuilt().isError; }
 }

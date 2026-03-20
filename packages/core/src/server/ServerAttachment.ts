@@ -39,7 +39,7 @@ import { compileExposition, type FlatRoute, type ExpositionResult } from '../exp
 import { type ResourceRegistry } from '../resource/ResourceRegistry.js';
 import { type PromptRegistry, type PromptFilter } from '../prompt/PromptRegistry.js';
 import { type LoopbackContext } from '../prompt/types.js';
-import { StateMachineGate, type FsmStateStore, type FsmSnapshot } from '../fsm/StateMachineGate.js';
+import type { StateMachineGate, FsmStateStore, FsmSnapshot } from '../fsm/StateMachineGate.js';
 import type { TelemetrySink } from '../observability/TelemetryEvent.js';
 import { randomUUID } from 'node:crypto';
 
@@ -613,11 +613,11 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         const flatRoute = exposition?.routingMap.get(name);
         const toolGroup = flatRoute ? flatRoute.builder.getName() : name;
         const action = flatRoute ? flatRoute.actionKey : name;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
         emit?.({ type: 'route', tool: toolGroup, action, args, timestamp: Date.now() } as any);
 
         // Per-request FSM clone for serverless isolation (Bug #3 + Bug #77 fix).
-        let fsm = await cloneAndRestoreFsm(hCtx, extra);
+        const fsm = await cloneAndRestoreFsm(hCtx, extra);
 
         // Bug #107 fix: enforce FSM gate on tools/call — not just tools/list.
         // Without this, a client that knows a tool's name can bypass the gate.
@@ -652,7 +652,7 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
             result = hCtx.syncLayer ? hCtx.syncLayer.decorateResult(name, result) : result;
         }
         } catch (err) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit?.({ type: 'error', tool: toolGroup, action, error: String(err), timestamp: Date.now() } as any);
             throw err;
         }
@@ -669,12 +669,12 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         }
 
         // ── Telemetry: execute event ─────────────────────────
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
-        emit?.({
+        emit?.({  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             type: 'execute', tool: toolGroup, action,
             durationMs: Date.now() - t0,
             isError: !!result.isError,
             timestamp: Date.now(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
         } as any);
 
         // FSM State Gate: auto-transition on successful execution
@@ -686,7 +686,7 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                 if (transition.changed) {
                     // Emit fsm.transition telemetry event
                     if (hCtx.telemetry) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any — TelemetrySink accepts extensible event shapes
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
                     hCtx.telemetry({
                             type: 'fsm.transition',
                             tool: name,
@@ -694,6 +694,7 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                             from: fromState,
                             to: fsm.currentState,
                             timestamp: Date.now(),
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
                         } as any);
                     }
                     // Persist new state to external store (serverless/edge)
@@ -857,11 +858,11 @@ function registerResourceHandlers<TContext>(
 
     if (typeof sendResourceUpdated === 'function') {
         resources.setNotificationSink((uri: string) => {
-            (sendResourceUpdated as Function).call(server, uri);
+            (sendResourceUpdated as (...args: unknown[]) => unknown).call(server, uri);
         });
     } else if (typeof sendNotification === 'function') {
         resources.setNotificationSink((uri: string) => {
-            void (sendNotification as Function).call(server, {
+            void (sendNotification as (...args: unknown[]) => unknown).call(server, {
                 method: 'notifications/resources/updated',
                 params: { uri },
             });
@@ -871,7 +872,7 @@ function registerResourceHandlers<TContext>(
     // Wire lifecycle sync for `notifications/resources/list_changed`
     const sendListChanged = serverAny['sendResourceListChanged'];
     if (typeof sendListChanged === 'function') {
-        resources.setListChangedSink(() => { (sendListChanged as Function).call(server); });
+        resources.setListChangedSink(() => { (sendListChanged as (...args: unknown[]) => unknown).call(server); });
     }
 
     // resources/list — merge with introspection resources if present (Bug #4 fix)
@@ -1051,7 +1052,7 @@ export async function attachToServer<TContext>(
         if (typeof sendFn === 'function') {
             notifyToolListChanged = () => {
                 try {
-                    void (sendFn as Function).call(server, { method: 'notifications/tools/list_changed' });
+                    void (sendFn as (...args: unknown[]) => unknown).call(server, { method: 'notifications/tools/list_changed' });
                 } catch {
                     // Connection might not be established — ignore
                 }
@@ -1302,7 +1303,7 @@ function collectHintPolicies<TContext>(
             policies.push({
                 match,
                 ...(hint.cacheControl ? { cacheControl: hint.cacheControl } : {}),
-                ...(hint.invalidates?.length ? { invalidates: [...hint.invalidates] } : {}),
+                ...(hint.invalidates != null && hint.invalidates.length > 0 ? { invalidates: [...hint.invalidates] } : {}),
             });
         }
     }

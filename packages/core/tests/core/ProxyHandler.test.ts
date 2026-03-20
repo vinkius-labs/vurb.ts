@@ -281,3 +281,140 @@ describe('ProxyHandler — Model Alias Resolution', () => {
         });
     });
 });
+
+// ============================================================================
+// Extended Coverage
+// ============================================================================
+
+describe('ProxyHandler — Multiple Path Params', () => {
+    it('should interpolate multiple :param placeholders correctly', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/orgs/:org_id/repos/:repo_id/issues', 'GET', false);
+
+        await handler({ org_id: 'acme', repo_id: 'core', labels: 'bug' }, mockCtx(client));
+
+        expect(client.get).toHaveBeenCalledWith(
+            '/orgs/acme/repos/core/issues',
+            { labels: 'bug' },
+        );
+    });
+
+    it('should consume all path params and leave only non-path params', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/a/:x/b/:y/c/:z', 'POST', false);
+
+        await handler({ x: '1', y: '2', z: '3', body: 'data' }, mockCtx(client));
+
+        expect(client.post).toHaveBeenCalledWith('/a/1/b/2/c/3', { body: 'data' });
+    });
+});
+
+describe('ProxyHandler — Missing Path Param Error', () => {
+    it('throws a descriptive error when a required path param is absent', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/users/:user_id/posts', 'GET', false);
+
+        await expect(
+            handler({ limit: 10 }, mockCtx(client)), // user_id missing
+        ).rejects.toThrow(/user_id/);
+    });
+
+    it('error message includes the endpoint pattern for context', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/tasks/:task_id', 'DELETE', false);
+
+        await expect(
+            handler({}, mockCtx(client)),
+        ).rejects.toThrow(/\/tasks\/:task_id/);
+    });
+
+    it('throws when path param is explicitly undefined in input', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/items/:item_id', 'PUT', false);
+
+        await expect(
+            handler({ item_id: undefined, name: 'X' }, mockCtx(client)),
+        ).rejects.toThrow(/item_id/);
+    });
+});
+
+describe('ProxyHandler — Unwrap Edge Cases', () => {
+    it('should unwrap { data: null } to null when unwrap is enabled', async () => {
+        const client = createMockClient();
+        client.get.mockResolvedValue({ data: null });
+
+        const handler = createProxyHandler('/resources/:id', 'GET', true);
+        const result = await handler({ id: '1' }, mockCtx(client));
+
+        // data property exists → unwrapped; data is null → returns null
+        expect(result).toBeNull();
+    });
+
+    it('should unwrap { data: 0 } to 0 (falsy but defined)', async () => {
+        const client = createMockClient();
+        client.get.mockResolvedValue({ data: 0 });
+
+        const handler = createProxyHandler('/count', 'GET', true);
+        const result = await handler({}, mockCtx(client));
+
+        expect(result).toBe(0);
+    });
+
+    it('should unwrap { data: false } to false', async () => {
+        const client = createMockClient();
+        client.get.mockResolvedValue({ data: false });
+
+        const handler = createProxyHandler('/flag', 'GET', true);
+        const result = await handler({}, mockCtx(client));
+
+        expect(result).toBe(false);
+    });
+
+    it('should unwrap { data: [] } to empty array', async () => {
+        const client = createMockClient();
+        client.get.mockResolvedValue({ data: [] });
+
+        const handler = createProxyHandler('/list', 'GET', true);
+        const result = await handler({}, mockCtx(client));
+
+        expect(result).toEqual([]);
+    });
+});
+
+describe('ProxyHandler — All HTTP Methods dispatch + param stripping', () => {
+    it('GET strips consumed path params, passes remainder as query', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/projects/:id', 'GET', false);
+
+        await handler({ id: 'p-1', page: 2, limit: 20 }, mockCtx(client));
+
+        expect(client.get).toHaveBeenCalledWith('/projects/p-1', { page: 2, limit: 20 });
+    });
+
+    it('POST strips consumed path params, passes remainder as body', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/projects/:id/comments', 'POST', false);
+
+        await handler({ id: 'p-1', text: 'Great work!' }, mockCtx(client));
+
+        expect(client.post).toHaveBeenCalledWith('/projects/p-1/comments', { text: 'Great work!' });
+    });
+
+    it('PUT strips consumed path params, passes remainder as body', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/projects/:id', 'PUT', false);
+
+        await handler({ id: 'p-1', name: 'Updated', status: 'active' }, mockCtx(client));
+
+        expect(client.put).toHaveBeenCalledWith('/projects/p-1', { name: 'Updated', status: 'active' });
+    });
+
+    it('DELETE strips consumed path params, passes remainder as query', async () => {
+        const client = createMockClient();
+        const handler = createProxyHandler('/projects/:id', 'DELETE', false);
+
+        await handler({ id: 'p-1', reason: 'deprecated' }, mockCtx(client));
+
+        expect(client.delete).toHaveBeenCalledWith('/projects/p-1', { reason: 'deprecated' });
+    });
+});

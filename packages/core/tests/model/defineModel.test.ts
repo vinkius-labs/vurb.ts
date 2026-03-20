@@ -648,6 +648,7 @@ describe('Schema Rejection — Output Schema', () => {
                 workflow: m.object('Workflow', { id: m.id() }),
             });
         });
+        // (test body continues below)
         expect(model.schema.safeParse({ workflow: 'not-object' }).success).toBe(false);
         expect(model.schema.safeParse({ workflow: [1, 2] }).success).toBe(false);
     });
@@ -970,5 +971,122 @@ describe('Adversarial Inputs — Runtime Validation', () => {
         expect(result.isError).toBeUndefined();
         // String passes through — Model validates type, not content
         expect(result.content[0]?.text).toContain('DROP TABLE');
+    });
+});
+
+// ============================================================================
+// Model.toApi() — Alias Resolution for HTTP Clients
+// ============================================================================
+
+describe('Model.toApi() — alias resolution', () => {
+    it('passes data through unchanged when no aliases are defined', () => {
+        const model = defineModel('Clean', m => {
+            m.casts({
+                title:  m.string('Title'),
+                status: m.string('Status'),
+            });
+        });
+
+        const data = { title: 'Hello', status: 'open' };
+        const result = model.toApi(data);
+
+        expect(result).toEqual({ title: 'Hello', status: 'open' });
+    });
+
+    it('renames aliased keys to their API names', () => {
+        const model = defineModel('Aliased', m => {
+            m.casts({
+                content:  m.text('Body').alias('description'),
+                due_date: m.date('Due date').alias('deadline'),
+                status:   m.string('Status'),  // no alias
+            });
+        });
+
+        const result = model.toApi({
+            content:  'Hello world',
+            due_date: '2026-01-01',
+            status:   'open',
+        });
+
+        expect(result).toEqual({
+            description: 'Hello world',  // aliased
+            deadline:    '2026-01-01',   // aliased
+            status:      'open',          // unchanged
+        });
+    });
+
+    it('passes through unknown keys not present in the model', () => {
+        const model = defineModel('WithAlias', m => {
+            m.casts({ title: m.string('Title').alias('name') });
+        });
+
+        const result = model.toApi({ title: 'X', extra_field: 'kept' });
+
+        // extra_field is unknown to the model but passes through
+        expect(result['name']).toBe('X');       // aliased
+        expect(result['extra_field']).toBe('kept'); // unknown → pass-through
+    });
+
+    it('strips undefined values', () => {
+        const model = defineModel('Undefs', m => {
+            m.casts({
+                title:   m.string('Title'),
+                content: m.text('Body').alias('description'),
+            });
+        });
+
+        const result = model.toApi({
+            title:   'Set',
+            content: undefined,  // should be stripped
+        });
+
+        expect(result).toEqual({ title: 'Set' });
+        expect('description' in result).toBe(false);
+    });
+
+    it('handles multiple aliases across a full model correctly', () => {
+        const model = defineModel('Complex', m => {
+            m.casts({
+                user_name:   m.string('User name').alias('username'),
+                created_at:  m.timestamp('Created').alias('createdAt'),
+                is_verified: m.boolean('Verified').alias('isVerified'),
+            });
+        });
+
+        const result = model.toApi({
+            user_name:   'alice',
+            created_at:  '2026-01-01T00:00:00Z',
+            is_verified: true,
+        });
+
+        expect(result).toEqual({
+            username:   'alice',
+            createdAt:  '2026-01-01T00:00:00Z',
+            isVerified: true,
+        });
+    });
+
+    it('handles empty input object', () => {
+        const model = defineModel('EmptyIn', m => {
+            m.casts({ title: m.string('Title').alias('name') });
+        });
+
+        expect(model.toApi({})).toEqual({});
+    });
+});
+
+// ============================================================================
+// model.infer runtime behavior
+// ============================================================================
+
+describe('model.infer — TypeScript-only type trick', () => {
+    it('model.infer is undefined at runtime (it is only a type-level helper)', () => {
+        const model = defineModel('TypeOnly', m => {
+            m.casts({ title: m.string('Title') });
+        });
+
+        // At runtime, `infer` is `undefined` — only useful as `typeof model.infer`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect((model as any).infer).toBeUndefined();
     });
 });

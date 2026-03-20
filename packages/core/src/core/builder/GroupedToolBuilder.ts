@@ -1015,7 +1015,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
             const response = await this._executeWithObservability(execCtx, ctx, args, progressSink, signal);
 
             // ── Egress Guard (Payload Size Limiter) ──────
-            if (this._egressMaxBytes) {
+            if (this._egressMaxBytes != null) {
                 return applyEgressGuard(response, this._egressMaxBytes);
             }
             return response;

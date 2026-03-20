@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.11] - 2026-03-20
+
+### Tests
+
+- **`ConcurrencyGuard` — full unit test suite (new file)** — Added 25 tests covering: fast-path slot acquisition, FIFO drain order, load shedding under zero-queue and full-queue conditions, idempotent release (double-call does not corrupt active count or spuriously drain), `AbortSignal` semantics (pre-aborted, abort while queued, abort listener cleanup on normal resolution), fractional `maxActive`/`maxQueue` clamping, high-throughput 50-task scenario, and `createConcurrencyGuard` factory.
+- **`PolicyEngine` — extended coverage** — Added 12 tests: `**` glob matching all tool names, specific policy shadowed by earlier `**`, frozen resolved objects (mutation attempt throws), match-only policy inheriting default `cacheControl`, empty policy array with/without defaults, exact-name near-miss non-matching, and ordering semantics of no-op vs later specific policies.
+- **`EgressGuard` — boundary and double-suffix tests** — Added 8 tests: exactly-at-limit returns same reference, exactly-1-byte-over triggers truncation, multi-block where first fits and second is truncated (using limits above `MIN_PAYLOAD_BYTES`), double-suffix protection (intervention marker appears exactly once even when input already contains it).
+- **`defineModel` — `toApi()` and runtime `infer` tests** — Added 9 tests: `toApi()` with no aliases (pass-through), single and multiple field aliases, unknown keys pass-through, `undefined` value stripping, empty input, and assertion that `model.infer` is `undefined` at runtime (type-only trick).
+- **`MutationSerializer` — isolation and abort edge cases** — Added 8 tests: distinct keys execute independently (no cross-chain blocking), GC of one key does not affect another, error in key-A does not block key-B, aborting a signal while the fn is already running does not cancel the in-flight call, sequential calls after an aborted queued call resume correctly.
+- **`ProxyHandler` — extended HTTP and error coverage** — Added 13 tests: multiple `:param` placeholders in one URL, error message includes endpoint pattern when param is missing, `undefined` param value throws, unwrap of `{ data: null }` / `{ data: 0 }` / `{ data: false }` / `{ data: [] }` (falsy but defined), all four HTTP methods with path-param stripping and remainder forwarding.
+
 ## [3.7.10] - 2026-03-20
 
 ### Changed

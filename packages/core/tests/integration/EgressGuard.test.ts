@@ -186,3 +186,111 @@ describe('EgressGuard: Error Flag Preservation', () => {
         expect(guarded.isError).toBeUndefined();
     });
 });
+
+// ============================================================================
+// 7. Boundary precision
+// ============================================================================
+
+describe('EgressGuard: Boundary Precision', () => {
+    it('should NOT truncate when content is exactly at the byte limit', () => {
+        // Construct exactly `limit` ASCII bytes
+        const limit = 2048;
+        const text = 'Z'.repeat(limit);
+        const response = success(text);
+        const guarded = applyEgressGuard(response, limit);
+
+        expect(guarded).toBe(response); // zero copy — same reference
+    });
+
+    it('should truncate when content is exactly 1 byte over the limit', () => {
+        const limit = 2048;
+        const text = 'Z'.repeat(limit + 1);
+        const response = success(text);
+        const guarded = applyEgressGuard(response, limit);
+
+        expect(guarded).not.toBe(response);
+        expect(guarded.content[0]!.text).toContain('SYSTEM INTERVENTION');
+    });
+
+    it('all multi-block content that fits stays intact without truncation', () => {
+        const response = {
+            content: [
+                { type: 'text' as const, text: 'Block A' },
+                { type: 'text' as const, text: 'Block B' },
+            ],
+        };
+        // Each block is ~7 bytes, well within 1024
+        const guarded = applyEgressGuard(response, 1024);
+        expect(guarded).toBe(response); // Same reference — no copy
+    });
+});
+
+// ============================================================================
+// 8. Double-suffix protection
+// ============================================================================
+
+describe('EgressGuard: Double-Suffix Protection', () => {
+    it('should not double-append intervention suffix if already present', () => {
+        // Simulate a response that was already truncated (has the suffix)
+        const suffix = '[SYSTEM INTERVENTION';
+        const alreadyTruncated = success(`Short text ${suffix}: payload truncated...]`);
+
+        // Pass through a second guard with a generous limit (content fits)
+        const guarded = applyEgressGuard(alreadyTruncated, 1024 * 10);
+
+        // It fits, so same reference is returned — no second suffix appended
+        expect(guarded).toBe(alreadyTruncated);
+        // Only one occurrence of the intervention marker
+        const occurrences = (guarded.content[0]!.text.match(/SYSTEM INTERVENTION/g) ?? []).length;
+        expect(occurrences).toBe(1);
+    });
+
+    it('should not append suffix twice when re-truncating an already-truncated block', () => {
+        // Build a string large enough to trigger truncation but the end already has the suffix
+        const suffix = '...[SYSTEM INTERVENTION: payload truncated. Use pagination.]';
+        const bigTextWithSuffix = 'X'.repeat(3000) + suffix;
+        const response = success(bigTextWithSuffix);
+        const guarded = applyEgressGuard(response, 2048);
+
+        const text = guarded.content[0]!.text;
+        const suffixMatches = (text.match(/SYSTEM INTERVENTION/g) ?? []).length;
+        // Must be exactly 1
+        expect(suffixMatches).toBe(1);
+    });
+});
+
+// ============================================================================
+// 9. Multi-block: partial blocks at boundary
+// ============================================================================
+
+describe('EgressGuard: Multi-Block Boundary Behavior', () => {
+    it('first block barely fits, second block oversized — only second is truncated', () => {
+        // limit must be > MIN_PAYLOAD_BYTES (1024) to avoid clamping
+        // First block: 800 bytes. Remaining: 1500 - 800 = 700. Second: 3000 bytes → truncated.
+        const response = {
+            content: [
+                { type: 'text' as const, text: 'A'.repeat(800) },
+                { type: 'text' as const, text: 'B'.repeat(3000) },
+            ],
+        };
+        const guarded = applyEgressGuard(response, 1500);
+
+        expect(guarded.content[0]!.text).toBe('A'.repeat(800)); // Intact
+        expect(guarded.content[1]!.text).toContain('SYSTEM INTERVENTION');
+    });
+
+    it('first block is over limit — both blocks reduced to one truncated block', () => {
+        const response = {
+            content: [
+                { type: 'text' as const, text: 'X'.repeat(3000) },
+                { type: 'text' as const, text: 'Y'.repeat(3000) },
+            ],
+        };
+        const guarded = applyEgressGuard(response, 1024);
+
+        // First block partially included, second dropped or folded in
+        expect(guarded.content.length).toBeGreaterThanOrEqual(1);
+        const allText = guarded.content.map(c => c.text).join('');
+        expect(allText).toContain('SYSTEM INTERVENTION');
+    });
+});

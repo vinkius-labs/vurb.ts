@@ -104,12 +104,14 @@ export class ToolRegistry<TContext = void> {
         if (existing) {
             // Same namespace — merge actions from the incoming builder
             // into the existing one (e.g. multiple f.query('compliance.xxx') files).
-            if (typeof (existing as any).mergeActions === 'function' &&
-                typeof (builder as any).getActions === 'function') {
-                (existing as any).mergeActions((builder as any).getActions());
+            const mergeable = existing as unknown as { mergeActions: (a: unknown[]) => void; _cachedTool: unknown; _frozen: boolean };
+            const incoming = builder as unknown as { getActions: () => unknown[] };
+            if (typeof mergeable.mergeActions === 'function' &&
+                typeof incoming.getActions === 'function') {
+                mergeable.mergeActions(incoming.getActions());
                 // Rebuild the tool definition to include the new actions
-                (existing as any)._cachedTool = null;
-                (existing as any)._frozen = false;
+                mergeable._cachedTool = null;
+                mergeable._frozen = false;
                 existing.buildToolDefinition();
                 return;
             }

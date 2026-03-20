@@ -126,7 +126,7 @@ export class PromptRegistry<TContext = void> {
      * @param options Pagination configuration (pageSize, modes, secrets)
      */
     configurePagination(options: PromptPaginationOptions): void {
-        if (options.pageSize) this._pageSize = options.pageSize;
+        if (options.pageSize != null) this._pageSize = options.pageSize;
         if (options.cursorMode || options.cursorSecret) {
             this._cursorCodec = new CursorCodec({
                 mode: options.cursorMode ?? 'signed',
@@ -364,7 +364,7 @@ export class PromptRegistry<TContext = void> {
         // Zero overhead when no timeout configured.
         const effectiveTimeout = builder.getHydrationTimeout() ?? this._defaultHydrationTimeout;
 
-        const result = effectiveTimeout && effectiveTimeout > 0
+        const result = effectiveTimeout != null && effectiveTimeout > 0
             ? await runWithHydrationDeadline(
                 () => builder.execute(ctx, args),
                 effectiveTimeout,

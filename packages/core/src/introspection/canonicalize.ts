@@ -28,7 +28,7 @@ export async function sha256(input: string): Promise<string> {
     const data = new TextEncoder().encode(input);
 
     // Web Crypto API (browsers, Cloudflare Workers, Deno, Bun, Node 20+)
-    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle != null) {
         const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
         return hexFromBuffer(hashBuffer);
     }

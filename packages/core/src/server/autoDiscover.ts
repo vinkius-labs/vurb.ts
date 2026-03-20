@@ -43,7 +43,7 @@
  * @module
  */
 import { promises as fs } from 'node:fs';
-import { join, resolve, relative, basename, extname, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 // ── Types ────────────────────────────────────────────────

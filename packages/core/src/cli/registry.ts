@@ -5,12 +5,13 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { PromptBuilderLike } from '../introspection/CapabilityLockfile.js';
+import type { ToolBuilder } from '../core/types.js';
 
 // ─── Types ───────────────────────────────────────────────────────
 
 /** @internal exported for testing */
 export interface RegistryLike {
-    getBuilders(): Iterable<import('../core/types.js').ToolBuilder<unknown>>;
+    getBuilders(): Iterable<ToolBuilder<unknown>>;
 }
 
 /** @internal exported for testing */
@@ -54,7 +55,7 @@ export async function resolveRegistry(serverPath: string): Promise<{ registry: R
     function extractPrompts(obj: Record<string, unknown>): PromptRegistryLike | undefined {
         for (const key of ['promptRegistry', 'prompts', 'promptsRegistry']) {
             const candidate = obj[key];
-            if (candidate && typeof candidate === 'object' && candidate !== null) {
+            if (candidate != null && typeof candidate === 'object') {
                 return candidate as PromptRegistryLike;
             }
         }
@@ -62,7 +63,7 @@ export async function resolveRegistry(serverPath: string): Promise<{ registry: R
     }
 
     // Strategy 1: Named `registry` export (ToolRegistry pattern)
-    if (mod.registry && typeof mod.registry.getBuilders === 'function') {
+    if (mod.registry != null && typeof mod.registry.getBuilders === 'function') {
         const pr = extractPrompts(mod as Record<string, unknown>);
         return {
             registry: mod.registry as RegistryLike,
@@ -72,7 +73,7 @@ export async function resolveRegistry(serverPath: string): Promise<{ registry: R
     }
 
     // Strategy 2: Named `vurb` export (initVurb pattern)
-    if (mod.vurb && mod.vurb.registry && typeof mod.vurb.registry.getBuilders === 'function') {
+    if (mod.vurb != null && mod.vurb.registry != null && typeof mod.vurb.registry.getBuilders === 'function') {
         const pr = extractPrompts(mod.vurb as Record<string, unknown>);
         return {
             registry: mod.vurb.registry as RegistryLike,
@@ -82,10 +83,10 @@ export async function resolveRegistry(serverPath: string): Promise<{ registry: R
     }
 
     // Strategy 3: Default export with registry
-    if (mod.default) {
+    if (mod.default != null) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const def = mod.default;
-        if (def.registry && typeof def.registry.getBuilders === 'function') {
+        if (def.registry != null && typeof def.registry.getBuilders === 'function') {
             const pr = extractPrompts(def as Record<string, unknown>);
             return {
                 registry: def.registry as RegistryLike,

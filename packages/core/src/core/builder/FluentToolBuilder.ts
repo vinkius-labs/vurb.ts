@@ -27,7 +27,7 @@
  */
 import { z, type ZodType, type ZodObject, type ZodRawShape } from 'zod';
 import { type Model, compileFieldForInput } from '../../model/defineModel.js';
-import { GroupedToolBuilder } from './GroupedToolBuilder.js';
+import type { GroupedToolBuilder } from './GroupedToolBuilder.js';
 import { type ToolResponse, type MiddlewareFn } from '../types.js';
 import { type Presenter } from '../../presenter/Presenter.js';
 import { type ConcurrencyConfig } from '../execution/ConcurrencyGuard.js';
@@ -649,10 +649,10 @@ export class FluentToolBuilder<
      *   .handle(async (input, ctx) => { ... });
      * ```
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Model fields are runtime-defined; `any` avoids forced casting
     fromModel<M extends Model>(
         model: M,
         operation: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Model fields are runtime-defined; `any` avoids forced casting
     ): FluentToolBuilder<TContext, TInput & Record<string, any>, TCtx> {
         const fieldNames = model.input[operation];
         if (!fieldNames) {

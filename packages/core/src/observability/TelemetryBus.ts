@@ -490,6 +490,7 @@ export async function createTelemetryBus(config?: TelemetryBusConfig): Promise<T
     process.once('SIGTERM', sigtermHandler);
 
     // ── Close Method ──────────────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/require-await -- async required by TelemetryBus interface contract
     async function close(): Promise<void> {
         process.removeListener('exit', exitHandler);
         // Signal handlers were registered with process.once, so they

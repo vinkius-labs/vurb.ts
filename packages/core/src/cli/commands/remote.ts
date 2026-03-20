@@ -7,7 +7,7 @@ import type { CliArgs } from '../args.js';
 import { ansi, VINKIUS_CLOUD_URL } from '../constants.js';
 import { VURBRC, readVurbRc, writeVurbRc } from '../rc.js';
 
-export async function commandRemote(args: CliArgs): Promise<void> {
+export function commandRemote(args: CliArgs): void {
     const cwd = args.cwd;
 
     // vurb remote <url> [--server-id <id>] [--token <tok>] — set one or more at once

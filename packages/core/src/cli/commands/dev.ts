@@ -31,7 +31,7 @@ export async function commandDev(args: CliArgs, reporter?: ProgressReporter): Pr
 
     // Step 1: Resolve registry
     progress.start('resolve', 'Resolving server entrypoint');
-    const { registry, name } = await resolveRegistry(serverEntry);
+    const { name } = await resolveRegistry(serverEntry);
     progress.done('resolve', 'Resolving server entrypoint', name);
 
     // Step 2: Determine watch directory
@@ -56,7 +56,7 @@ export async function commandDev(args: CliArgs, reporter?: ProgressReporter): Pr
                 resolved = await resolveRegistry(serverEntry);
             } catch (err) {
                 const message = toErrorMessage(err);
-                throw new Error(`Failed to reload: ${message}`);
+                throw new Error(`Failed to reload: ${message}`, { cause: err });
             }
 
             if ('clear' in reg && typeof (reg as { clear: unknown }).clear === 'function') {

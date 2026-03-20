@@ -18,6 +18,7 @@ import { ProgressTracker } from '../progress.js';
 import { ansi, VINKIUS_CLOUD_URL } from '../constants.js';
 import { ask, inferServerEntry } from '../utils.js';
 import { loadEnv, readVurbRc } from '../rc.js';
+import type * as EsbuildNS from 'esbuild';
 
 // ── Edge Stub Plugin ─────────────────────────────────────────────────────────
 // Intercepts all Node.js built-in imports (including subpaths like
@@ -65,10 +66,10 @@ function sanitizeBundleForEdge(code: string): string {
         // Reflect.setPrototypeOf( → Reflect["setPrototypeOf"](
         .replace(/Reflect\.setPrototypeOf\s*\(/g, 'Reflect["setPrototypeOf"](')
         // __proto__ = or __proto__[ → ["__proto__"] = or ["__proto__"][
-        .replace(/\b__proto__\s*([=\[])/g, '["__proto__"]$1');
+        .replace(/\b__proto__\s*([=[])/g, '["__proto__"]$1');
 }
 
-function edgeStubPlugin(): import('esbuild').Plugin {
+function edgeStubPlugin(): EsbuildNS.Plugin {
     return {
         name: 'vurb-edge-stub',
         setup(build) {
@@ -193,6 +194,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
 
     // ── Step 3: bundle (esbuild) ──
     progress.start('bundle', 'Bundling with esbuild');
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- typeof import() needed: namespace import cannot be used as a type
     let esbuild: typeof import('esbuild');
     try {
         esbuild = await import('esbuild');
@@ -240,7 +242,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         });
     } catch (err: unknown) {
         const buildErr = err as { errors?: Array<{ text: string; location?: { file: string; line: number; column: number } }> };
-        if (buildErr.errors?.length) {
+        if (buildErr.errors != null && buildErr.errors.length > 0) {
             const first = buildErr.errors[0]!;
             const loc = first.location
                 ? ` (${first.location.file}:${first.location.line}:${first.location.column})`
@@ -260,7 +262,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
     }
 
     const outFile = buildResult.outputFiles?.[0];
-    if (!outFile) {
+    if (outFile == null) {
         progress.fail('bundle', 'Bundling', 'esbuild produced no output');
         process.exit(1);
     }
@@ -502,8 +504,8 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
     // ── Step 7: Premium Output ──
     const elapsed = ((Date.now() - deployStart) / 1000).toFixed(1);
     const w = process.stderr.write.bind(process.stderr);
-    const magenta = (s: string) => `\x1b[35m${s}\x1b[0m`;
-    const bgGreen = (s: string) => `\x1b[42m\x1b[30m${s}\x1b[0m`;
+    const _magenta = (s: string) => `\x1b[35m${s}\x1b[0m`;
+    const _bgGreen = (s: string) => `\x1b[42m\x1b[30m${s}\x1b[0m`;
     const bgCyan = (s: string) => `\x1b[46m\x1b[30m${s}\x1b[0m`;
     const white = (s: string) => `\x1b[97m${s}\x1b[0m`;
 

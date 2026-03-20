@@ -156,3 +156,145 @@ describe('PolicyEngine', () => {
         });
     });
 });
+
+// ── Extended Coverage ────────────────────────────────────────────────────────
+
+describe('PolicyEngine: ** glob matches any tool name', () => {
+    it('** should match any tool regardless of dots or depth', () => {
+        const engine = new PolicyEngine([
+            { match: '**', cacheControl: 'no-store' },
+        ]);
+
+        expect(engine.resolve('billing.pay')?.cacheControl).toBe('no-store');
+        expect(engine.resolve('sprints.update')?.cacheControl).toBe('no-store');
+        expect(engine.resolve('any_tool')?.cacheControl).toBe('no-store');
+        expect(engine.resolve('a.b.c.d')?.cacheControl).toBe('no-store');
+    });
+
+    it('** catch-all should be shadowed by earlier specific policies', () => {
+        const engine = new PolicyEngine([
+            { match: 'countries.*', cacheControl: 'immutable' },
+            { match: '**',          cacheControl: 'no-store' },
+        ]);
+
+        expect(engine.resolve('countries.list')?.cacheControl).toBe('immutable');
+        expect(engine.resolve('billing.pay')?.cacheControl).toBe('no-store');
+    });
+});
+
+describe('PolicyEngine: policy with both cacheControl and invalidates', () => {
+    it('resolve() returns both directives when policy defines both', () => {
+        const engine = new PolicyEngine([
+            {
+                match: 'sprints.update',
+                cacheControl: 'no-store',
+                invalidates: ['sprints.*', 'tasks.*'],
+            },
+        ]);
+
+        const result = engine.resolve('sprints.update');
+        expect(result?.cacheControl).toBe('no-store');
+        expect(result?.invalidates).toEqual(['sprints.*', 'tasks.*']);
+    });
+
+    it('resolved object is frozen (immutable)', () => {
+        const engine = new PolicyEngine([
+            { match: 'billing.*', cacheControl: 'no-store', invalidates: ['billing.*'] },
+        ]);
+
+        const result = engine.resolve('billing.pay')!;
+        expect(() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (result as any).cacheControl = 'immutable';
+        }).toThrow();
+    });
+
+    it('default-only resolved object is also frozen', () => {
+        const engine = new PolicyEngine(
+            [],
+            { cacheControl: 'immutable' },
+        );
+
+        const result = engine.resolve('any.tool')!;
+        expect(() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (result as any).extra = 'injected';
+        }).toThrow();
+    });
+});
+
+describe('PolicyEngine: empty policies with defaults', () => {
+    it('empty policy list with defaults returns default for every tool', () => {
+        const engine = new PolicyEngine(
+            [],
+            { cacheControl: 'no-store' },
+        );
+
+        expect(engine.resolve('billing.pay')?.cacheControl).toBe('no-store');
+        expect(engine.resolve('sprints.list')?.cacheControl).toBe('no-store');
+        expect(engine.resolve('any.tool.name')?.cacheControl).toBe('no-store');
+    });
+
+    it('empty policies and no defaults returns null for every tool', () => {
+        const engine = new PolicyEngine([]);
+        expect(engine.resolve('billing.pay')).toBeNull();
+        expect(engine.resolve('anything')).toBeNull();
+    });
+});
+
+describe('PolicyEngine: no-op policy first-match semantics', () => {
+    it('match-only policy with defaults — inherits default cacheControl (no override)', () => {
+        // _buildResolved uses: policy.cacheControl ?? this._defaultCacheControl
+        // A match-only policy INHERITS the default, so first-match returns the default value
+        const engine = new PolicyEngine(
+            [{ match: 'sprints.*' }],
+            { cacheControl: 'no-store' },
+        );
+
+        // sprints.get matches the entry → inherits default → { cacheControl: 'no-store' }
+        expect(engine.resolve('sprints.get')?.cacheControl).toBe('no-store');
+    });
+
+    it('match-only policy WITHOUT defaults — returns null', () => {
+        // No directives, no defaults → null
+        const engine = new PolicyEngine([{ match: 'sprints.*' }]);
+        expect(engine.resolve('sprints.get')).toBeNull();
+    });
+
+    it('match-only policy does not prevent later policies from being evaluated', () => {
+        // This is about ORDERING, not null: since first-match-wins, the no-op
+        // policy matches first and its (inherited) resolution is returned.
+        // A subsequent more-specific policy is never reached for 'sprints.*' tools.
+        const engine = new PolicyEngine([
+            { match: 'sprints.*' },                                   // catch-all (no override)
+            { match: 'sprints.get', cacheControl: 'immutable' },     // more specific (unreachable)
+        ]);
+        // First policy matches sprints.get → null (no defaults), not 'immutable'
+        expect(engine.resolve('sprints.get')).toBeNull();
+        // Unknown tool falls through to defaults (none here) → null
+        expect(engine.resolve('unknown')).toBeNull();
+    });
+});
+
+describe('PolicyEngine: exact-name match (no wildcards)', () => {
+    it('exact tool name match resolves correctly', () => {
+        const engine = new PolicyEngine([
+            { match: 'billing.pay', cacheControl: 'no-store' },
+        ]);
+
+        expect(engine.resolve('billing.pay')?.cacheControl).toBe('no-store');
+        // Prefix should NOT match
+        expect(engine.resolve('billing.payment')).toBeNull();
+        expect(engine.resolve('billing')).toBeNull();
+    });
+
+    it('near-miss names do not cross-match', () => {
+        const engine = new PolicyEngine([
+            { match: 'tasks.get', cacheControl: 'immutable' },
+        ]);
+
+        expect(engine.resolve('tasks.get')?.cacheControl).toBe('immutable');
+        expect(engine.resolve('tasks.gets')).toBeNull(); // trailing char
+        expect(engine.resolve('tasks.ge')).toBeNull();   // truncated
+    });
+});

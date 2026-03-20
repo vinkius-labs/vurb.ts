@@ -20,15 +20,15 @@
 // ── Tier 1: Structural (satisfy AST — dead code, never called) ──────────────
 
 export class EventEmitter {
-    on() { return this; }
-    once() { return this; }
-    emit() { return false; }
-    addListener() { return this; }
-    removeListener() { return this; }
-    removeAllListeners() { return this; }
-    listeners() { return []; }
-    listenerCount() { return 0; }
-    setMaxListeners() { return this; }
+    on(): this { return this; }
+    once(): this { return this; }
+    emit(): boolean { return false; }
+    addListener(): this { return this; }
+    removeListener(): this { return this; }
+    removeAllListeners(): this { return this; }
+    listeners(): unknown[] { return []; }
+    listenerCount(): number { return 0; }
+    setMaxListeners(): this { return this; }
 }
 
 export class Readable extends EventEmitter {}
@@ -36,7 +36,7 @@ export class Writable extends EventEmitter {}
 export class Duplex extends EventEmitter {}
 export class Transform extends EventEmitter {}
 export class PassThrough extends EventEmitter {}
-export class Server extends EventEmitter { listen() {} close() {} }
+export class Server extends EventEmitter { listen(): void {} close(): void {} }
 export class Socket extends EventEmitter {}
 export class IncomingMessage extends Readable {}
 export class ServerResponse extends Writable {}
@@ -51,32 +51,32 @@ const CRASH = (api: string): never => {
     );
 };
 
-export const createHash = () => CRASH('node:crypto.createHash');
-export const createHmac = () => CRASH('node:crypto.createHmac');
-export const randomUUID = () => CRASH('node:crypto.randomUUID');
-export const randomBytes = () => CRASH('node:crypto.randomBytes');
-export const createReadStream = () => CRASH('node:fs.createReadStream');
-export const readFileSync = () => CRASH('node:fs.readFileSync');
-export const writeFileSync = () => CRASH('node:fs.writeFileSync');
-export const exec = () => CRASH('node:child_process.exec');
-export const execSync = () => CRASH('node:child_process.execSync');
-export const spawn = () => CRASH('node:child_process.spawn');
+export const createHash = (): never => CRASH('node:crypto.createHash');
+export const createHmac = (): never => CRASH('node:crypto.createHmac');
+export const randomUUID = (): never => CRASH('node:crypto.randomUUID');
+export const randomBytes = (): never => CRASH('node:crypto.randomBytes');
+export const createReadStream = (): never => CRASH('node:fs.createReadStream');
+export const readFileSync = (): never => CRASH('node:fs.readFileSync');
+export const writeFileSync = (): never => CRASH('node:fs.writeFileSync');
+export const exec = (): never => CRASH('node:child_process.exec');
+export const execSync = (): never => CRASH('node:child_process.execSync');
+export const spawn = (): never => CRASH('node:child_process.spawn');
 
 // Diplomatic Buffer — defensive checks pass, allocation crashes
 export const Buffer = {
-    isBuffer: () => false,
-    isEncoding: () => false,
-    from: () => CRASH('Buffer.from (use Uint8Array)'),
-    alloc: () => CRASH('Buffer.alloc (use Uint8Array)'),
-    allocUnsafe: () => CRASH('Buffer.allocUnsafe (use Uint8Array)'),
+    isBuffer: (): boolean => false,
+    isEncoding: (): boolean => false,
+    from: (): never => CRASH('Buffer.from (use Uint8Array)'),
+    alloc: (): never => CRASH('Buffer.alloc (use Uint8Array)'),
+    allocUnsafe: (): never => CRASH('Buffer.allocUnsafe (use Uint8Array)'),
 };
 
 // Path stubs — crash like Tier 2 stubs for consistency.
 // If these are ever reached at runtime, a silent empty string
 // would propagate and create hard-to-debug path errors.
-export const resolve = () => CRASH('node:path.resolve');
-export const join = () => CRASH('node:path.join');
-export const dirname = () => CRASH('node:path.dirname');
-export const basename = () => CRASH('node:path.basename');
+export const resolve = (): never => CRASH('node:path.resolve');
+export const join = (): never => CRASH('node:path.join');
+export const dirname = (): never => CRASH('node:path.dirname');
+export const basename = (): never => CRASH('node:path.basename');
 
 export default {};

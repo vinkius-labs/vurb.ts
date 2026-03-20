@@ -241,7 +241,7 @@ export class FluentPromptBuilder<TContext = void, TArgs extends Record<string, u
         return this._hydrationTimeout;
     }
 
-    buildPromptDefinition() {
+    buildPromptDefinition(): ReturnType<PromptBuilder['buildPromptDefinition']> {
         return this._build().buildPromptDefinition();
     }
 

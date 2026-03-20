@@ -69,7 +69,7 @@ export function isFluentDescriptor(value: unknown): value is FluentDescriptor {
  * Infer whether a fluent descriptor is optional.
  * @internal
  */
-type IsFluentOptional<T> =
+type _IsFluentOptional<T> =
     T extends { _optional: true } ? true :
     T extends FluentString | FluentNumber | FluentBoolean | FluentEnum<string> | FluentArray ? false :
     false;

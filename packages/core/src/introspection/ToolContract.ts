@@ -21,7 +21,7 @@
  *
  * @module
  */
-import { type ToolBuilder } from '../core/types.js';
+import { type ToolBuilder, type ActionMetadata } from '../core/types.js';
 import { sha256, canonicalize } from './canonicalize.js';
 import { scanSource, buildEntitlements } from './EntitlementScanner.js';
 
@@ -235,8 +235,8 @@ export async function materializeContract<TContext>(
  * @internal
  */
 async function materializeBehavior<TContext>(
-    metadata: readonly import('../core/types.js').ActionMetadata[],
-    builder: ToolBuilder<TContext>,
+    metadata: readonly ActionMetadata[],
+    _builder: ToolBuilder<TContext>,
 ): Promise<ToolBehavior> {
     // Collect Presenter data from the first action that declares one
     let egressSchemaDigest: string | null = null;
@@ -308,7 +308,7 @@ async function materializeBehavior<TContext>(
  * @internal
  */
 function computeTokenEconomics(
-    metadata: readonly import('../core/types.js').ActionMetadata[],
+    metadata: readonly ActionMetadata[],
     behavior: ToolBehavior,
 ): TokenEconomicsProfile {
     // Count schema fields across all Presenters

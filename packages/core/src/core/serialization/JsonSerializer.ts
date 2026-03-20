@@ -142,10 +142,10 @@ function transformForFjs(jsonSchema: Record<string, unknown>): Record<string, un
     }
 
     // Recursively transform nested properties
-    if (schema['properties'] && typeof schema['properties'] === 'object') {
+    if (schema['properties'] != null && typeof schema['properties'] === 'object') {
         const props = { ...(schema['properties'] as Record<string, unknown>) };
         for (const [key, value] of Object.entries(props)) {
-            if (value && typeof value === 'object') {
+            if (value != null && typeof value === 'object') {
                 props[key] = transformForFjs(value as Record<string, unknown>);
             }
         }
@@ -153,7 +153,7 @@ function transformForFjs(jsonSchema: Record<string, unknown>): Record<string, un
     }
 
     // Transform array items
-    if (schema['items'] && typeof schema['items'] === 'object') {
+    if (schema['items'] != null && typeof schema['items'] === 'object') {
         schema['items'] = transformForFjs(schema['items'] as Record<string, unknown>);
     }
 
@@ -161,7 +161,7 @@ function transformForFjs(jsonSchema: Record<string, unknown>): Record<string, un
     for (const combiner of ['anyOf', 'oneOf', 'allOf'] as const) {
         if (Array.isArray(schema[combiner])) {
             schema[combiner] = (schema[combiner] as Record<string, unknown>[])
-                .map(s => (s && typeof s === 'object' ? transformForFjs(s) : s));
+                .map(s => (s != null && typeof s === 'object' ? transformForFjs(s) : s));
         }
     }
 

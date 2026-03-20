@@ -18,7 +18,8 @@ import { createServer as createHttpServer, type Server as HttpServer } from 'nod
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { attachToServer, type AttachOptions, _missingContextProxy } from './ServerAttachment.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { attachToServer as _attachToServer, type AttachOptions, _missingContextProxy } from './ServerAttachment.js';
 import { createTelemetryBus, type TelemetryBusInstance } from '../observability/TelemetryBus.js';
 import type { PromptRegistry } from '../prompt/PromptRegistry.js';
 import type { ProgressSink } from '../core/execution/ProgressHelper.js';
@@ -262,7 +263,7 @@ class RateLimitBucket {
  */
 function applyCorsHeaders(
     req: { headers: Record<string, string | string[] | undefined>; method?: string | undefined },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any — duck-typed HTTP response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- duck-typed HTTP response
     res: any,
     cors: CorsConfig | undefined,
 ): boolean {
@@ -364,7 +365,7 @@ export async function startServer<TContext>(
         let fsmData: { config: unknown; bindings: Array<{ tool: string; states: string[]; event?: string }> } | undefined;
         const fsmGate = (attach as Record<string, unknown>)?.['fsm'] as
             { _config?: unknown; _bindings?: Map<string, { allowedStates: Set<string>; transitionEvent?: string }> } | undefined;
-        if (fsmGate?._config && fsmGate?._bindings) {
+        if (fsmGate?._config != null && fsmGate?._bindings != null) {
             const bindings: Array<{ tool: string; states: string[]; event?: string }> = [];
             for (const [toolName, binding] of fsmGate._bindings) {
                 bindings.push({
@@ -550,7 +551,7 @@ export async function startServer<TContext>(
             for (const [id, lastActive] of sessionActivity) {
                 if (now - lastActive > sessionTtlMs) {
                     const t = sessions.get(id);
-                    if (t) { try { t.close(); } catch { /* best effort */ } }
+                    if (t) { void t.close().catch(() => { /* best effort */ }); }
                     sessions.delete(id);
                     sessionActivity.delete(id);
                 }
@@ -562,6 +563,7 @@ export async function startServer<TContext>(
             reapInterval.unref();
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- async HTTP handler is standard Node.js pattern
         const httpServer = createHttpServer(async (req, res) => {
             try {
                 const url = new URL(req.url ?? '/', `http://localhost:${port}`);
@@ -642,7 +644,7 @@ export async function startServer<TContext>(
                             sessionActivity.delete(id);
                         }
                     };
-                    await server.connect(t as unknown as import('@modelcontextprotocol/sdk/shared/transport.js').Transport);
+                    await server.connect(t as unknown as Transport);
                     await t.handleRequest(req, res, body);
                 } else if (req.method === 'GET') {
                     const sessionId = req.headers['mcp-session-id'] as string | undefined;

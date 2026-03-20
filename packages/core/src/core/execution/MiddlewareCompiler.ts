@@ -47,7 +47,7 @@ function isAsyncGeneratorFunction(fn: unknown): boolean {
  * to ensure each middleware warns at most once across all chains.
  * @internal
  */
-const _warnedMiddlewares = new WeakSet<Function>();
+const _warnedMiddlewares = new WeakSet<object>();
 
 /**
  * Wrap a handler with a middleware stack (right-to-left composition).

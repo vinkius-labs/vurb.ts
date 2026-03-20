@@ -11,7 +11,7 @@
  * @internal
  * @module
  */
-import { ZodType, ZodError } from 'zod';
+import { type ZodTypeAny, ZodError } from 'zod';
 import { ResponseBuilder } from './ResponseBuilder.js';
 import { type UiBlock } from './ui.js';
 import { type ActionSuggestion } from './Presenter.js';
@@ -64,7 +64,7 @@ export interface EmbedEntry {
  */
 export interface PresenterSnapshot<T> {
     readonly name: string;
-    readonly schema?: ZodType<any, any, any> | undefined;
+    readonly schema?: ZodTypeAny | undefined;
     readonly rules: RulesConfig<T>;
     readonly collectionRules: CollectionRulesFn<T>;
     readonly itemUiBlocks?: ItemUiBlocksFn<T> | undefined;

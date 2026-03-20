@@ -8,7 +8,6 @@ import {
     writeLockfile,
     readLockfile,
     checkLockfile,
-    serializeLockfile,
     LOCKFILE_NAME,
     type PromptBuilderLike,
 } from '../../introspection/CapabilityLockfile.js';

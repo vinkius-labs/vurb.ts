@@ -38,7 +38,6 @@ import {
     createJudgeChain,
     extractLastJson,
     type JudgeChain,
-    type JudgeChainConfig,
     type JudgeChainResult,
 } from './JudgeChain.js';
 
@@ -159,7 +158,7 @@ export interface FirewallRejection {
  */
 export function buildFirewallPrompt(rules: readonly string[]): string {
     // Bug #150 fix: sanitize backticks to prevent markdown code fence escape.
-    const numberedRules = rules.map((r, i) => `${i + 1}. ${r.replaceAll('\`', '\\u0060')}`).join('\n');
+    const numberedRules = rules.map((r, i) => `${i + 1}. ${r.replaceAll('`', '\\u0060')}`).join('\n');
 
     return `You are a security evaluator for an AI tool platform.
 
@@ -314,7 +313,7 @@ function extractDetailedRejections(
             rejected?: { index: number; reason: string }[];
         };
 
-        if (!parsed.rejected?.length) return undefined;
+        if (parsed.rejected == null || parsed.rejected.length === 0) return undefined;
 
         return parsed.rejected
             .filter(r => r.index >= 1 && r.index <= rules.length)

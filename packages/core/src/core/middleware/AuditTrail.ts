@@ -185,7 +185,7 @@ export function auditTrail(config: AuditTrailConfig): MiddlewareFn<unknown> {
             // Detect error/blocked status from response
             if (logResult === 'status') {
                 const r = result as Record<string, unknown> | undefined;
-                if (r && r['isError']) {
+                if (r != null && r['isError'] === true) {
                     const content = r['content'] as Array<{ text?: string }> | undefined;
                     const text = content?.[0]?.text ?? '';
                     // Bug #11 fix: extract the error code from the XML

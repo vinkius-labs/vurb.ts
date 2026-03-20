@@ -55,7 +55,7 @@ async function main(): Promise<void> {
             process.exit(0);
             break;
         case 'remote':
-            await commandRemote(args);
+            commandRemote(args);
             break;
         case 'token':
             await commandToken(args);
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
             try {
                 const { runInspector } = await import('@vurb/inspector');
                 await runInspector(inspectArgv);
-            } catch (importErr) {
+            } catch {
                 console.error(
                     `\x1b[31m\u2717\x1b[0m The inspector TUI requires the optional package:\n\n` +
                     `  npm install @vurb/inspector\n`,

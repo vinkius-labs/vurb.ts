@@ -51,6 +51,7 @@
  *
  * @module
  */
+import type * as xstate from 'xstate';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ export interface TransitionResult {
 // ── Lazy XState Loading ──────────────────────────────────
 
 /** Cached XState module reference */
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- typeof import() needed: namespace import cannot be used as a type
 let xstateModule: typeof import('xstate') | null = null;
 /** Number of failed import attempts (Bug #10 fix: retry up to 3 times) */
 let xstateLoadAttempts = 0;
@@ -155,8 +157,9 @@ const MAX_XSTATE_LOAD_ATTEMPTS = 3;
  *
  * @internal
  */
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- typeof import() needed: namespace import cannot be used as a type
 async function loadXState(): Promise<typeof import('xstate') | null> {
-    if (xstateModule) return xstateModule; // cached success
+    if (xstateModule != null) return xstateModule; // cached success
     if (xstateLoadAttempts >= MAX_XSTATE_LOAD_ATTEMPTS) return null; // max retries exceeded
 
     xstateLoadAttempts++;
@@ -218,7 +221,7 @@ export class StateMachineGate {
     private readonly _config: FsmConfig;
     private readonly _bindings = new Map<string, FsmToolBinding>();
     private readonly _transitionCallbacks: Array<() => void> = [];
-    private _actor: import('xstate').Actor | null = null;
+    private _actor: xstate.Actor | null = null;
     private _currentState: string;
     private _initialized = false;
     private _initPromise: Promise<boolean> | null = null;
@@ -256,7 +259,7 @@ export class StateMachineGate {
     /** @internal */
     private async _doInit(): Promise<boolean> {
         const xstate = await loadXState();
-        if (!xstate) {
+        if (xstate == null) {
             this._initialized = true;
             return false;
         }
