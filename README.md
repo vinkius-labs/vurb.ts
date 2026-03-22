@@ -19,6 +19,9 @@ Type-safe tools · Presenters that control what the LLM sees · Built-in PII red
 
 </div>
 
+<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/d0fadcd0-dcc7-44ce-9363-090e3294e3a6" />
+
+
 ---
 
 ## Get Started in 5 Seconds
