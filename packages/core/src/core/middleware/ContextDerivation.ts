@@ -135,7 +135,7 @@ export function defineMiddleware<
             // ⚠️  contextFactory MUST return a fresh object per invocation
             // to prevent cross-call property leakage in parallel scenarios.
             for (const [key, value] of Object.entries(derived as Record<string, unknown>)) {
-                // Bug #110 fix: block constructor/prototype in addition to __proto__,
+                // block constructor/prototype in addition to __proto__,
                 // matching FluentToolBuilder's inline middleware guard.
                 if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
                 (ctx as Record<string, unknown>)[key] = value;

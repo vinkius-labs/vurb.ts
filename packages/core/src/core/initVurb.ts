@@ -417,7 +417,7 @@ export function initVurb<TContext = void>(): VurbInstance<TContext> {
 
         sandbox(config?: SandboxConfig): SandboxEngine {
             const engine = new SandboxEngine(config);
-            // Bug #141: warn when engines are garbage-collected without dispose().
+            // warn when engines are garbage-collected without dispose().
             // V8 Isolates hold native memory invisible to the Node GC.
             _trackSandboxDispose(engine);
             return engine;
@@ -435,7 +435,7 @@ export function initVurb<TContext = void>(): VurbInstance<TContext> {
     };
 }
 
-// ── Bug #141: FinalizationRegistry leak-detection for SandboxEngine ──
+// ── FinalizationRegistry leak-detection for SandboxEngine ──
 
 /**
  * Track SandboxEngine instances and emit a console.warn when one is

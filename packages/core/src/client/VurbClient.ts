@@ -548,7 +548,7 @@ export function createVurbClient<TRouter extends RouterMap>(
  *
  * @internal
  */
-// Bug #130: Symbols that debugging / inspection tools access on every object.
+// Symbols that debugging / inspection tools access on every object.
 // Returning undefined for these prevents the proxy from recursing into itself
 // when inspected in DevTools, Node REPL, or util.inspect().
 const INSPECTION_SYMBOLS: ReadonlySet<symbol> = new Set([
@@ -568,7 +568,7 @@ function buildFluentProxy(
     return new Proxy(function () {} as any, {
         get(_target: unknown, prop: string | symbol): unknown {
             if (typeof prop === 'symbol') {
-                // Bug #130: guard inspection symbols
+                // guard inspection symbols
                 if (INSPECTION_SYMBOLS.has(prop)) return undefined;
                 return undefined;           // all other symbols → safe no-op
             }

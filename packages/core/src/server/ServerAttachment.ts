@@ -19,7 +19,7 @@ import {
     UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { type Tool as McpTool } from '@modelcontextprotocol/sdk/types.js';
-import { type ToolResponse, error, toolError } from '../core/response.js';
+import { type ToolResponse, error, toolError, isHandoffResponse, type HandoffPayload } from '../core/response.js';
 import { type ToolBuilder } from '../core/types.js';
 import { type ProgressSink, type ProgressEvent } from '../core/execution/ProgressHelper.js';
 import { resolveServer } from './ServerResolver.js';
@@ -414,6 +414,43 @@ export interface AttachOptions<TContext> {
      * @see {@link defineResource} for creating resources
      */
     resources?: ResourceRegistry<TContext>;
+
+    /**
+     * SwarmGateway for federated multi-agent handoffs (Federated Handoff Protocol).
+     *
+     * When provided, the framework detects `HandoffResponse` from tool handlers
+     * and activates the B2BUA tunnel to the upstream MCP micro-server.
+     * Zero overhead when omitted — no FHP code runs.
+     *
+     * Import from `@vurb/swarm`:
+     * ```typescript
+     * import { SwarmGateway } from '@vurb/swarm';
+     *
+     * registry.attachToServer(server, {
+     *     swarmGateway: new SwarmGateway({
+     *         registry: { finance: 'http://finance-agent:8081' },
+     *         delegationSecret: process.env.VURB_DELEGATION_SECRET!,
+     *     }),
+     * });
+     * ```
+     */
+    swarmGateway?: ISwarmGateway;
+}
+
+
+/**
+ * Minimal duck-typed interface for the SwarmGateway.
+ * Defined here to avoid a hard dependency on `@vurb/swarm` from `@vurb/core`.
+ * The real `SwarmGateway` from `@vurb/swarm` satisfies this interface automatically.
+ *
+ * @internal
+ */
+export interface ISwarmGateway {
+    activateHandoff(payload: HandoffPayload, sessionId: string, signal: AbortSignal): Promise<void>;
+    proxyToolsList(sessionId: string): Promise<Array<{ name: string; description?: string; inputSchema?: unknown }> | null>;
+    proxyToolsCall(sessionId: string, name: string, args: Record<string, unknown>, signal: AbortSignal): Promise<ToolResponse | null>;
+    returnToGateway(sessionId: string): Promise<void>;
+    hasActiveHandoff(sessionId: string): boolean;
 }
 
 /** Function to detach the registry from the server */
@@ -453,13 +490,15 @@ interface HandlerContext<TContext> {
     readonly isFlat: boolean;
     readonly fsm?: StateMachineGate;
     readonly fsmStore?: FsmStateStore;
-    /** In-memory FSM snapshot store for non-serverless transports without fsmStore (Bug #77 fix). */
+    /** In-memory FSM snapshot store for non-serverless transports without fsmStore ( fix). */
     readonly fsmMemorySnapshots?: Map<string, FsmSnapshot>;
     readonly notifyToolListChanged?: () => void;
     readonly telemetry?: TelemetrySink;
     readonly selfHealing?: SelfHealingConfig;
-    /** Bug #3 fix: per-attachment UUID fallback for transports without session IDs (e.g. stdio). */
+    /** per-attachment UUID fallback for transports without session IDs (e.g. stdio). */
     readonly fallbackSessionId: string;
+    /** SwarmGateway for federated handoff (optional — zero overhead when absent). */
+    readonly swarmGateway?: ISwarmGateway;
 }
 
 // ── Observability Propagation ────────────────────────────
@@ -530,7 +569,7 @@ function resolveSessionId<TContext>(extra: unknown, hCtx: HandlerContext<TContex
  * Clone the FSM and restore the session-specific snapshot.
  *
  * Shared by both `tools/list` and `tools/call` handlers.
- * Eliminates the duplicated clone+restore logic (Bug #3 + Bug #77).
+ * Eliminates the duplicated clone+restore logic ( + ).
  */
 async function cloneAndRestoreFsm<TContext>(
     hCtx: HandlerContext<TContext>,
@@ -562,8 +601,18 @@ async function cloneAndRestoreFsm<TContext>(
  */
 function createToolListHandler<TContext>(hCtx: HandlerContext<TContext>) {
     return async (_request: unknown, extra: unknown) => {
-        // Per-request FSM clone for serverless isolation (Bug #3 + Bug #77 fix).
+        // Per-request FSM clone for serverless isolation ( +  fix).
         const fsm = await cloneAndRestoreFsm(hCtx, extra);
+
+        // FHP: if a handoff tunnel is active, proxy the upstream's tools list
+        if (hCtx.swarmGateway) {
+            const sessionId = resolveSessionId(extra, hCtx);
+            const proxied = await hCtx.swarmGateway.proxyToolsList(sessionId);
+            if (proxied !== null && proxied !== undefined) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- McpTool shape
+                return { tools: proxied as any };
+            }
+        }
 
         let tools: McpTool[];
 
@@ -629,10 +678,10 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
         emit?.({ type: 'route', tool: toolGroup, action, args, timestamp: Date.now() } as any);
 
-        // Per-request FSM clone for serverless isolation (Bug #3 + Bug #77 fix).
+        // Per-request FSM clone for serverless isolation ( +  fix).
         const fsm = await cloneAndRestoreFsm(hCtx, extra);
 
-        // Bug #107 fix: enforce FSM gate on tools/call — not just tools/list.
+        // enforce FSM gate on tools/call — not just tools/list.
         // Without this, a client that knows a tool's name can bypass the gate.
         if (fsm && fsm.hasBindings && !fsm.isToolAllowed(name)) {
             return toolError('FORBIDDEN', {
@@ -644,6 +693,29 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                 severity: 'error',
                 details: { currentState: fsm.currentState, blockedTool: name },
             });
+        }
+
+        // ── FHP: proxy tools/call when handoff tunnel is active ──────────────────
+        // This check MUST happen before the local tool execution block below.
+        // When a session has an active handoff, the LLM will call upstream tools
+        // (e.g. 'finance.refund') that do not exist in the gateway registry.
+        // Checking for an active handoff FIRST short-circuits the local execution
+        // entirely, giving clean telemetry and avoiding the unnecessary registry lookup.
+        if (hCtx.swarmGateway) {
+            const sessionId = resolveSessionId(extra, hCtx);
+            if (hCtx.swarmGateway.hasActiveHandoff(sessionId)) {
+                // Handle return_to_triage
+                if (name.endsWith('.return_to_triage')) {
+                    await hCtx.swarmGateway.returnToGateway(sessionId);
+                    hCtx.notifyToolListChanged?.();
+                    return { content: [{ type: 'text' as const, text: '[RETURN] Specialised session ended. Gateway tools restored.' }] };
+                }
+                const callSignal = extractSignal(extra) ?? new AbortController().signal;
+                const proxied = await hCtx.swarmGateway.proxyToolsCall(sessionId, name, args as Record<string, unknown>, callSignal);
+                if (proxied !== null) return proxied;
+                // proxied === null means the gateway deferred (e.g. unknown tool in upstream);
+                // fall through to local execution so gateway-native tools still work.
+            }
         }
 
         let result: ToolResponse;
@@ -670,7 +742,7 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
             throw err;
         }
 
-        // ── Self-Healing: enrich validation errors with contract deltas (Bug #43 fix) ──
+        // ── Self-Healing: enrich validation errors with contract deltas ( fix) ──
         if (result.isError && hCtx.selfHealing) {
             const text = result.content?.[0]?.type === 'text' ? (result.content[0] as { text: string }).text : '';
             if (text) {
@@ -679,6 +751,28 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                     result = { ...result, content: [{ type: 'text' as const, text: healing.enrichedError }] };
                 }
             }
+        }
+
+        // ── FHP: detect HandoffResponse and activate SwarmGateway tunnel ──────────
+        if (isHandoffResponse(result) && hCtx.swarmGateway) {
+            const sessionId = resolveSessionId(extra, hCtx);
+            const signal = extractSignal(extra) ?? new AbortController().signal;
+            const gateway = hCtx.swarmGateway;
+            const payload = result.payload;
+
+            // Activate tunnel asynchronously — ACK is returned immediately to the LLM
+            void gateway.activateHandoff(payload, sessionId, signal)
+                .then(() => hCtx.notifyToolListChanged?.())
+                .catch(() => hCtx.notifyToolListChanged?.());
+
+            // Cognitive anchor: visible ACK prevents LLM anxiety loop while tools reload.
+            // Uses HANDOFF_CONNECTING (not HANDOFF_UPSTREAM_UNAVAILABLE): the latter
+            // signals a failure to the LLM, whereas here the upstream is actively connecting.
+            return toolError('HANDOFF_CONNECTING', {
+                message: `[HANDOFF] ${payload.reason ?? 'Specialist selected'}. Your tools are being updated — please wait.`,
+                suggestion: 'Wait for the tools list to refresh, then proceed with the specialised tools.',
+                severity: 'warning',
+            }) as unknown as ToolResponse;
         }
 
         // ── Telemetry: execute event ─────────────────────────
@@ -711,12 +805,12 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
                         } as any);
                     }
                     // Persist new state to external store (serverless/edge)
-                    // Use fallback session ID for transports without sessions (e.g., stdio) (Bug #44 fix)
+                    // Use fallback session ID for transports without sessions (e.g., stdio) ( fix)
                     const sessionId = resolveSessionId(extra, hCtx);
                     if (hCtx.fsmStore) {
                         await hCtx.fsmStore.save(sessionId, fsm.snapshot());
                     } else if (hCtx.fsmMemorySnapshots) {
-                        // Bug #77 fix: persist to in-memory session map
+                        // persist to in-memory session map
                         hCtx.fsmMemorySnapshots.set(sessionId, fsm.snapshot());
                     }
                     // Notify client to re-fetch tools/list
@@ -861,7 +955,7 @@ function registerResourceHandlers<TContext>(
 ): void {
     const resourceServer = resolved as unknown as McpServerWithResourceSubscriptions;
 
-    // Bug #4 fix: Pre-compute introspection manifest URI for merge.
+    // Pre-compute introspection manifest URI for merge.
     const manifestUri = introspection?.config.uri ?? 'vurb://manifest.json';
 
     // Wire notification sink for `notifications/resources/updated`
@@ -888,7 +982,7 @@ function registerResourceHandlers<TContext>(
         resources.setListChangedSink(() => { (sendListChanged as (...args: unknown[]) => unknown).call(server); });
     }
 
-    // resources/list — merge with introspection resources if present (Bug #4 fix)
+    // resources/list — merge with introspection resources if present ( fix)
     resourceServer.setRequestHandler(ListResourcesRequestSchema, (() => {
         const list = resources.listResources();
         if (introspection) {
@@ -902,12 +996,12 @@ function registerResourceHandlers<TContext>(
         return { resources: list };
     }) as (...args: never[]) => unknown);
 
-    // resources/read — with introspection manifest delegation (Bug #4 fix)
+    // resources/read — with introspection manifest delegation ( fix)
     resourceServer.setRequestHandler(ReadResourceRequestSchema, (async (
         request: { params: { uri: string } },
         extra: unknown,
     ) => {
-        // Bug #4 fix: Handle introspection manifest URI before ResourceRegistry
+        // Handle introspection manifest URI before ResourceRegistry
         if (introspection && request.params.uri === manifestUri) {
             const fullManifest = compileManifest(
                 introspection.serverName,
@@ -1000,7 +1094,7 @@ export async function attachToServer<TContext>(
         filter, contextFactory, debug, tracing, stateSync,
         introspection, serverName,
         toolExposition = 'flat', actionSeparator = '_',
-        prompts, zeroTrust, selfHealing,
+        prompts, zeroTrust, selfHealing, swarmGateway,
     } = options;
 
     // 1. Propagate observability to all registered builders
@@ -1012,7 +1106,7 @@ export async function attachToServer<TContext>(
     const syncLayer = mergedSyncConfig ? new StateSyncLayer(mergedSyncConfig) : undefined;
 
     // 3. Register introspection resource (zero overhead when disabled)
-    //    Bug #4 fix: When `resources` is also configured, introspection is merged
+    //    When `resources` is also configured, introspection is merged
     //    into registerResourceHandlers to avoid setRequestHandler overwrite.
     if (introspection?.enabled && !options.resources) {
         registerIntrospectionResource(
@@ -1057,9 +1151,9 @@ export async function attachToServer<TContext>(
         autoBindFsmFromBuilders(fsm, registry.getBuilders(), toolExposition, actionSeparator);
     }
 
-    // Wire the notification sink for list_changed (FSM transitions)
+    // Wire the notification sink for list_changed (FSM transitions + FHP swarm)
     let notifyToolListChanged: (() => void) | undefined;
-    if (fsm) {
+    if (fsm || swarmGateway) {
         const serverAny = server as Record<string, unknown>;
         const sendFn = serverAny['sendToolListChanged'] ?? serverAny['notification'];
         if (typeof sendFn === 'function') {
@@ -1073,7 +1167,7 @@ export async function attachToServer<TContext>(
         }
     }
 
-    // Bug #7 fix: exposition dirty flag — O(1) cache validation
+    // exposition dirty flag — O(1) cache validation
     // Starts dirty to force initial compile, then stays clean until invalidated.
     let _expositionDirty = true;
 
@@ -1084,12 +1178,12 @@ export async function attachToServer<TContext>(
         ...(syncLayer ? { syncLayer } : {}),
         toolExposition, actionSeparator,
         isFlat: toolExposition === 'flat',
-        // Bug #7 fix: O(1) exposition cache with dirty flag + builder-count safety net.
+        // O(1) exposition cache with dirty flag + builder-count safety net.
         // The dirty flag provides O(1) fast-path invalidation (set whenever a builder
         // registers or the filter changes). The builder-count safety net catches
         // late-registered builders that might have been missed by the dirty flag.
         //
-        // Bug #4 (Performance) fix: previous safety net iterated `registry.getBuilders()`
+        //  (Performance) fix: previous safety net iterated `registry.getBuilders()`
         // with a for...of loop (O(n)) on every tools/call request even on the cache hit path.
         // `ToolRegistry.size` is a Map.size getter — always O(1). No loop needed.
         recompile: (() => {
@@ -1104,7 +1198,7 @@ export async function attachToServer<TContext>(
                 _expositionDirty = false;
                 cachedBuilderCount = currentCount;
                 const builders = [...registry.getBuilders()];
-                // Bug #131: route diagnostic warnings through debug observer
+                // route diagnostic warnings through debug observer
                 const warnFn = debug
                     ? (msg: string) => debug({ type: 'error', tool: '', action: '', error: msg, step: 'route', timestamp: Date.now() })
                     : undefined;
@@ -1114,14 +1208,15 @@ export async function attachToServer<TContext>(
         })(),
         ...(fsm ? { fsm } : {}),
         ...(fsmStore ? { fsmStore } : {}),
-        // Bug #77 fix: in-memory FSM snapshot store when no external fsmStore
-        // Bug #108 fix: bounded LRU eviction (max 10,000 entries) to prevent
+        // in-memory FSM snapshot store when no external fsmStore
+        // bounded LRU eviction (max 10,000 entries) to prevent
         // unbounded memory growth proportional to unique session count.
         ...(fsm && !fsmStore ? { fsmMemorySnapshots: createBoundedSnapshotMap(10_000) } : {}),
         ...(notifyToolListChanged ? { notifyToolListChanged } : {}),
         ...(options.telemetry ? { telemetry: options.telemetry } : {}),
         ...(selfHealing ? { selfHealing } : {}),
-        // Bug #3 fix: per-attachment UUID — never use static key for session-scoped mutable state
+        ...(swarmGateway ? { swarmGateway } : {}),
+        // per-attachment UUID — never use static key for session-scoped mutable state
         fallbackSessionId: randomUUID(),
     };
 
@@ -1137,7 +1232,7 @@ export async function attachToServer<TContext>(
     // 7. Register resource handlers (zero overhead when omitted)
     const { resources } = options;
     if (resources) {
-        // Bug #4 fix: pass introspection config so manifest resource is merged
+        // pass introspection config so manifest resource is merged
         // into ResourceRegistry handlers instead of being overwritten.
         registerResourceHandlers(
             resolved, server, resources, contextFactory,
@@ -1336,7 +1431,7 @@ function collectHintPolicies<TContext>(
  * Uses native `Map` iteration order guarantee (insertion order) as the LRU proxy.
  * On `get()`, the accessed entry is re-inserted to refresh its position.
  *
- * Bug #108 fix: prevents unbounded memory growth proportional to unique sessions.
+ * prevents unbounded memory growth proportional to unique sessions.
  */
 function createBoundedSnapshotMap(maxSize: number): Map<string, FsmSnapshot> {
     const map = new Map<string, FsmSnapshot>();
@@ -1434,7 +1529,7 @@ function autoBindFsmFromBuilders<TContext>(
                 const actionList = actions.call(builder) as Array<{ key: string }>;
                 const isSingleAction = actionList.length === 1;
                 for (const action of actionList) {
-                    // Bug #9 fix: single-action default tools use bare name
+                    // single-action default tools use bare name
                     // (matching ExpositionCompiler.compileFlat behavior)
                     const flatName = (isSingleAction && action.key === 'default')
                         ? toolName

@@ -120,7 +120,7 @@ export class ToolRegistry<TContext = void> {
         builder.buildToolDefinition();
         this._builders.set(name, builder);
 
-        // Propagate active observability features to the new builder (Bug #12)
+        // Propagate active observability features to the new builder ()
         this._propagateObservability(builder);
     }
 

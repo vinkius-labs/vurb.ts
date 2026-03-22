@@ -706,7 +706,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
             );
         }
         this._hasFlat = true;
-        // Bug #115 fix: reject empty or whitespace-only action names.
+        // reject empty or whitespace-only action names.
         if (!config.name || !config.name.trim()) {
             throw new Error(
                 `Action name must be a non-empty string on builder "${this._name}". ` +
@@ -719,7 +719,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
                 `The framework uses dots internally for group.action compound keys.`
             );
         }
-        // Bug #112 fix: reject duplicate action names instead of silently
+        // reject duplicate action names instead of silently
         // registering two actions with the same discriminator key.
         if (this._actions.some(a => a.key === config.name)) {
             throw new Error(

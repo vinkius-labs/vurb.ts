@@ -2,8 +2,9 @@
 export { resolveServer } from './ServerResolver.js';
 export {
     attachToServer,
-    type AttachOptions, type DetachFn, type RegistryDelegate,
+    type AttachOptions, type DetachFn, type RegistryDelegate, type ISwarmGateway,
 } from './ServerAttachment.js';
+
 
 // Re-export exposition for backward compatibility
 export type { ToolExposition, ExpositionConfig } from '../exposition/index.js';

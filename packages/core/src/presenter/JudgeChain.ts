@@ -322,7 +322,7 @@ async function executeConsensus(
         };
     }
 
-    // Bug #8 fix: in consensus mode, errors violate the "ALL must agree" contract.
+    // in consensus mode, errors violate the "ALL must agree" contract.
     // Treat adapter errors as implicit rejections — the consensus requires every
     // adapter to succeed AND agree. failOpen only applies to fallback strategy.
     if (anyError) {
@@ -355,7 +355,7 @@ async function executeConsensus(
  */
 function parseJudgePass(raw: string): boolean {
     try {
-        // Bug #150 fix: use extractLastJson instead of greedy regex
+        // use extractLastJson instead of greedy regex
         // to avoid capturing non-JSON text between multiple braces.
         const jsonStr = extractLastJson(raw);
         if (jsonStr) {

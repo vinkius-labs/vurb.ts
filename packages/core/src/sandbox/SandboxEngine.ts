@@ -137,7 +137,7 @@ const DEFAULT_TIMEOUT_MS = 5_000;
 const DEFAULT_MEMORY_LIMIT_MB = 128;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576; // 1MB
 const MAX_CODE_LENGTH = 65_536; // 64KB — generous for any legitimate sandbox function
-const TEXT_ENCODER = new TextEncoder(); // Bug #138: reuse stateless encoder
+const TEXT_ENCODER = new TextEncoder(); // reuse stateless encoder
 
 // ── Lazy Require ─────────────────────────────────────────
 
@@ -166,7 +166,7 @@ function getIvm(): any {
 /**
  * Reset the cached isolated-vm module reference.
  * Exported exclusively for testing — allows mock/unmock cycles
- * without process restart (Bug #137).
+ * without process restart ().
  * @internal
  */
 export function resetIvmCache(): void {
@@ -320,9 +320,9 @@ export class SandboxEngine {
         // fires before that line. We use a mutable reference object (`ctxRef`) so the
         // closure always sees the latest assigned value.
         //
-        // Bug #142: When other executions share the same isolate
+        // When other executions share the same isolate
         // (activeExecutions > 1), we cannot dispose the isolate
-        // without killing all concurrent work (Bug #63 fix). Instead
+        // without killing all concurrent work ( fix). Instead
         // we set the `aborted` flag AND release the per-request
         // context (if already created) to interrupt the running
         // script without collateral damage. If context is not yet
@@ -336,7 +336,7 @@ export class SandboxEngine {
                 try { isolate.dispose(); } catch { /* may already be dead */ }
             } else {
                 // Release this request's context to interrupt execution
-                // without killing the shared isolate (Bug #142).
+                // without killing the shared isolate ().
                 try { ctxRef.current?.release(); } catch { /* may already be released */ }
             }
         } : undefined;
@@ -362,7 +362,7 @@ export class SandboxEngine {
             ctxRef.current = context;
 
             // Deep-copy data into isolated heap (no references!)
-            // Bug #135: catch serialization errors from ExternalCopy separately
+            // catch serialization errors from ExternalCopy separately
             try {
                 inputCopy = new ivm.ExternalCopy(data);
             } catch (copyErr: unknown) {

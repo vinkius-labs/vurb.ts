@@ -1,6 +1,6 @@
 {
   "name": "@vurb/jwt",
-  "version": "3.7.12",
+  "version": "3.8.0",
   "description": "JWT verification middleware for MCP servers built with vurb. Standards-compliant token validation with jose, JWKS support, and self-healing error responses.",
   "type": "module",
   "main": "dist/index.js",
@@ -47,7 +47,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@vurb/core": "^3.0.0",
+    "@vurb/core": "^3.8.0",
     "jose": "^5.0.0"
   },
   "peerDependenciesMeta": {
@@ -56,7 +56,7 @@
     }
   },
   "devDependencies": {
-    "@vurb/core": ">=3.0.0"
+    "@vurb/core": ">=3.8.0"
   },
   "license": "Apache-2.0"
 }

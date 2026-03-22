@@ -29,7 +29,7 @@
  * @module
  */
 import type { ServerDigest } from './BehaviorDigest.js';
-// Bug #55: Lazy resolution instead of top-level await (breaks CJS consumers)
+// Lazy resolution instead of top-level await (breaks CJS consumers)
 let _subtle: SubtleCrypto | undefined;
 async function getSubtle(): Promise<SubtleCrypto> {
     if (_subtle) return _subtle;

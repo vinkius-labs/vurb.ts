@@ -69,7 +69,7 @@ export interface ExpositionResult<TContext> {
 /**
  * Optional warning callback for diagnostics.
  * Replaces console.warn to avoid polluting stdout/stderr in production.
- * @see Bug #131
+ * @see 
  */
 export type ExpositionWarnFn = (message: string) => void;
 
@@ -251,8 +251,8 @@ function buildAtomicSchema<TContext>(
         };
 
         for (const [key, value] of Object.entries(jsonSchema.properties ?? {})) {
-            // Bug #54: Warn when action schema overwrites a common schema field
-            // Bug #131: Route through onWarn callback instead of console.warn
+            // Warn when action schema overwrites a common schema field
+            // Route through onWarn callback instead of console.warn
             if (key in properties && onWarn) {
                 onWarn(
                     `[Vurb] Action schema field '${key}' overwrites common schema field with the same name. ` +

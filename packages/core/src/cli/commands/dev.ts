@@ -48,7 +48,7 @@ export async function commandDev(args: CliArgs, reporter?: ProgressReporter): Pr
                 ? regOrCtx.registry
                 : regOrCtx as { register(b: unknown): void; clear?(): void };
 
-            // Bug #75 fix: resolve NEW registry first, only clear+register on success.
+            // resolve NEW registry first, only clear+register on success.
             // If resolveRegistry throws (syntax error in user code), the
             // current tools remain available until the next successful reload.
             let resolved: Awaited<ReturnType<typeof resolveRegistry>>;

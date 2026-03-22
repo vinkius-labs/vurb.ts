@@ -21,8 +21,18 @@ type Resolver = (input: unknown) => McpServerLike | undefined;
 
 // ── Type Guards (pure predicates) ────────────────────────
 
+/**
+ * Checks `typeof setRequestHandler === 'function'`, not just key presence.
+ * A plain property check (`'setRequestHandler' in obj`) accepts any object with
+ * a property of that name regardless of type (e.g. `{ setRequestHandler: 42 }`),
+ * which then crashes at call time with "setRequestHandler is not a function".
+ */
 function isMcpServerLike(obj: unknown): obj is McpServerLike {
-    return typeof obj === 'object' && obj !== null && 'setRequestHandler' in obj;
+    return (
+        typeof obj === 'object' &&
+        obj !== null &&
+        typeof (obj as Record<string, unknown>)['setRequestHandler'] === 'function'
+    );
 }
 
 function hasServerProperty(obj: unknown): obj is { server: unknown } {
@@ -70,8 +80,13 @@ export function resolveServer(server: unknown): McpServerLike {
         }
     }
 
+    // Include the received object's own keys in the error message to aid debugging.
+    // Knowing which keys the object exposes narrows the problem to
+    // "wrong wrapper type" vs "completely wrong argument".
+    const receivedKeys = Object.keys(server as object).slice(0, 10).join(', ') || '(none)';
     throw new Error(
         'attachToServer() requires a Server or McpServer instance. ' +
-        'The provided object does not have setRequestHandler().',
+        `The provided object does not have setRequestHandler() as a function. ` +
+        `Received keys: [${receivedKeys}]`,
     );
 }

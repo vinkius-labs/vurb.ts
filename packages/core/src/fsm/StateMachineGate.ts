@@ -141,7 +141,7 @@ export interface TransitionResult {
 /** Cached XState module reference */
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- typeof import() needed: namespace import cannot be used as a type
 let xstateModule: typeof import('xstate') | null = null;
-/** Number of failed import attempts (Bug #10 fix: retry up to 3 times) */
+/** Number of failed import attempts (retry up to 3 times) */
 let xstateLoadAttempts = 0;
 const MAX_XSTATE_LOAD_ATTEMPTS = 3;
 
@@ -151,7 +151,7 @@ const MAX_XSTATE_LOAD_ATTEMPTS = 3;
  * Returns `null` if `xstate` is not installed — the framework
  * degrades gracefully (all tools remain visible, no gating).
  *
- * Bug #10 fix: only caches successful imports. Failed imports
+ * only caches successful imports. Failed imports
  * are retried up to {@link MAX_XSTATE_LOAD_ATTEMPTS} times to
  * handle transient filesystem errors on edge/serverless cold starts.
  *
@@ -247,7 +247,7 @@ export class StateMachineGate {
     async init(): Promise<boolean> {
         if (this._initialized) return this._actor !== null;
 
-        // Bug #6 fix: Serialize concurrent init() calls via a shared promise.
+        // Serialize concurrent init() calls via a shared promise.
         // Without this, two concurrent transition() calls can both enter init(),
         // creating two XState actors — the first is leaked (never stopped).
         if (this._initPromise) return this._initPromise;

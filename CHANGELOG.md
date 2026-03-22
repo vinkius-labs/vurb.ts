@@ -5,6 +5,99 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-03-22
+
+### Added
+
+#### `@vurb/swarm` — Federated Handoff Protocol (new package)
+
+A new first-class package implementing the **Federated Handoff Protocol (FHP)**: a production-ready multi-agent orchestration layer that lets a single gateway MCP server dynamically hand off LLM sessions to specialist upstream micro-servers — and bring them back — without the LLM losing context.
+
+- **`SwarmGateway` — Back-to-Back User Agent (B2BUA)**
+  - External face (UAS): MCP server for the LLM client (Claude, Cursor, Copilot)
+  - Internal face (UAC): MCP client tunnelling to upstream specialists
+  - Session lifecycle: `activateHandoff()` → `proxyToolsList()` → `proxyToolsCall()` → `returnToGateway()`
+  - Domain registry: maps logical names (`finance`, `devops`) to upstream URIs (`http://specialist:8081`)
+  - Concurrent session management with configurable `maxSessions` cap (default: 100) — excess activations rejected with `SESSION_LIMIT_EXCEEDED`
+  - Automatic `dispose()` on shutdown cleanly closes all active tunnels
+
+- **`UpstreamMcpClient` — Outbound MCP tunnel**
+  - Dual transport: SSE (persistent, streaming) or Streamable HTTP (stateless, edge-compatible); auto-selected based on runtime
+  - Connect timeout with `AbortSignal` cascade — closing the parent MCP connection aborts the upstream tunnel
+  - Idle timeout closes zombie tunnels after configurable inactivity (default: 5 min)
+  - Concurrent tool call tracking suspends the idle timer during active calls
+  - `ProgressForwarder` pipes `notifications/progress` and `notifications/message` from upstream back to the LLM client
+
+- **`NamespaceRewriter` — Transparent namespace isolation**
+  - All upstream tools transparently prefixed with their domain: `listInvoices` → `finance.listInvoices`
+  - Prefix stripped before forwarding to upstream — LLM never sees the raw name
+  - `NamespaceError` thrown for prefix mismatches, preventing cross-domain routing
+
+- **`ReturnTripInjector` — LLM escape hatch**
+  - Injects a virtual `gateway.return_to_triage` tool into every upstream tools list
+  - Without it, the LLM would be trapped in the specialist domain — restarting the conversation was the only escape
+  - Deduplicates against rogue upstream tools with the same name (gateway's canonical version wins)
+  - `formatSafeReturn()` anti-IPI sanitiser for return summaries from potentially compromised upstreams:
+    - HTML-escapes `<`, `>`, `&`
+    - Blocks `[SYSTEM]` / `[SISTEMA]` patterns
+    - Hard-truncates at 2000 characters
+    - Wraps in `<upstream_report source="…" trusted="false">` XML envelope
+
+- **Zero-trust delegation token flow (`@vurb/core` integration)**
+  - `mintDelegationToken()` — HMAC-SHA256 signed payload: `iss`, `sub`, `iat`, `exp`, `tid`, optional `traceparent`
+  - Claim-Check pattern: carry-over state > 2 KB is stored in `HandoffStateStore`; only the UUID key travels in the token
+  - `requireGatewayClearance` middleware for upstream servers: verifies HMAC, checks expiry, hydrates carry-over state via atomic one-shot read
+
+- **Distributed tracing (W3C Trace Context)**
+  - W3C `traceparent` (`00-{traceId}-{spanId}-01`) generated per handoff via `crypto.randomUUID()`
+  - Propagated to upstream via `traceparent` HTTP header and embedded in the delegation token
+  - Accessible on upstream via `ctx.traceparent` — correlates gateway ↔ specialist spans in any OpenTelemetry backend
+
+#### `@vurb/core` — FHP security hardening
+
+- **`EXPIRED_DELEGATION_TOKEN` error on missing Claim-Check state** — `verifyDelegationToken()` previously silently removed `state_id` and continued when the corresponding state was not found in the store (expired or already consumed). Now throws explicitly with `EXPIRED_DELEGATION_TOKEN`, enforcing fail-fast semantics and preventing silent context loss.
+
+- **`HandoffStateStore` — atomic `getAndDelete` interface** — The store interface now supports an optional atomic `getAndDelete(id)` method. When present, it is used in preference to the two-phase `get` + `delete` path, guaranteeing true one-shot token consumption under concurrent requests (e.g. Redis `GETDEL`, Cloudflare KV with metadata).
+
+- **`InMemoryHandoffStateStore`** — default in-process store suitable for single-instance deployments; uses two-phase `get` + `delete` (state is never irrecoverably lost on in-process crash, but concurrent requests can both succeed — documented behaviour).
+
+#### `@vurb/cloudflare` and `@vurb/vercel` — test coverage
+
+- Added `"test": "vitest run"` script and `vitest` devDependency to both adapter packages. Existing test files (`waitUntilCleanup-bug103.test.ts`, `VercelAdapter.test.ts`, `contextFactoryGuard-bug89.test.ts`) were already present but were not executed by `npm test --workspaces`.
+
+### Fixed
+
+- **`DelegationToken.ts` — silent state loss on replay/expiry** (`@vurb/core`) — When `state_id` was present in token claims but the state was not found in the store (already consumed or TTL-expired), the old code silently deleted `state_id` from claims and continued. A replayed token would be accepted with partial context, allowing unintended downstream access. Fixed: explicit `EXPIRED_DELEGATION_TOKEN` rejection.
+
+### Security
+
+- **One-shot Claim-Check guarantee** — Delegation tokens carrying large state via the Claim-Check pattern are now strictly one-shot: the first verification atomically reads and deletes the state; all subsequent verifications receive `EXPIRED_DELEGATION_TOKEN`. Under concurrent requests with an atomic store, exactly one verification succeeds.
+
+- **Anti-IPI boundary on return summaries** — Upstream return summaries (via `gateway.return_to_triage`) are sanitised before being relayed to the LLM, preventing a compromised specialist from injecting instructions into the gateway's prompt context.
+
+- **Session limit enforcement** — `SwarmGateway.maxSessions` counts both `connecting` and `active` sessions, preventing bypass attacks where an attacker opens `maxSessions` connecting tunnels before opening more.
+
+### Test Suite
+
+- **New package: `@vurb/swarm`** — 7 test files, 158 tests covering:
+  - `SwarmGateway` full lifecycle (activation, proxy, return, dispose)
+  - `NamespaceRewriter` prefix/unprefix and `NamespaceError`
+  - `ReturnTripInjector` injection, deduplication, and `formatSafeReturn` anti-IPI
+  - `UpstreamMcpClient` connect timeout, idle timeout, signal cascade, progress forwarding
+  - Concurrent session activation and session limit enforcement
+  - Token replay and expiry rejection end-to-end
+
+- **`DelegationToken.deep.test.ts`** (`@vurb/core`) — 5 new tests:
+  - Minimal atomic store (exercises the `getAndDelete`-only code path)
+  - First/second verification with atomic store (one-shot via `getAndDelete`)
+  - Pre-deleted state → `EXPIRED_DELEGATION_TOKEN`
+  - Concurrent verification with atomic store: exactly 1 succeeds, 1 rejected
+  - Concurrent verification with two-phase store: both succeed (documented behaviour); third call correctly rejected
+
+- **`@vurb/cloudflare`** — 1 file, 3 tests (previously not executed)
+- **`@vurb/vercel`** — 2 files, 26 tests (previously not executed)
+
+
 ## [3.7.13] - 2026-03-21
 
 ### Fixed

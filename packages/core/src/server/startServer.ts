@@ -463,7 +463,7 @@ export async function startServer<TContext>(
             };
         }
 
-        // Abort normal startup — no Server, no Transport (Bug #45 fix)
+        // Abort normal startup — no Server, no Transport ( fix)
         return { server: null, close: async () => {} };
     }
 
@@ -577,7 +577,7 @@ export async function startServer<TContext>(
                 if (applyCorsHeaders(req, res, options.cors)) return; // preflight handled
 
                 if (req.method === 'POST') {
-                    // Bug #149 fix: enforce body size limit to prevent DoS/OOM.
+                    // enforce body size limit to prevent DoS/OOM.
                     const maxBytes = options.maxBodyBytes ?? 4_194_304; // 4MB
                     const declaredLength = parseInt(req.headers['content-length'] ?? '', 10);
                     if (declaredLength > maxBytes) {

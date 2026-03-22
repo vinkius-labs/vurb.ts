@@ -89,7 +89,7 @@ export class FluentToolBuilder<
     /** @internal */ _modelRef?: Model;
 
     /**
-     * @internal Bug #118 fix: reject duplicate parameter names.
+     * @internal reject duplicate parameter names.
      * All `withXxx()` methods delegate to this instead of assigning directly.
      */
     private _addParam(name: string, schema: ZodType): void {
@@ -741,7 +741,7 @@ export class FluentToolBuilder<
         // Convert the fluent middleware signature to the standard MiddlewareFn
         const standardMw: MiddlewareFn<TContext> = async (ctx, args, next) => {
             const wrappedNext = async (enrichedCtx: unknown): Promise<ToolResponse> => {
-                // Bug #78 fix: sanitize enriched context before merging
+                // sanitize enriched context before merging
                 // to prevent prototype pollution via __proto__/constructor/prototype keys.
                 const safe = enrichedCtx as Record<string, unknown>;
                 const target = ctx as Record<string, unknown>;
@@ -1061,7 +1061,7 @@ export class FluentToolBuilder<
             ctx: TCtx,
         ) => Promise<ToolResponse | unknown>,
     ): GroupedToolBuilder<TContext> {
-        // Bug #123 fix: guard against double-invocation of handle()/resolve()
+        // guard against double-invocation of handle()/resolve()
         if (this._handlerSet) {
             throw new Error(
                 `handle() already called on tool "${this._name}". ` +

@@ -371,7 +371,7 @@ export async function createTelemetryBus(config?: TelemetryBusConfig): Promise<T
     });
 
     // ── Start Listening ───────────────────────────────────
-    // Bug #7 fix: chmod inside the listen callback to eliminate the race
+    // chmod inside the listen callback to eliminate the race
     // window where the socket is world-readable before permissions are set.
     const chmodSocket = () => {
         if (platform() !== 'win32') {
@@ -478,12 +478,12 @@ export async function createTelemetryBus(config?: TelemetryBusConfig): Promise<T
     process.on('exit', exitHandler);
 
     // Use process.once for SIGINT/SIGTERM and re-emit the signal after cleanup
-    // so the process actually terminates (Bug #15)
+    // so the process actually terminates ()
     const sigHandler = (signal: NodeJS.Signals): void => {
         cleanup();
         process.kill(process.pid, signal);
     };
-    // Bug #49 fix: store arrow function references so close() can remove them
+    // store arrow function references so close() can remove them
     const sigintHandler = (): void => sigHandler('SIGINT');
     const sigtermHandler = (): void => sigHandler('SIGTERM');
     process.once('SIGINT', sigintHandler);

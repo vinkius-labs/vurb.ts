@@ -157,7 +157,7 @@ export interface FirewallRejection {
  * @returns Complete evaluation prompt
  */
 export function buildFirewallPrompt(rules: readonly string[]): string {
-    // Bug #150 fix: sanitize backticks to prevent markdown code fence escape.
+    // sanitize backticks to prevent markdown code fence escape.
     const numberedRules = rules.map((r, i) => `${i + 1}. ${r.replaceAll('`', '\\u0060')}`).join('\n');
 
     return `You are a security evaluator for an AI tool platform.
@@ -304,7 +304,7 @@ function extractDetailedRejections(
     rawResponse: string,
 ): FirewallRejection[] | undefined {
     try {
-        // Bug #150 fix: use extractLastJson for robust JSON extraction.
+        // use extractLastJson for robust JSON extraction.
         const jsonMatch = extractLastJson(rawResponse);
         if (!jsonMatch) return undefined;
 

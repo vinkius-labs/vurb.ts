@@ -188,7 +188,7 @@ export function auditTrail(config: AuditTrailConfig): MiddlewareFn<unknown> {
                 if (r != null && r['isError'] === true) {
                     const content = r['content'] as Array<{ text?: string }> | undefined;
                     const text = content?.[0]?.text ?? '';
-                    // Bug #11 fix: extract the error code from the XML
+                    // extract the error code from the XML
                     // attribute instead of substring matching on full text
                     const codeMatch = text.match(/code="([^"]+)"/);
                     const errorCode = codeMatch?.[1] ?? '';

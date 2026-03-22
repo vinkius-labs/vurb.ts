@@ -1,0 +1,64 @@
+{
+  "name": "@vurb/swarm",
+  "version": "3.8.0",
+  "description": "Federated Handoff Protocol for Vurb — SwarmGateway B2BUA, multi-agent orchestration, zero-trust delegation, and upstream MCP client tunneling.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "vurb",
+    "swarm",
+    "multi-agent",
+    "handoff",
+    "gateway",
+    "b2bua",
+    "federation",
+    "ai",
+    "llm",
+    "delegation",
+    "zero-trust"
+  ],
+  "author": "Renato Marinho",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinkius-labs/vurb.ts.git",
+    "directory": "packages/swarm"
+  },
+  "bugs": {
+    "url": "https://github.com/vinkius-labs/vurb.ts/issues"
+  },
+  "homepage": "https://vurb.vinkius.com/",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@vurb/core": "^3.8.0",
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@vurb/core": ">=3.8.0",
+    "rimraf": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

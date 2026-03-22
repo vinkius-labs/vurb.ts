@@ -32,7 +32,7 @@ import { type StringifyFn } from './serialization/JsonSerializer.js';
 /**
  * Non-enumerable brand symbol stamped on all helper-created ToolResponse objects.
  * Used by FluentToolBuilder to reliably distinguish framework responses from
- * domain data that coincidentally matches the ToolResponse shape (Bug #127).
+ * domain data that coincidentally matches the ToolResponse shape ().
  *
  * @internal
  */
@@ -278,6 +278,9 @@ export type ErrorCode =
     | 'SERVER_BUSY'
     | 'DEPRECATED'
     | 'AUTH_REQUIRED'
+    | 'HANDOFF_UPSTREAM_UNAVAILABLE'
+    | 'HANDOFF_NAMESPACE_MISMATCH'
+    | 'HANDOFF_CONNECTING'
     | (string & {}); // custom codes welcome — union preserves autocomplete
 
 /**
@@ -405,6 +408,80 @@ export function toolError(code: ErrorCode, options: ToolErrorOptions): ToolRespo
     // flows through the success path while still carrying guidance.
     const isError = severity !== 'warning';
     const resp: ToolResponse = { content: [{ type: "text", text: parts.join('\n') }], isError };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
+}
+
+// ============================================================================
+// Federated Handoff Protocol — f.handoff()
+// ============================================================================
+
+/**
+ * Payload for a federated agent handoff.
+ * Full type lives in `@vurb/swarm` — this is the minimal shape needed by core.
+ * @see `HandoffPayload` in `@vurb/swarm`
+ */
+export interface HandoffPayload {
+    target: string;
+    carryOverState?: Record<string, unknown>;
+    systemInstruction?: string;
+    delegationToken?: string;
+    reason?: string;
+    modelHint?: 'fast' | 'balanced' | 'powerful';
+}
+
+/**
+ * Discriminated response returned by `f.handoff()`.
+ * Detected by `ServerAttachment` via `isHandoffResponse()` and routed
+ * to the `SwarmGateway` instead of being forwarded to the LLM.
+ */
+export interface HandoffResponse {
+    readonly _vurb_handoff: true;
+    readonly isHandoff: true;
+    readonly payload: HandoffPayload;
+}
+
+/**
+ * Type-guard used by `ServerAttachment` to detect a `HandoffResponse`
+ * without importing `@vurb/swarm` (avoids circular dependency).
+ */
+export function isHandoffResponse(v: unknown): v is HandoffResponse {
+    return (
+        typeof v === 'object' &&
+        v !== null &&
+        (v as HandoffResponse)._vurb_handoff === true &&
+        (v as HandoffResponse).isHandoff === true
+    );
+}
+
+/**
+ * Initiate a federated agent handoff from a tool handler.
+ *
+ * The `ServerAttachment` detects this response and activates the
+ * `SwarmGateway` tunnel to the specified upstream server.
+ *
+ * @param target  - Target server URI (e.g. `'mcp://finance-agent.internal:8080'`)
+ * @param options - Carry-over state, system instruction, and tracing hints
+ *
+ * @example
+ * ```typescript
+ * import { f } from '@vurb/core';
+ *
+ * export const triage = f.tool('system.triage')
+ *     .withEnum('domain', ['finance', 'devops'])
+ *     .withString('context', 'What the user needs.')
+ *     .handle(async (input) => f.handoff(`mcp://${input.domain}-agent`, {
+ *         carryOverState: { intent: input.context },
+ *         reason: `Triage → ${input.domain}`,
+ *     }));
+ * ```
+ */
+export function handoff(target: string, options?: Omit<HandoffPayload, 'target'>): HandoffResponse {
+    const resp: HandoffResponse = {
+        _vurb_handoff: true,
+        isHandoff: true,
+        payload: { target, ...options },
+    };
     Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
     return resp;
 }

@@ -269,8 +269,8 @@ async function materializeBehavior<TContext>(
         egressSchemaDigest = await sha256(sortedKeys.join(','));
     }
 
-    // Bug #47 fix: condition should only check staticRuleStrings, not presenterSchemaKeys
-    // Bug #48 fix: always hash static rules even when dynamic rules coexist
+    // condition should only check staticRuleStrings, not presenterSchemaKeys
+    // always hash static rules even when dynamic rules coexist
     if (staticRuleStrings.length > 0) {
         const sortedRules = [...new Set(staticRuleStrings)].sort();
         const hash = await sha256(sortedRules.join(','));

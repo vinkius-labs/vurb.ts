@@ -350,7 +350,7 @@ export function createDevServer(config: DevServerConfig): DevServer {
             }
         }
 
-        // Transfer collected builders to the real registry (Bug #42 fix)
+        // Transfer collected builders to the real registry ( fix)
         if (builders.length > 0 && config.registry) {
             if (typeof config.registry.clear === 'function') {
                 config.registry.clear();
@@ -386,7 +386,7 @@ export function createDevServer(config: DevServerConfig): DevServer {
             // Start watching
             const watchOptions = { recursive: true };
 
-            // Bug #128: warn on Linux with Node.js < 20 where recursive watch is unsupported
+            // warn on Linux with Node.js < 20 where recursive watch is unsupported
             if (process.platform === 'linux' && parseInt(process.versions.node, 10) < 20) {
                 // eslint-disable-next-line no-console
                 console.warn(

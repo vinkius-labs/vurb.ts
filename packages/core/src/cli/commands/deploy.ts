@@ -122,7 +122,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
     const serverId = rc.serverId;
     const token = args.token ?? process.env['VURB_DEPLOY_TOKEN'] ?? rc.token;
 
-    // Bug #76 fix: warn when token would be sent over plaintext HTTP
+    // warn when token would be sent over plaintext HTTP
     if (token && remote && !args.allowInsecure) {
         try {
             const remoteUrl = new URL(remote);

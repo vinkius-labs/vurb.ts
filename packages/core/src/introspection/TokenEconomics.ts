@@ -225,7 +225,7 @@ export function profileResponse(
             .reduce((sum, b) => sum + b.estimatedTokens, 0)
         : 0;
     const dataTokens = totalTokens - overheadTokens;
-    // Bug #46 fix: when ALL blocks are overhead (dataTokens === 0),
+    // when ALL blocks are overhead (dataTokens === 0),
     // report Infinity instead of 0 to correctly trigger OVERHEAD WARNING
     const overheadRatio = dataTokens > 0
         ? overheadTokens / dataTokens

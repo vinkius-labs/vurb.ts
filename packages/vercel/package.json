@@ -1,6 +1,6 @@
 {
   "name": "@vurb/vercel",
-  "version": "3.7.12",
+  "version": "3.8.0",
   "description": "Vercel adapter for Vurb. Deploy your MCP server as a Next.js App Router route handler or standalone Vercel Function — Edge Runtime or Node.js, stateless JSON-RPC, zero config.",
   "type": "module",
   "main": "dist/index.js",
@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -47,11 +48,12 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@vurb/core": "^3.0.0",
+    "@vurb/core": "^3.8.0",
     "@modelcontextprotocol/sdk": "^1.12.0"
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@vurb/core": ">=3.0.0"
+    "@vurb/core": ">=3.8.0",
+    "vitest": "^3.0.0"
   }
 }

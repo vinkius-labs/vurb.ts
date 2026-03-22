@@ -98,7 +98,7 @@ export interface InputFirewallConfig {
  * @returns Complete evaluation prompt
  */
 export function buildInputFirewallPrompt(args: Record<string, unknown>): string {
-    // Bug #150 fix: sanitize backticks to prevent markdown code fence escape.
+    // sanitize backticks to prevent markdown code fence escape.
     const serialized = JSON.stringify(args, null, 2).replaceAll('`', String.raw`\u0060`);
 
     return `You are a security evaluator for an AI tool platform.

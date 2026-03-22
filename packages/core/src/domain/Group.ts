@@ -99,7 +99,7 @@ export class Group extends BaseModel {
     public addChildGroup(childGroup: Group): boolean {
         if (this.childGroups.includes(childGroup)) return false;
 
-        // Bug #52: Cycle detection — walk the parent chain to prevent infinite recursion
+        // Cycle detection — walk the parent chain to prevent infinite recursion
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         let ancestor: Group | null = this;
         while (ancestor !== null) {
@@ -111,7 +111,7 @@ export class Group extends BaseModel {
             ancestor = ancestor.parent;
         }
 
-        // Remove from previous parent to avoid ghost references (Bug #7 fix)
+        // Remove from previous parent to avoid ghost references ( fix)
         if (childGroup.parent !== null) {
             childGroup.parent.removeChildGroup(childGroup);
         }

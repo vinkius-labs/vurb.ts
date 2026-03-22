@@ -72,7 +72,7 @@ export function buildToolFromFluent<TContext, TCtx>(
 
     // Parse name: 'domain.action' → tool='domain', action='action'
     const dotIndex = config.name.indexOf('.');
-    // Bug #109 fix: reject multi-dot names early with a clear error.
+    // reject multi-dot names early with a clear error.
     if (dotIndex > 0 && config.name.indexOf('.', dotIndex + 1) !== -1) {
         throw new Error(
             `Tool name '${config.name}' has too many dot-separated segments. ` +
@@ -106,7 +106,7 @@ export function buildToolFromFluent<TContext, TCtx>(
     const wrappedHandler = async (ctx: TContext, args: Record<string, unknown>): Promise<ToolResponse> => {
         const result = await resolvedHandler(args as never, ctx as never);
 
-        // Guard: void/null handlers → safe fallback (Bug #41)
+        // Guard: void/null handlers → safe fallback ()
         if (result === undefined || result === null) {
             return success('OK');
         }
@@ -120,7 +120,7 @@ export function buildToolFromFluent<TContext, TCtx>(
         // would be returned as-is instead of being serialized — a silent data loss bug.
         // Always use the framework helpers; never construct ToolResponse manually.
         if (typeof result === 'object' && result !== null) {
-            // Brand check — reliable, no false positives (Bug #127)
+            // Brand check — reliable, no false positives ()
             if (TOOL_RESPONSE_BRAND in result) {
                 return result as unknown as ToolResponse;
             }

@@ -178,7 +178,7 @@ export function createGovernanceObserver(config: GovernanceObserverConfig): Gove
         try {
             const result = fn();
 
-            // Bug #50: Runtime guard — reject async callbacks passed to sync observe()
+            // Runtime guard — reject async callbacks passed to sync observe()
             if (result != null && typeof (result as Record<string, unknown>)['then'] === 'function') {
                 throw new Error(
                     '[Vurb] observe() received an async callback. Use observeAsync() for async operations.',

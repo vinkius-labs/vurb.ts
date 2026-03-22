@@ -70,6 +70,7 @@ A production-ready MCP server with file-based routing, Presenters, middleware, t
   - [tRPC-Style Client — Compile-Time Route Validation](#trpc-style-client--compile-time-route-validation)
   - [Self-Healing Errors](#self-healing-errors)
   - [Capability Governance — Cryptographic Surface Integrity](#capability-governance--cryptographic-surface-integrity)
+  - [Federated Handoff Protocol — Multi-Agent Swarm](#federated-handoff-protocol--multi-agent-swarm)
 - [Code Generators](#code-generators)
   - [OpenAPI → MCP in One Command](#openapi--mcp-in-one-command)
   - [Prisma → MCP with Field-Level Security](#prisma--mcp-with-field-level-security)
@@ -255,6 +256,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 | **Hallucination guard** | 🔴 None | 🟢 8 anti-hallucination mechanisms |
 | **Temporal safety** | 🔴 LLM calls anything anytime | 🟢 FSM State Gate — tools disappear |
 | **Governance** | 🔴 None | 🟢 Lockfile + SHA-256 attestation |
+| **Multi-agent** | 🔴 Manual HTTP wiring | 🟢 `@vurb/swarm` FHP — zero-trust B2BUA |
 | **Lines of code** | 🔴 ~200 per tool | 🟢 ~15 per tool |
 | **AI agent setup** | 🔴 Days of learning | 🟢 Reads SKILL.md — first pass correct |
 
@@ -705,6 +707,61 @@ PR diffs show exactly what changed in the AI-facing surface:
 
 > 💡 **Enterprise & Compliance** — Vurb blocks PII and locks capability surfaces locally. Need to prove it in a SOC2/GDPR/HIPAA audit? [Connect your Vurb server to Vinkius Cloud](https://vinkius.com) for immutable audit logs, visual compliance dashboards, and one-click deployment.
 
+### Federated Handoff Protocol — Multi-Agent Swarm
+
+**`@vurb/swarm` — the only MCP framework with first-class multi-agent orchestration.**
+
+A single gateway server dynamically routes the LLM to specialist micro-servers — and brings it back — with zero context loss. The gateway acts as a **Back-to-Back User Agent (B2BUA)**:
+
+```
+LLM (Claude / Cursor / Copilot)
+        │   MCP  (tools/list, tools/call)
+        ▼
+┌──────────────────┐
+│  SwarmGateway    │  ← your triage server (@vurb/core + @vurb/swarm)
+└────────┬─────────┘
+         │  FHP tunnel  (HMAC-SHA256 delegation + W3C traceparent)
+         ▼
+┌──────────────────┐
+│  finance-agent   │  ← specialist micro-server (@vurb/core)
+└──────────────────┘
+```
+
+```typescript
+import { SwarmGateway } from '@vurb/swarm';
+
+const gateway = new SwarmGateway({
+    registry: {
+        finance: 'http://finance-agent:8081',
+        devops:  'http://devops-agent:8082',
+    },
+    delegationSecret: process.env.VURB_DELEGATION_SECRET!,
+});
+
+// In your triage tool:
+return f.handoff('finance', {
+    reason: 'Routing to finance specialist.',
+    carryOverState: { originalIntent: input.intent },
+});
+// → LLM now sees: finance.listInvoices, finance.refund, gateway.return_to_triage
+// → Back in triage: gateway.return_to_triage closes the tunnel
+```
+
+Key properties:
+
+- **Namespace isolation** — upstream tools prefixed automatically (`listInvoices` → `finance.listInvoices`). Cross-domain routing structurally blocked.
+- **Zero-trust delegation** — HMAC-SHA256 signed tokens with TTL. Carry-over state > 2 KB stored via Claim-Check pattern (one-shot atomic read — replay → `EXPIRED_DELEGATION_TOKEN`).
+- **Anti-IPI return boundary** — return summaries sanitised and wrapped in `<upstream_report trusted="false">` before reaching the LLM.
+- **Dual transport** — SSE (persistent) or Streamable HTTP (stateless, edge-compatible). AbortSignal cascade + idle timeout close zombie tunnels automatically.
+- **Distributed tracing** — W3C `traceparent` generated per handoff, propagated to upstream via HTTP header.
+- **Session governance** — configurable `maxSessions` cap counts `connecting` + `active` sessions to prevent bypass attacks.
+
+> 💬 **Tell your AI agent:**
+>
+> *"Add a SwarmGateway that routes to finance and devops specialist servers. Use zero-trust HMAC delegation tokens with a Redis state store for Claim-Check pattern."*
+
+→ Full documentation: [`@vurb/swarm` README](https://github.com/vinkius-labs/vurb.ts/tree/main/packages/swarm)
+
 ---
 
 ## Code Generators
@@ -961,6 +1018,12 @@ contextFactory: (req, env, ctx) => ({
 ---
 
 ## Ecosystem
+
+### Multi-Agent Orchestration
+
+| Package | Name | Purpose |
+|---|---|---|
+| [`@vurb/swarm`](https://github.com/vinkius-labs/vurb.ts/tree/main/packages/swarm) | Swarm Gateway | Federated Handoff Protocol — B2BUA multi-agent orchestration with zero-trust delegation |
 
 ### Adapters
 

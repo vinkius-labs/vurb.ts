@@ -105,7 +105,7 @@ export class FluentPromptBuilder<TContext = void, TArgs extends Record<string, u
      * @returns `this` for chaining
      */
     tags(...tags: string[]): this {
-        // Bug #113 fix: append instead of replace, matching FluentToolBuilder’s
+        // append instead of replace, matching FluentToolBuilder’s
         // accumulative .tags() semantics.
         this._tags.push(...tags);
         this._delegate = undefined;

@@ -259,7 +259,7 @@ export class ResourceRegistry<TContext = void> {
      *
      * Template: `stock://prices/{symbol}` matches `stock://prices/AAPL`
      *
-     * Bug #5 fix: Escapes regex metacharacters in static segments
+     * Escapes regex metacharacters in static segments
      * to prevent `.`, `+`, `*` etc. from being interpreted as regex syntax.
      */
     private _matchesTemplate(template: string, uri: string): boolean {

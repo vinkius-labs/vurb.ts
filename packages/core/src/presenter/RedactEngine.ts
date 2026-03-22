@@ -89,14 +89,14 @@ export type RedactFn = (data: unknown) => unknown;
 type FastRedactFactory = (opts: any) => any;
 
 let _fastRedact: FastRedactFactory | null | false = null;
-// Bug #5 fix: promise gate to serialize concurrent lazy-import calls
+// promise gate to serialize concurrent lazy-import calls
 let _loadPromise: Promise<FastRedactFactory | null> | null = null;
 
 async function loadFastRedact(): Promise<FastRedactFactory | null> {
     if (_fastRedact === false) return null; // already tried, not available
     if (_fastRedact !== null) return _fastRedact;
 
-    // Bug #5 fix: if another call is already importing, await the same promise
+    // if another call is already importing, await the same promise
     if (_loadPromise) return _loadPromise;
 
     _loadPromise = (async () => {
@@ -169,7 +169,7 @@ export function compileRedactor(config: RedactConfig): RedactFn | undefined {
                 redactor(clone);
                 return clone;
             } catch (err) {
-                // Bug #9 fix: never return unredacted data — throw explicitly.
+                // never return unredacted data — throw explicitly.
                 // The caller must handle the error rather than silently leaking PII.
                 throw new Error(
                     `[Vurb] PII redaction failed: ${toErrorMessage(err)}. ` +

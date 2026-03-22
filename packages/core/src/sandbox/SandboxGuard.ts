@@ -53,7 +53,7 @@ const SUSPICIOUS_PATTERNS: ReadonlyArray<{ pattern: RegExp; reason: string }> = 
     { pattern: /\bimport\s*\(/, reason: 'Dynamic import() is not available in the sandbox.' },
     { pattern: /\bimport\s+/, reason: 'ES module imports are not available in the sandbox.' },
     { pattern: /\brequire\s*\(/, reason: 'require() is not available in the sandbox.' },
-    // Bug #139: fail-fast for eval()/Function() — no security risk (empty Context),
+    // fail-fast for eval()/Function() — no security risk (empty Context),
     // but provides immediate, actionable feedback to the LLM.
     { pattern: /\beval\s*\(/, reason: 'eval() has no effect in the sandbox — use direct expressions instead.' },
     { pattern: /\bnew\s+Function\s*\(/, reason: 'new Function() has no effect in the sandbox — use direct expressions instead.' },
@@ -69,7 +69,7 @@ const FUNCTION_PATTERNS: ReadonlyArray<RegExp> = [
     /^\s*function\s*\(/,             // function(x) { ... }
     /^\s*function\s+\w+\s*\(/,       // function name(x) { ... }
     // Async patterns kept for shape recognition — SUSPICIOUS_PATTERNS
-    // will reject them before they reach execution (Bug #16)
+    // will reject them before they reach execution ()
     /^\s*async\s+\(.*\)\s*=>/s,      // async (x) => ...
     /^\s*async\s+function\s*\(/,     // async function(x) { ... }
     /^\s*async\s+[a-zA-Z_$]\w*\s*=>/, // async x => ...
@@ -125,7 +125,7 @@ export function validateSandboxCode(code: string): GuardResult {
         }
     }
 
-    // Bug #136: detect `async` anywhere in the code (not just at the start).
+    // detect `async` anywhere in the code (not just at the start).
     // Strip string literals first to avoid false positives on e.g. "async".
     if (containsAsyncKeyword(trimmed)) {
         return {
@@ -161,11 +161,11 @@ function stripStringLiterals(code: string): string {
 
 /**
  * Check if `async` appears as a keyword anywhere in the code,
- * ignoring occurrences inside string literals (Bug #136).
+ * ignoring occurrences inside string literals ().
  * @internal
  */
 function containsAsyncKeyword(code: string): boolean {
-    // Bug #12 fix: negative lookbehind excludes property access (d.async)
+    // negative lookbehind excludes property access (d.async)
     // Only matches `async` as a keyword (not preceded by a dot)
     return /(?<!\.)\basync\b/.test(stripStringLiterals(code));
 }

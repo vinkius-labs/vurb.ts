@@ -220,8 +220,8 @@ export class DeviceAuthenticator {
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
-        // Bug #BUG-3: Use a named handler so it can be removed when the
-        // timer fires normally, preventing listener accumulation on the signal.
+        // Use a named handler so it can be removed when the timer fires normally,
+        // preventing listener accumulation on the signal.
         const onAbort = () => {
             clearTimeout(timer);
             reject(signal!.reason ?? new DOMException('Aborted', 'AbortError'));

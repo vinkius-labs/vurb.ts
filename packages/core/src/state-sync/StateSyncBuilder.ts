@@ -53,7 +53,7 @@ export class StateSyncBuilder {
     private _defaults: { cacheControl?: CacheDirective } = {};
     private _onInvalidation?: (event: InvalidationEvent) => void;
     private _notificationSink?: (notification: ResourceNotification) => void | Promise<void>;
-    private _cachedLayer?: StateSyncLayer | undefined;  // Bug #114 fix
+    private _cachedLayer?: StateSyncLayer | undefined;  //  fix
 
     /**
      * Set global default cache-control directives.
@@ -139,7 +139,7 @@ export class StateSyncBuilder {
 
     /**
      * Shortcut for build() to align with other builders.
-     * Bug #114 fix: cache the result so `sync.layer === sync.layer` is true.
+     * cache the result so `sync.layer === sync.layer` is true.
      */
     get layer(): StateSyncLayer { return this._cachedLayer ??= this.build(); }
 }

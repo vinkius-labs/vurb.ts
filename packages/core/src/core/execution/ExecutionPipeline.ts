@@ -45,7 +45,7 @@ export function parseDiscriminator<TContext>(
     args: Record<string, unknown>,
 ): Result<string> {
     const raw = args[execCtx.discriminator];
-    // Bug #116 fix: distinguish missing from wrong-type discriminator.
+    // distinguish missing from wrong-type discriminator.
     if (raw !== undefined && typeof raw !== 'string') {
         const text = [
             `<tool_error code="INVALID_DISCRIMINATOR">`,
@@ -237,7 +237,7 @@ async function drainGenerator(
     progressSink?: ProgressSink,
     signal?: AbortSignal,
 ): Promise<ToolResponse> {
-    // Bug #4 fix: build a reusable abort promise so Promise.race can cancel
+    // build a reusable abort promise so Promise.race can cancel
     // during `await gen.next()`, preventing zombie handlers on slow I/O.
     const abortPromise = signal && !signal.aborted
         ? new Promise<never>((_, reject) => {
@@ -262,7 +262,7 @@ async function drainGenerator(
             progressSink(result.value);
         }
 
-        // Bug #4 fix: race next iteration against abort signal to prevent
+        // race next iteration against abort signal to prevent
         // zombie generators that block on slow I/O (DB queries, network, etc.)
         if (abortPromise) {
             try {

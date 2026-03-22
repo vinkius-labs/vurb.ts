@@ -95,7 +95,23 @@ export type {
     VurbValidator, ValidationResult,
     SemanticDefaults,
     StateSyncHint,
+    // FHP
 } from './core/index.js';
+
+// ── Federated Handoff Protocol (FHP) ─────────────────────
+/** @category FHP */
+export {
+    handoff, isHandoffResponse,
+    InMemoryHandoffStateStore,
+    mintDelegationToken, verifyDelegationToken, HandoffAuthError,
+    requireGatewayClearance,
+} from './handoff/index.js';
+/** @category FHP */
+export type {
+    HandoffPayload, HandoffResponse, HandoffStateStore,
+    DelegationClaims,
+    GatewayClearanceContext,
+} from './handoff/index.js';
 
 // ── Client (tRPC-style type-safe) ────────────────────────
 /** @category Client */
@@ -151,7 +167,7 @@ export type { McpPromptDef, PromptFilter } from './prompt/PromptRegistry.js';
 
 // ── Server Integration ───────────────────────────────────
 /** @category Server */
-export type { AttachOptions, DetachFn } from './server/index.js';
+export type { AttachOptions, DetachFn, ISwarmGateway } from './server/index.js';
 /** @category Server */
 export { autoDiscover } from './server/index.js';
 /** @category Server */
