@@ -756,12 +756,14 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         // ── FHP: detect HandoffResponse and activate SwarmGateway tunnel ──────────
         if (isHandoffResponse(result) && hCtx.swarmGateway) {
             const sessionId = resolveSessionId(extra, hCtx);
-            const signal = extractSignal(extra) ?? new AbortController().signal;
+            // Reuse the signal already extracted at the top of this handler (line ~656).
+            // Using a new name avoids shadowing the outer `signal` variable.
+            const handoffSignal = signal ?? new AbortController().signal;
             const gateway = hCtx.swarmGateway;
             const payload = result.payload;
 
             // Activate tunnel asynchronously — ACK is returned immediately to the LLM
-            void gateway.activateHandoff(payload, sessionId, signal)
+            void gateway.activateHandoff(payload, sessionId, handoffSignal)
                 .then(() => hCtx.notifyToolListChanged?.())
                 .catch(() => hCtx.notifyToolListChanged?.());
 
@@ -982,19 +984,24 @@ function registerResourceHandlers<TContext>(
         resources.setListChangedSink(() => { (sendListChanged as (...args: unknown[]) => unknown).call(server); });
     }
 
-    // resources/list — merge with introspection resources if present ( fix)
+    // resources/list — merge with introspection resources if present
+    // The handler is a per-request arrow function (not an IIFE) so that
+    // resources registered or removed dynamically after attachToServer() are
+    // always reflected in the response.
     resourceServer.setRequestHandler(ListResourcesRequestSchema, (() => {
-        const list = resources.listResources();
-        if (introspection) {
-            list.push({
-                uri: manifestUri,
-                name: 'Vurb Manifest',
-                description: 'Dynamic introspection manifest exposing all registered tools, actions, and presenters. RBAC-filtered per session context.',
-                mimeType: 'application/json',
-            });
-        }
-        return { resources: list };
-    }) as (...args: never[]) => unknown);
+        return () => {
+            const list = resources.listResources();
+            if (introspection) {
+                list.push({
+                    uri: manifestUri,
+                    name: 'Vurb Manifest',
+                    description: 'Dynamic introspection manifest exposing all registered tools, actions, and presenters. RBAC-filtered per session context.',
+                    mimeType: 'application/json',
+                });
+            }
+            return { resources: list };
+        };
+    })() as (...args: never[]) => unknown);
 
     // resources/read — with introspection manifest delegation ( fix)
     resourceServer.setRequestHandler(ReadResourceRequestSchema, (async (

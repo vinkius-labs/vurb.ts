@@ -321,9 +321,16 @@ export class SwarmGateway {
         await this._closeSession(sessionId);
     }
 
-    /** `true` if there is a fully active (not connecting) tunnel for the given session. */
+    /**
+     * `true` if there is a tracked tunnel (connecting or active) for the given session.
+     *
+     * Returning `true` during `'connecting'` ensures `ServerAttachment` routes
+     * tools/call through `proxyToolsCall`, which already returns the correct
+     * `HANDOFF_CONNECTING` error for in-progress tunnels — preventing gateway-local
+     * execution from silently bypassing the handoff.
+     */
     hasActiveHandoff(sessionId: string): boolean {
-        return this._sessions.get(sessionId)?.status === 'active';
+        return this._sessions.has(sessionId);
     }
 
     /** `true` if an activation is in progress for the given session. */

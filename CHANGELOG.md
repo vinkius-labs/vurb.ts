@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.1] - 2026-03-25
+
+### Fixed
+
+- **`resources/list` handler computed at boot instead of per-request** (`@vurb/core`) — `registerResourceHandlers` registered the resource list via an IIFE, computing it once at `attachToServer()` time. Resources registered or removed from `ResourceRegistry` after initialization were never reflected in subsequent `resources/list` responses. Fixed by wrapping the list computation in an arrow function that is called on every request.
+
+- **Variable shadowing: `signal` redeclared inside FHP block** (`@vurb/core`) — Inside `createToolCallHandler`, the outer `signal` (extracted at the top of the handler) was shadowed by a new `const signal` declaration inside the FHP handoff block. Renamed the inner variable to `handoffSignal` for clarity and to avoid potential misuse during future refactors.
+
+- **`SwarmGateway.hasActiveHandoff` returned `false` during `connecting` phase** (`@vurb/swarm`) — When a handoff was activating but not yet fully connected, `hasActiveHandoff()` returned `false` (it only matched `status === 'active'`). This caused `ServerAttachment` to skip the `proxyToolsCall` path entirely, routing the LLM's tool call to the local gateway instead of returning the correct `HANDOFF_CONNECTING` error. Fixed by using `_sessions.has(sessionId)` — `proxyToolsCall` already handles `connecting` sessions correctly with a descriptive retry error.
+
 ## [3.8.0] - 2026-03-22
 
 ### Added
