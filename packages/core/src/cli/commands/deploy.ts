@@ -492,15 +492,8 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         message: string;
         tools_synced?: number;
     };
-    let rawBody: string;
     try {
-        rawBody = await res.text();
-    } catch {
-        progress.fail('upload', 'Deploying to Edge', 'unexpected non-JSON response from API');
-        process.exit(1);
-    }
-    try {
-        data = JSON.parse(rawBody) as typeof data;
+        data = await res.json() as typeof data;
     } catch {
         progress.fail('upload', 'Deploying to Edge', 'unexpected non-JSON response from API');
         process.exit(1);
