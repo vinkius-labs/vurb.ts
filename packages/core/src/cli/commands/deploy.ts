@@ -528,6 +528,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         tools_synced?: number;
         marketplace_synced?: boolean;
         trust_tier?: string;
+        warnings?: string[];
     };
     try {
         data = await res.json() as typeof data;
@@ -583,6 +584,12 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
             : data.trust_tier === 'silver' ? '🥈'
             : data.trust_tier === 'bronze' ? '🥉' : '⚪';
         w(`  ${ansi.dim('✓ marketplace listing synced')} ${tierBadge}\n`);
+    }
+    if (data.warnings && data.warnings.length > 0) {
+        w('\n');
+        for (const warning of data.warnings) {
+            w(`  ${ansi.yellow('⚠')} ${warning}\n`);
+        }
     }
 
     w('\n');

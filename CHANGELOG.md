@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-03-27
+
+### Added
+
+#### SaaS Integration Identity
+- **`integration`** — New manifest block to declare which SaaS platform an MCP server wraps:
+  - `name` — Platform name (e.g. "Acuity Scheduling")
+  - `url` — Platform website
+  - `description` — i18n-aware short description of what the SaaS does
+  - `logoUrl` — Official SaaS logo for the listing card
+- **`documentationUrl`** — Link to API/integration documentation
+- **`supportUrl`** — Link to support channel
+- **`sourceCodeUrl`** — Link to source code repository (trust signal for enterprise buyers)
+- **`compatibility`** — MCP clients this server is tested with (e.g. `["claude-desktop", "cursor", "cline"]`)
+
+#### Deploy Warnings
+- **Non-blocking category warnings** — When a manifest includes category slugs that don't exist in the marketplace, `vurb deploy` now displays a `⚠ Warning` with guidance instead of silently dropping them. Deploys never fail for category mismatches.
+
+### Changed
+- `normalizeMarketplacePayload()` now maps all new integration fields from camelCase to snake_case for the deploy API payload.
+- Deploy response type includes optional `warnings` array.
+
 ## [3.10.0] - 2026-03-27
 
 ### Added

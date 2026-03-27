@@ -100,6 +100,33 @@ export interface MarketplaceManifest {
      * The CLI extracts the latest version section and sends it as `changelog_excerpt`.
      */
     readonly changelog?: string;
+
+    /**
+     * SaaS/platform this MCP server integrates with.
+     * Displayed as the integration identity card on the listing page.
+     */
+    readonly integration?: {
+        /** Name of the SaaS platform (e.g. "Acuity Scheduling"). */
+        readonly name: string;
+        /** URL of the SaaS platform (e.g. "https://acuityscheduling.com"). */
+        readonly url: string;
+        /** Short description of what the SaaS does — plain string or i18n map. */
+        readonly description?: I18nString;
+        /** URL to the SaaS's official logo. */
+        readonly logoUrl?: string;
+    };
+
+    /** Link to integration documentation. */
+    readonly documentationUrl?: string;
+
+    /** Link to support channel. */
+    readonly supportUrl?: string;
+
+    /** Link to source code repository (e.g. GitHub). */
+    readonly sourceCodeUrl?: string;
+
+    /** MCP clients this server is tested/compatible with. */
+    readonly compatibility?: readonly string[];
 }
 
 // ============================================================================
@@ -222,6 +249,27 @@ export function normalizeMarketplacePayload(
     if (manifest.changelog) {
         payload['changelog_excerpt'] = extractLatestChangelog(manifest.changelog);
     }
+
+    // SaaS integration identity
+    if (manifest.integration) {
+        const integration: Record<string, unknown> = {
+            name: manifest.integration.name,
+            url: manifest.integration.url,
+        };
+        if (manifest.integration.logoUrl) {
+            integration['logo_url'] = manifest.integration.logoUrl;
+        }
+        if (manifest.integration.description) {
+            const { canonical: desc } = extractI18n(manifest.integration.description);
+            integration['description'] = desc;
+        }
+        payload['integration'] = integration;
+    }
+
+    if (manifest.documentationUrl) payload['documentation_url'] = manifest.documentationUrl;
+    if (manifest.supportUrl) payload['support_url'] = manifest.supportUrl;
+    if (manifest.sourceCodeUrl) payload['source_code_url'] = manifest.sourceCodeUrl;
+    if (manifest.compatibility) payload['compatibility'] = manifest.compatibility;
 
     return payload;
 }
