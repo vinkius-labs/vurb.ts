@@ -2244,3 +2244,143 @@ await subscriptions.notify('config://app/settings');
 ```
 
 `SubscriptionManager` tracks client subscriptions per URI. `ResourceRegistry` handles `resources/list`, `resources/read`, `resources/subscribe`, and `resources/unsubscribe`. Integrates with `ServerAttachment` for automatic MCP protocol handling.
+
+## Credentials — BYOC (Bring Your Own Credentials)
+
+The Credentials API enables marketplace-publishable MCP servers to declare per-buyer credential requirements. The Vinkius marketplace prompts buyers to configure credentials before activation; the runtime injects them per-request via `globalThis.__vinkius_secrets`. Seller code never sees raw buyer credentials.
+
+### defineCredentials(schema)
+
+Declare what credentials your server needs. Read at deploy/introspect time by the marketplace:
+
+```typescript
+import { defineCredentials } from '@vurb/core';
+
+export const credentials = defineCredentials({
+  openai_key: {
+    type: 'api_key',
+    label: 'OpenAI API Key',
+    description: 'Used for GPT-4 completions.',
+    required: true,
+    sensitive: true,
+  },
+  database_url: {
+    type: 'uri',
+    label: 'PostgreSQL Connection URL',
+    required: true,
+    sensitive: true,
+    validation: {
+      pattern: '^postgres(ql)?://',
+      message: 'Must be a valid PostgreSQL URI',
+    },
+  },
+  webhook_secret: {
+    type: 'token',
+    label: 'Webhook Secret (optional)',
+    required: false,
+  },
+});
+```
+
+### Credential Types
+
+| Type | Category | Common Use |
+|---|---|---|
+| `api_key` | Secret | Stripe, SendGrid, Upstash |
+| `token` | Secret | OAuth / Bearer — Notion, GitHub |
+| `password` | Secret | MySQL, PostgreSQL, SSH |
+| `connection_string` | Connection | Structured DB DSN |
+| `uri` | Connection | Full URL — `postgres://…`, `redis://…` |
+| `hostname` | Connection | Custom domain or IP |
+| `json_config` | Structured | Service account key, full JSON config |
+| `certificate` | Structured | PEM certificates / private keys |
+| `custom` | Structured | Anything else |
+
+### CredentialSchema Fields
+
+```typescript
+interface CredentialSchema {
+  type: CredentialType        // One of the 9 types above
+  label: string               // Shown in the marketplace UI
+  description?: string        // Explanation for the buyer
+  required?: boolean          // Default: true
+  sensitive?: boolean         // Masked in UI/logs — default: true for secrets/connection types
+  placeholder?: string        // Example value shown in the input field
+  validation?: {
+    pattern: string           // Regex pre-check on buyer side
+    message?: string          // Error shown when pattern fails
+  }
+}
+```
+
+### requireCredential(name, options?)
+
+Read a credential at runtime. Resolves in order: `globalThis.__vinkius_secrets` (Cloud Edge) → `process.env[NAME.toUpperCase()]` (local) → `options.fallback`:
+
+```typescript
+import { requireCredential } from '@vurb/core';
+
+// Required (throws if missing)
+const apiKey = requireCredential('openai_key');
+
+// Optional (returns undefined if missing)
+const webhookSecret = requireCredential('webhook_secret', { required: false });
+
+// With fallback (testing / mocks)
+const dbUrl = requireCredential('database_url', { fallback: 'postgres://localhost/test' });
+```
+
+```typescript
+requireCredential(name: string, options?: {
+  fallback?: string    // Used when not found in secrets or env
+  required?: boolean   // Default: true — throws if missing; false allows undefined
+}): string | undefined
+```
+
+### Full Example
+
+```typescript
+import { defineCredentials, requireCredential, initVurb } from '@vurb/core';
+import Stripe from 'stripe';
+
+// 1. Declare credentials (read by marketplace at deploy time)
+export const credentials = defineCredentials({
+  stripe_secret_key: {
+    type: 'api_key',
+    label: 'Stripe Secret Key',
+    required: true,
+    sensitive: true,
+    placeholder: 'sk_live_...',
+    validation: { pattern: '^sk_(live|test)_', message: 'Must start with sk_live_ or sk_test_' },
+  },
+});
+
+const f = initVurb();
+
+// 2. Use credential inside handlers — never log or return the raw value
+const listPayments = f.query('payments.list')
+  .describe('List recent Stripe payments')
+  .handle(async () => {
+    const key = requireCredential('stripe_secret_key');
+    const stripe = new Stripe(key);
+    const payments = await stripe.paymentIntents.list({ limit: 10 });
+    return payments.data.map(p => ({ id: p.id, amount: p.amount, status: p.status }));
+  });
+```
+
+### Local Development
+
+Credentials resolve from env vars locally. Create a `.env` file (add to `.gitignore`):
+
+```dotenv
+OPENAI_KEY=sk-proj-...
+DATABASE_URL=postgres://localhost:5432/mydb
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+### Security Notes
+
+- **Zero-knowledge** — seller code never receives raw buyer credentials during marketplace execution
+- **Server-side enforcement** — `vurb deploy` rejects bundles accessing `__vinkius_secrets`, `process.env`, `Object.keys(globalThis)`, etc. Returns HTTP 422 with structured `violations[]`
+- **Sensitive by default** — `api_key`, `token`, `password`, `connection_string`, `uri`, `certificate`, `json_config` are `sensitive: true` by default
+- **Never leak** — do not log, return, or embed credential values in tool responses

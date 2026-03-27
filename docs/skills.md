@@ -324,6 +324,45 @@ Request: { file_path: "../../etc/passwd" }
 | **Size limits** | Files above `maxFileSize` are rejected to prevent OOM |
 | **Error sanitization** | Absolute server paths are never exposed to the agent |
 
+## Credentials in Skill Servers {#credentials}
+
+If your skill server calls external APIs (e.g. a skill that automates GitHub, Slack, or Stripe), use the BYOC (Bring Your Own Credentials) system instead of hardcoding tokens or reading from environment variables.
+
+```typescript
+import { defineCredentials, requireCredential } from '@vurb/core';
+import { SkillRegistry, autoDiscoverSkills, createSkillTools } from '@vurb/skills';
+
+// Declare credentials — Vinkius marketplace prompts buyers to configure these
+export const credentials = defineCredentials({
+  github_token: {
+    type: 'token',
+    label: 'GitHub Personal Access Token',
+    description: 'Required for skill servers that interact with GitHub repos.',
+    required: true,
+    sensitive: true,
+  },
+});
+
+const f = initVurb();
+
+// Skills that call GitHub can read the credential at runtime
+const skills = new SkillRegistry();
+await autoDiscoverSkills(skills, './skills');
+const [search, load, readFile] = createSkillTools(f, skills);
+
+// If your skill handlers need the credential, pass it via contextFactory:
+registry.attachToServer(server, {
+  contextFactory: async () => ({
+    githubToken: requireCredential('github_token'),
+  }),
+});
+```
+
+Locally, create a `.env` file with `GITHUB_TOKEN=ghp_...`. On Vinkius Cloud Edge, the runtime injects credentials automatically per-request.
+
+> [!NOTE]
+> See [Credentials — BYOC](/credentials) for the full API reference including all 9 credential types, `CredentialSchema` fields, and security architecture.
+
 ## Custom Search Engine {#custom-search}
 
 The registry uses `FullTextSearchEngine` (MiniSearch-based) by default. Swap it for any implementation of the `SkillSearchEngine` interface:
