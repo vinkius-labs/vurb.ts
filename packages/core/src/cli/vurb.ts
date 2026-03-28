@@ -15,6 +15,10 @@ import { commandCreate } from './commands/create.js';
 import { commandRemote } from './commands/remote.js';
 import { commandDeploy } from './commands/deploy.js';
 import { commandToken } from './commands/token.js';
+import { commandVersion } from './commands/version.js';
+import { commandUpdate } from './commands/update.js';
+import { commandDoctor } from './commands/doctor.js';
+import { commandValidate } from './commands/validate.js';
 
 // ─── Re-exports (backward compat — tests import from vurb.js) ──
 
@@ -26,7 +30,7 @@ export { ProgressTracker, createDefaultReporter } from './progress.js';
 export type { RegistryLike, PromptRegistryLike } from './registry.js';
 export { resolveRegistry } from './registry.js';
 export { collectConfig } from './commands/create.js';
-export { commandLock, commandDev, commandCreate, commandToken };
+export { commandLock, commandDev, commandCreate, commandToken, commandVersion, commandUpdate, commandDoctor, commandValidate };
 export { ask } from './utils.js';
 
 // ─── Main ────────────────────────────────────────────────────────
@@ -77,6 +81,19 @@ async function main(): Promise<void> {
             }
             break;
         }
+        case 'version':
+            await commandVersion(args);
+            break;
+        case 'update':
+            await commandUpdate(args);
+            break;
+        case 'doctor':
+            await commandDoctor(args);
+            break;
+        case 'validate':
+            await commandValidate(args);
+            process.exit(0);
+            break;
         default:
             console.error(`Unknown command: "${args.command}"\n`);
             console.log(HELP);

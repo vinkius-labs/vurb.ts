@@ -87,7 +87,16 @@ export function parseArgs(argv: string[]): CliArgs {
             case 'insp':
             case 'debug':
             case 'dbg':
+            case 'update':
+            case 'version':
+            case 'validate':
+            case 'doctor':
                 result.command = arg;
+                seenCommand = true;
+                break;
+            case '-v':
+            case '--version':
+                result.command = 'version';
                 seenCommand = true;
                 break;
             case '--check':

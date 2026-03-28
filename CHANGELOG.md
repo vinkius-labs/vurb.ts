@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] - 2026-03-28
+
+### Added
+
+#### `@vurb/core` — CLI Developer Experience Expansion
+
+Four new CLI commands to bring the Vurb CLI to industry-standard developer experience and platform reliability.
+
+- **`vurb version`** — Displays CLI version, Node.js/OS environment, and a table of all installed `@vurb/*` packages with their versions. Supports `-v` and `--version` shortcuts.
+- **`vurb update`** — Automatically scans all `@vurb/*` packages, fetches the latest versions from the npm registry, and performs targeted `npm install` for outdated packages. Displays a clear before/after comparison table.
+- **`vurb doctor`** — Comprehensive diagnostic suite that validates 8 environment checks: Node.js version (≥ 18), `@vurb/core` installation, `.vurbrc` configuration, deploy token validity (with live API probe), server entrypoint detection, esbuild availability, and `vurb.lock` status. Includes pass/warn/fail summary.
+- **`vurb validate`** — Live server smoke test inspired by `terraform validate`. Boots the server via introspection (`VURB_INTROSPECT=1`), compiles contracts, and runs 7 validation checks: entrypoint resolution, esbuild build, server boot timing, tool registration audit (grouped vs flat), description coverage, schema parameter analysis, and lockfile drift detection via SHA-256 comparison.
+
+#### Shared Infrastructure Modules
+
+- **`npm-registry.ts`** — Centralized module for scanning declared and installed `@vurb/*` packages, fetching latest versions from the npm registry with timeout handling, and enriching package lists with registry data.
+- **`introspect.ts`** — Shared introspection pipeline extracted from `deploy.ts`. Boots the server in non-transport mode, compiles `ToolContract` surfaces, generates lockfile manifests, and extracts tool entries (flat and grouped). Reused by both `vurb deploy` and `vurb validate`.
+
+### Test Suite
+
+- **`npm-registry.test.ts`** — 31 tests covering package scanning, version fetching, corrupt JSON, network errors, deduplication, and sorted results.
+- **`version.test.ts`** — 11 tests covering arg parsing (`-v`, `--version`), output formatting, installed packages display, and empty directory handling.
+- **`update.test.ts`** — 8 tests covering no-packages detection, all-up-to-date path, version mismatch indicators, and partial fetch failures.
+- **`doctor.test.ts`** — 21 tests covering all 8 diagnostic checks with success and failure paths, API mocking, env vars, and missing dependencies.
+- **`validate.test.ts`** — 48 deep tests with `vi.mock` on `runIntrospection` covering every code path: entrypoint resolution, boot failures (esbuild/timeout/generic/non-Error), tool analysis (zero/flat/grouped/descriptions/grammar/params), lockfile drift (missing/match/drift/SHA/corrupt), summary line formatting, and SHA-256 determinism.
+
 ## [3.11.1] - 2026-03-28
 
 ### Fixed

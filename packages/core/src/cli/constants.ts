@@ -52,6 +52,10 @@ USAGE
   vurb token                        Show current token status
   vurb inspect                      Launch the real-time TUI dashboard
   vurb insp --demo                  Launch TUI with built-in simulator
+  vurb version                      Show CLI and installed package versions
+  vurb update                       Update all @vurb/* packages to latest
+  vurb doctor                       Run environment diagnostics
+  vurb validate                     Validate server tools, schemas & lockfile
 
 CREATE OPTIONS
   --transport <stdio|sse>  Transport layer (default: stdio)
@@ -109,4 +113,9 @@ EXAMPLES
   vurb token --clear
   vurb inspect --demo
   vurb insp --pid 12345
+  vurb version
+  vurb update
+  vurb doctor
+  vurb validate
+  vurb validate --server ./src/server.ts
 `.trim();
