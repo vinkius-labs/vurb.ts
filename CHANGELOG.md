@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.13.1] - 2026-03-28
+
+### Fixed
+
+#### `@vurb/core` — Credential Schema Not Persisted on Deploy
+
+- **`vurb deploy` now injects `credential_schema` into the manifest payload** — Servers using `defineCredentials()` correctly generated the credential schema during introspection, but the `commandDeploy` function never injected `result.credentials` into the `manifest` object before uploading. The backend (`EdgeDeployController`) reads `manifest.credentials` to persist the schema on the `mcp_servers` record, so all deployed servers had `credential_schema = null` in the database. Buyers subscribing to these servers never saw the "Authentication" setup tab because `credential_schema` was empty. Fixed by injecting `result.credentials` into the manifest when present. The `IntrospectResult` type now includes an optional `credentials` field.
+
 ## [3.13.0] - 2026-03-28
 
 ### Added

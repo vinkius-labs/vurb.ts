@@ -321,6 +321,7 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         serverName: string;
         version: string;
         registry: { getBuilders(): Iterable<{ getName(): string; getActionNames(): string[]; buildToolDefinition(): unknown }> };
+        credentials?: Record<string, unknown>;
     }
 
     let manifest: Record<string, unknown> | null = null;
@@ -393,6 +394,12 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         const lockfile = await generateLockfile(result.serverName, contracts, VURB_VERSION);
 
         manifest = lockfile as unknown as Record<string, unknown>;
+
+        // Inject credential_schema into manifest so the backend persists it
+        // on the server record (EdgeDeployController reads manifest.credentials).
+        if (result.credentials && Object.keys(result.credentials).length > 0) {
+            manifest['credentials'] = result.credentials;
+        }
 
         // Extract tool names + descriptions for CLI display and dashboard sync.
         // Uses `contracts` (pre-lockfile ToolContract) which has per-action
