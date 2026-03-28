@@ -43,17 +43,18 @@ export interface IntrospectionReport {
  * generate the lockfile manifest.
  *
  * @param absEntry - Absolute path to the server entrypoint.
+ * @param projectRoot - Absolute path to the project root (where package.json lives).
  * @returns Full introspection report including tools, contracts, lockfile.
  * @throws If esbuild build fails, server doesn't boot, or contracts fail to compile.
  */
-export async function runIntrospection(absEntry: string): Promise<IntrospectionReport> {
+export async function runIntrospection(absEntry: string, projectRoot?: string): Promise<IntrospectionReport> {
     let esbuild: typeof import('esbuild');
     try {
         esbuild = await import('esbuild');
     } catch {
         // Auto-install esbuild — zero friction for CLI users
         const { execSync } = await import('node:child_process');
-        const cwd = (await import('node:path')).dirname(absEntry);
+        const cwd = projectRoot ?? (await import('node:path')).dirname(absEntry);
         try {
             execSync('npm install -D esbuild', { cwd, stdio: 'pipe' });
             esbuild = await import('esbuild');

@@ -173,7 +173,7 @@ describe('commandValidate — entrypoint resolution', () => {
 
         expect(out).toContain('Entrypoint');
         expect(out).toContain('resolved');
-        expect(mockRunIntrospection).toHaveBeenCalledWith(resolve(tmpDir, 'src/server.ts'));
+        expect(mockRunIntrospection).toHaveBeenCalledWith(resolve(tmpDir, 'src/server.ts'), tmpDir);
     });
 
     it('resolves --server override over auto-detect', async () => {
@@ -186,7 +186,7 @@ describe('commandValidate — entrypoint resolution', () => {
             commandValidate({ command: 'validate', cwd: tmpDir, check: false, help: false, server: 'custom.ts' }),
         );
 
-        expect(mockRunIntrospection).toHaveBeenCalledWith(resolve(tmpDir, 'custom.ts'));
+        expect(mockRunIntrospection).toHaveBeenCalledWith(resolve(tmpDir, 'custom.ts'), tmpDir);
     });
 });
 

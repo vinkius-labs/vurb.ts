@@ -150,7 +150,7 @@ export async function commandValidate(args: CliArgs): Promise<void> {
     // 2. Run introspection
     let report: IntrospectionReport;
     try {
-        report = await runIntrospection(absEntry);
+        report = await runIntrospection(absEntry, cwd);
     } catch (err) {
         printResult(fail('Server boot', `failed: ${err instanceof Error ? err.message : String(err)}`));
         process.stderr.write('\n');
