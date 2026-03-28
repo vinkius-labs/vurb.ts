@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.1] - 2026-03-28
+
+### Fixed
+
+#### `@vurb/core` — Deploy Bundle Size & Deduplication
+
+- **Bundle size limit increased from 500KB to 1.5MB** — The previous 512KB limit was too restrictive for community-developed MCP servers that include standard third-party dependencies. All five size gates (CLI `MAX_BUNDLE_SIZE`, API controller `bundle`/`raw_size` validation, API service base64/raw guards) bumped in sync to 1,536,000 bytes (raw) / 2,100,000 bytes (base64).
+- **MCP SDK deduplication** — `edgeStubPlugin()` now intercepts `@modelcontextprotocol/sdk` imports and provides empty modules, preventing esbuild from bundling a second copy (~200KB saved). `@vurb/core` already bundles the SDK internally — user-listed copies are redundant.
+
 ## [3.11.0] - 2026-03-27
 
 ### Added

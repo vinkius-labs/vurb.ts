@@ -81,6 +81,21 @@ function edgeStubPlugin(): EsbuildNS.Plugin {
             const stubPath = fileURLToPath(new URL('../../edge-stub.js', import.meta.url));
             const stubPathEscaped = JSON.stringify(stubPath);
 
+            // ── Deduplicate MCP SDK ──────────────────────────────────────────
+            // @vurb/core already bundles @modelcontextprotocol/sdk internally.
+            // When users also list it as a direct dependency (very common),
+            // esbuild bundles a second copy (~200KB). Intercepting these
+            // imports and providing empty modules prevents the duplication —
+            // @vurb/core's bundled copy satisfies all type/runtime needs.
+            build.onResolve({ filter: /^@modelcontextprotocol\/sdk(\/.*)?$/ }, (args) => ({
+                path: args.path,
+                namespace: 'mcp-sdk-dedup',
+            }));
+            build.onLoad({ filter: /.*/, namespace: 'mcp-sdk-dedup' }, () => ({
+                contents: 'module.exports = {};',
+                loader: 'js',
+            }));
+
             // Resolve all node builtins to a virtual namespace
             build.onResolve({ filter: BUILTIN_FILTER }, (args) => ({
                 path: args.path,
@@ -283,11 +298,11 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
 
     // ── Step 4: size-check ──
     const rawSizeBytes = Buffer.byteLength(rawCode, 'utf-8');
-    const MAX_BUNDLE_SIZE = 512_000; // 500KB (fat bundle includes all deps)
+    const MAX_BUNDLE_SIZE = 1_536_000; // 1.5MB (fat bundle includes all deps)
     if (rawSizeBytes > MAX_BUNDLE_SIZE) {
         const sizeKB = (rawSizeBytes / 1024).toFixed(1);
         process.stderr.write(
-            `\nfatal: bundle too large: ${sizeKB}KB (max 500KB)\n` +
+            `\nfatal: bundle too large: ${sizeKB}KB (max 1.5MB)\n` +
             `hint: remove unused imports — the fat bundle includes all dependencies\n\n`,
         );
         process.exit(1);
