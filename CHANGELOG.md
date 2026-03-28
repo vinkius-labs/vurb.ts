@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.3] - 2026-03-28
+
+### Fixed
+
+#### `@vurb/core` — Introspection Pipeline Auto-installs esbuild
+
+- **`vurb validate` and `vurb deploy` no longer fail when esbuild is missing** — The shared introspection pipeline (`runIntrospection()`) now auto-installs esbuild if the initial `import('esbuild')` fails. It runs `npm install -D esbuild` silently and retries, matching the existing auto-install pattern in `commandDeploy`. Previously, `vurb validate` failed with `Cannot find package 'esbuild'` in projects that didn't explicitly list esbuild as a devDependency.
+
+## [3.12.2] - 2026-03-28
+
+### Fixed
+
+#### `@vurb/core` — Resilient `vurb update`
+
+- **`vurb update` no longer fails on freshly published versions** — Added `--prefer-online` to the `npm install` invocation to bypass stale npm cache metadata. Previously, `npm install @vurb/core@X.Y.Z` would fail with `ETARGET` immediately after a publish because npm's local cache still listed the old version as latest.
+- **Automatic retry with per-package fallback** — If the batch `npm install` fails, the command retries once. If the retry also fails, it falls back to installing each package individually with per-package error reporting — partial updates succeed instead of all-or-nothing failure.
+- **Reduced noise** — Added `--no-fund --no-audit` flags and increased timeout to 120s for batch installs.
+
 ## [3.12.1] - 2026-03-28
 
 ### Fixed

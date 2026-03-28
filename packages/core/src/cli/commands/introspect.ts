@@ -47,7 +47,22 @@ export interface IntrospectionReport {
  * @throws If esbuild build fails, server doesn't boot, or contracts fail to compile.
  */
 export async function runIntrospection(absEntry: string): Promise<IntrospectionReport> {
-    const esbuild = await import('esbuild');
+    let esbuild: typeof import('esbuild');
+    try {
+        esbuild = await import('esbuild');
+    } catch {
+        // Auto-install esbuild — zero friction for CLI users
+        const { execSync } = await import('node:child_process');
+        const cwd = (await import('node:path')).dirname(absEntry);
+        try {
+            execSync('npm install -D esbuild', { cwd, stdio: 'pipe' });
+            esbuild = await import('esbuild');
+        } catch {
+            throw new Error(
+                'esbuild is required but could not be installed automatically. Run: npm install -D esbuild',
+            );
+        }
+    }
 
     // ── 1. Build (Node platform, ESM — for local execution, not edge) ──
     const buildStart = Date.now();

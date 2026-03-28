@@ -70,18 +70,57 @@ export async function commandUpdate(args: CliArgs): Promise<void> {
 
     const installArgs = toUpdate.map(e => `${e.name}@${e.latest}`);
     const { execSync } = await import('node:child_process');
+    const npmFlags = '--prefer-online --no-fund --no-audit';
 
-    try {
-        execSync(`npm install ${installArgs.join(' ')}`, {
-            cwd,
-            stdio: 'pipe',
-            timeout: 60_000,
-        });
+    // Try batch install with one automatic retry
+    let batchOk = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            execSync(`npm install ${npmFlags} ${installArgs.join(' ')}`, {
+                cwd,
+                stdio: 'pipe',
+                timeout: 120_000,
+            });
+            batchOk = true;
+            break;
+        } catch {
+            if (attempt === 1) {
+                process.stderr.write(`  ${ansi.dim('Retrying...')}\n`);
+            }
+        }
+    }
+
+    if (batchOk) {
         process.stderr.write(`\n  ${ansi.green('✓')} ${toUpdate.length} package${toUpdate.length !== 1 ? 's' : ''} updated.\n\n`);
-    } catch (err) {
-        process.stderr.write(
-            `\n  ${ansi.red('✗')} npm install failed: ${err instanceof Error ? err.message : String(err)}\n\n`,
-        );
+        return;
+    }
+
+    // Batch failed twice — fall back to one-by-one install
+    process.stderr.write(`  ${ansi.dim('Batch install failed. Installing individually...')}\n`);
+    let succeeded = 0;
+    let failed = 0;
+    for (const entry of toUpdate) {
+        const spec = `${entry.name}@${entry.latest}`;
+        try {
+            execSync(`npm install ${npmFlags} ${spec}`, {
+                cwd,
+                stdio: 'pipe',
+                timeout: 60_000,
+            });
+            succeeded++;
+        } catch {
+            process.stderr.write(`  ${ansi.red('✗')} Failed to install ${spec}\n`);
+            failed++;
+        }
+    }
+
+    if (failed === 0) {
+        process.stderr.write(`\n  ${ansi.green('✓')} ${succeeded} package${succeeded !== 1 ? 's' : ''} updated.\n\n`);
+    } else if (succeeded > 0) {
+        process.stderr.write(`\n  ${ansi.yellow('⚠')} ${succeeded} updated, ${failed} failed.\n\n`);
+        process.exit(1);
+    } else {
+        process.stderr.write(`\n  ${ansi.red('✗')} All ${failed} packages failed to install.\n\n`);
         process.exit(1);
     }
 }

@@ -122,7 +122,7 @@ describe('commandUpdate', () => {
         expect(output).toContain('All packages up to date');
     });
 
-    it('detects version mismatch in output', async () => {
+    it('detects version mismatch in output', { timeout: 30_000 }, async () => {
         writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({
             dependencies: { '@vurb/core': '^3.0.0' },
         }));
@@ -188,9 +188,16 @@ describe('commandUpdate', () => {
         installPkg(tmpDir, '@vurb', 'inspector', '2.5.0');
         installPkg(tmpDir, '@vurb', 'test', '1.2.0');
 
-        globalThis.fetch = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({ version: '3.11.1' }),
+        // Return matching versions so no install is attempted — this test
+        // only verifies that the table displays all packages.
+        const versionMap: Record<string, string> = {
+            '@vurb/core': '3.11.1',
+            '@vurb/inspector': '2.5.0',
+            '@vurb/test': '1.2.0',
+        };
+        globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+            const pkg = Object.keys(versionMap).find(k => url.includes(encodeURIComponent(k)) || url.includes(k));
+            return { ok: true, json: async () => ({ version: pkg ? versionMap[pkg] : '0.0.0' }) };
         }) as unknown as typeof fetch;
 
         const output = await captureStderr(() =>
