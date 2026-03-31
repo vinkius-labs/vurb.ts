@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.14.5] - 2026-03-31
+
+### Fixed
+
+#### `@vurb/core` — Edge Dispatch: Structured Clone Boundary Protection
+
+- **`__vinkius_edge_dispatch` now returns JSON string instead of raw object** — The edge dispatch function (`startServer` edge mode) previously returned the raw `routeCall()` result object directly across the V8 isolate structured-clone boundary. If any handler returned an object containing non-clonable values (`Promise`, `Function`, `Symbol`), the `isolated-vm` structured clone failed with `#<Promise> could not be cloned`, crashing the runtime. Fixed by wrapping the return value in `JSON.stringify()` inside the isolate before crossing the boundary. The host (`IsolateRunner`) calls `JSON.parse()` on the other side. `JSON.stringify` neutralizes all non-serializable values automatically (Promises become `{}`, Functions are stripped), eliminating the entire class of `DataCloneError` at the isolate boundary.
+
 ## [3.14.4] - 2026-03-31
 
 ### Fixed

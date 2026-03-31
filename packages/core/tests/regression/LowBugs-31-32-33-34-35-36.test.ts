@@ -134,27 +134,27 @@ describe('Bug #34 — autoDiscover onError and strict mode', () => {
     });
 });
 
-// ── Bug #35: edge-stub path functions crash ──────────────
-
-describe('Bug #35 — edge-stub path functions crash instead of returning empty string', () => {
-    it('resolve() should throw instead of returning empty string', async () => {
+describe('Bug #35 — edge-stub path functions return safe defaults for import-time init', () => {
+    it('resolve() should return concatenated parts', async () => {
         const { resolve } = await import('../../src/edge-stub.js');
-        expect(() => resolve()).toThrow('Edge');
+        expect(resolve('/tmp', 'session')).toBe('/tmp/session');
+        expect(resolve()).toBe('');
     });
 
-    it('join() should throw instead of returning empty string', async () => {
+    it('join() should return concatenated parts', async () => {
         const { join } = await import('../../src/edge-stub.js');
-        expect(() => join()).toThrow('Edge');
+        expect(join('/tmp', 'session')).toBe('/tmp/session');
+        expect(join()).toBe('');
     });
 
-    it('dirname() should throw instead of returning empty string', async () => {
+    it('dirname() should return parent path', async () => {
         const { dirname } = await import('../../src/edge-stub.js');
-        expect(() => dirname()).toThrow('Edge');
+        expect(dirname('/tmp/session')).toBe('/tmp');
     });
 
-    it('basename() should throw instead of returning empty string', async () => {
+    it('basename() should return last segment', async () => {
         const { basename } = await import('../../src/edge-stub.js');
-        expect(() => basename()).toThrow('Edge');
+        expect(basename('/tmp/session')).toBe('session');
     });
 });
 

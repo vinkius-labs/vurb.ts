@@ -125,7 +125,10 @@ describe('Bug #45 Regression: edge interceptor server null safety', () => {
         const dispatch = (globalThis as any).__vinkius_edge_dispatch;
         expect(typeof dispatch).toBe('function');
 
-        const response = await dispatch('users', { action: 'list' });
+        const rawResponse = await dispatch('users', { action: 'list' });
+        // New: dispatch returns JSON string (safe for structured clone)
+        expect(typeof rawResponse).toBe('string');
+        const response = JSON.parse(rawResponse);
         expect(response.content[0].text).toBe('ok');
     });
 
@@ -148,10 +151,53 @@ describe('Bug #45 Regression: edge interceptor server null safety', () => {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dispatch = (globalThis as any).__vinkius_edge_dispatch;
-        const response = await dispatch('bad-tool', {});
+        const rawResponse = await dispatch('bad-tool', {});
 
+        // Returns JSON string even on error
+        expect(typeof rawResponse).toBe('string');
+        const response = JSON.parse(rawResponse);
         expect(response.isError).toBe(true);
         expect(response.content[0].text).toContain('boom');
+    });
+
+    it('edge dispatch strips non-serializable values (Promise, Function) via JSON', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).__vinkius_edge_interceptor = {
+            applySync: vi.fn(),
+        };
+
+        // Simulate a handler that returns an object with a Promise (the exact bug)
+        const routeCall = vi.fn().mockResolvedValue({
+            content: [{ type: 'text', text: 'ok' }],
+            _leakedPromise: Promise.resolve('should be stripped'),
+            _leakedFn: () => 'should be stripped',
+        });
+
+        await startServer({
+            name: 'dispatch-safe',
+            registry: {
+                getBuilders: () => [],
+                attachToServer: vi.fn(),
+                routeCall,
+            },
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dispatch = (globalThis as any).__vinkius_edge_dispatch;
+        const rawResponse = await dispatch('tool', { action: 'default' });
+
+        // JSON string — always safe for structured clone
+        expect(typeof rawResponse).toBe('string');
+        const parsed = JSON.parse(rawResponse);
+
+        // Data is preserved
+        expect(parsed.content[0].text).toBe('ok');
+        // Promises and functions are neutralized by JSON.stringify:
+        // - Promise → {} (empty object, harmless)
+        // - Function → stripped (undefined)
+        // Neither is an actual Promise/Function = safe for structured clone
+        expect(parsed._leakedPromise).toEqual({});
+        expect(parsed._leakedFn).toBeUndefined();
     });
 
     it('StartServerResult type allows null server (compile-time check)', () => {

@@ -413,28 +413,28 @@ export async function startServer<TContext>(
             }),
         ]);
 
-        // Expose async dispatcher — PLAIN OBJECT return, never Error class.
-        // Host extracts via { result: { copy: true } } (C++ structured clone).
+        // Expose async dispatcher — returns JSON string to cross the
+        // structured-clone boundary safely. The host (IsolateRunner)
+        // calls JSON.parse() on the other side. This eliminates all
+        // DataCloneError crashes (Promise, Function, Symbol, etc.).
         g.__vinkius_edge_dispatch = async (
             toolName: string,
             args: Record<string, unknown>,
-        ) => {
+        ): Promise<string> => {
             try {
                 const ctx = contextFactory
                     ? await contextFactory(undefined)
                     : _missingContextProxy as TContext;
-                return await registry.routeCall(ctx, toolName, args);
+                return JSON.stringify(await registry.routeCall(ctx, toolName, args));
             } catch (e: unknown) {
-                // Error class cannot survive C++ structured clone.
-                // Return MCP-protocol plain object instead.
                 const err = e as { stack?: string; message?: string };
-                return {
+                return JSON.stringify({
                     isError: true,
                     content: [{
                         type: 'text',
                         text: String(err?.stack || err?.message || e),
                     }],
-                };
+                });
             }
         };
 
