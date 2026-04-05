@@ -2,6 +2,7 @@
 export {
     defineCredentials,
     requireCredential,
+    optionalCredential,
     CredentialMissingError,
 } from './credentials.js';
 export type {

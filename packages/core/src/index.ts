@@ -394,6 +394,7 @@ export type {
 export {
     defineCredentials,
     requireCredential,
+    optionalCredential,
     CredentialMissingError,
 } from './credentials/index.js';
 /** @category Credentials */

@@ -325,3 +325,26 @@ export function requireCredential(key: string, hint?: string): string {
 
     return value;
 }
+
+/**
+ * Read an optional credential at runtime.
+ *
+ * Unlike `requireCredential()`, this does NOT throw when the credential
+ * is absent or empty — it returns `undefined` instead. Use this for
+ * non-mandatory credentials that enhance functionality when present.
+ *
+ * @param key - The credential key as declared in `defineCredentials()`.
+ * @returns The credential value, or `undefined` if absent/empty.
+ *
+ * @example
+ * ```ts
+ * const appToken = optionalCredential('BEAGLE_APP_TOKEN');
+ * if (appToken) { headers['X-App-Token'] = appToken; }
+ * ```
+ */
+export function optionalCredential(key: string): string | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const secrets = (globalThis as any).__vinkius_secrets as Record<string, unknown> | undefined;
+    const value = secrets?.[key];
+    return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
