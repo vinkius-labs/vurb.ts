@@ -510,6 +510,49 @@ export class FluentToolBuilder<
         return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, (I extends 'string' ? string : I extends 'number' ? number : boolean)[]>>, TCtx>;
     }
 
+    // ── JSON Object Parameters ─────────────────────────────
+
+    /**
+     * Add a required JSON object parameter.
+     *
+     * Accepts an arbitrary key–value object. Useful for tools that
+     * receive structured payloads, configuration maps, or filter sets.
+     *
+     * @param name - Parameter name
+     * @param description - Human-readable description for the LLM
+     * @returns Builder with narrowed `TInput` type
+     *
+     * @example
+     * ```typescript
+     * f.action('reports.generate')
+     *     .withJson('payload', 'Report configuration (dates, metrics, grouping)')
+     *     .handle(async (input) => { ... });
+     * // input.payload: Record<string, unknown> ✅
+     * ```
+     */
+    withJson<K extends string>(
+        name: K,
+        description?: string,
+    ): FluentToolBuilder<TContext, TInput & Record<K, Record<string, unknown>>, TCtx> {
+        this._addParam(name, withDesc(z.record(z.unknown()), description));
+        return this as unknown as FluentToolBuilder<TContext, TInput & Record<K, Record<string, unknown>>, TCtx>;
+    }
+
+    /**
+     * Add an optional JSON object parameter.
+     *
+     * @param name - Parameter name
+     * @param description - Human-readable description for the LLM
+     * @returns Builder with narrowed `TInput` type
+     */
+    withOptionalJson<K extends string>(
+        name: K,
+        description?: string,
+    ): FluentToolBuilder<TContext, TInput & Partial<Record<K, Record<string, unknown>>>, TCtx> {
+        this._addParam(name, withDesc(z.record(z.unknown()), description).optional());
+        return this as unknown as FluentToolBuilder<TContext, TInput & Partial<Record<K, Record<string, unknown>>>, TCtx>;
+    }
+
     // ── Bulk Enum & Array Declaration ─────────────────────
 
     /**

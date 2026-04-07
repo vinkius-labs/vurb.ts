@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.15.0] - 2026-04-07
+
+### Added
+
+#### `@vurb/core` — JSON Object Parameters for FluentToolBuilder
+
+Two new fluent parameter methods for tools that accept arbitrary structured JSON payloads, configuration maps, or filter sets — without forcing callers to serialize objects as strings.
+
+- **`.withJson(name, description?)`** — Adds a required JSON object parameter (`Record<string, unknown>`) using `z.record(z.unknown())`. Produces a proper `object` type in the MCP `inputSchema`, allowing LLMs to pass structured key–value payloads natively.
+- **`.withOptionalJson(name, description?)`** — Same as above, but optional (`.optional()`).
+
+Both methods follow the same fluent type-narrowing pattern as all existing `with*()` methods — `input` is fully typed inside `.handle()`.
+
+### Example
+
+```typescript
+f.action('reports.generate')
+    .withString('report_id', 'Report identifier')
+    .withJson('payload', 'Report configuration (dates, metrics, grouping)')
+    .withOptionalJson('filters', 'Optional filter overrides')
+    .handle(async (input) => {
+        // input.report_id: string ✅
+        // input.payload:   Record<string, unknown> ✅
+        // input.filters?:  Record<string, unknown> | undefined ✅
+    });
+```
+
+### Test Suite
+
+- **4 new tests** in `FluentApi.test.ts`:
+  - `.withJson()` required — accepts an object and returns data correctly
+  - `.withOptionalJson()` — works with and without the parameter
+  - `.withJson()` rejects non-object input (string) at runtime
+  - `.withJson()` chains with other `with*()` methods without issues
+
 ## [3.14.8] - 2026-03-31
 
 ### Fixed

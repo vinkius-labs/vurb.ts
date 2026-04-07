@@ -263,6 +263,77 @@ describe('with*() Parameter Declaration', () => {
         expect(result.content[0]?.text).toContain('a,b,c');
     });
 
+    it('.withJson() should add a required JSON object parameter', async () => {
+        const f = initVurb<TestContext>();
+
+        const tool = f.action('params.json')
+            .withJson('payload', 'Configuration object')
+            .handle(async (input) => success(JSON.stringify(input.payload)));
+
+        const result = await tool.execute(testCtx, {
+            action: 'json',
+            payload: { start: '2025-01-01', metrics: ['clicks', 'views'] },
+        });
+        expect(result.content[0]?.text).toContain('2025-01-01');
+        expect(result.content[0]?.text).toContain('clicks');
+    });
+
+    it('.withOptionalJson() should add an optional JSON object parameter', async () => {
+        const f = initVurb<TestContext>();
+
+        const tool = f.action('params.optjson')
+            .withOptionalJson('filters', 'Optional filter set')
+            .handle(async (input) => success(input.filters ? JSON.stringify(input.filters) : 'no-filters'));
+
+        // Without the optional param
+        const result = await tool.execute(testCtx, { action: 'optjson' });
+        expect(result.content[0]?.text).toContain('no-filters');
+
+        // With the optional param
+        const result2 = await tool.execute(testCtx, {
+            action: 'optjson',
+            filters: { status: 'active' },
+        });
+        expect(result2.content[0]?.text).toContain('active');
+    });
+
+    it('.withJson() should reject non-object input at runtime', async () => {
+        const f = initVurb<TestContext>();
+
+        const tool = f.action('params.jsonval')
+            .withJson('data', 'JSON payload')
+            .handle(async (input) => success(input.data));
+
+        // String instead of object should fail validation
+        const result = await tool.execute(testCtx, {
+            action: 'jsonval',
+            data: 'not-an-object',
+        });
+        expect(result.isError).toBe(true);
+    });
+
+    it('.withJson() should work chained with other with*() methods', async () => {
+        const f = initVurb<TestContext>();
+
+        const tool = f.action('params.jsonchain')
+            .withString('id', 'Entity ID')
+            .withJson('config', 'Configuration')
+            .withOptionalJson('metadata', 'Extra metadata')
+            .handle(async (input) => success({
+                id: input.id,
+                configKeys: Object.keys(input.config),
+                hasMeta: !!input.metadata,
+            }));
+
+        const result = await tool.execute(testCtx, {
+            action: 'jsonchain',
+            id: 'e-1',
+            config: { theme: 'dark', lang: 'en' },
+        });
+        expect(result.content[0]?.text).toContain('e-1');
+        expect(result.content[0]?.text).toContain('theme');
+    });
+
     it('chained with*() should accumulate all parameters', async () => {
         const f = initVurb<TestContext>();
 
