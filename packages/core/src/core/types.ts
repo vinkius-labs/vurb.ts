@@ -85,6 +85,13 @@ export interface ToolBuilder<TContext = void> {
     /** Check if `_select` reflection is enabled for context window optimization. */
     getSelectEnabled?(): boolean;
 
+    // ── Merge & Cache Management ───────────────────────────
+
+    /** Merge actions from another builder with the same namespace. Used by ToolRegistry for multi-file auto-merge. */
+    mergeActions?(actions: readonly InternalAction<TContext>[]): void;
+    /** Invalidate build-time caches, forcing recompilation on the next `buildToolDefinition()` call. */
+    invalidateCache?(): void;
+
     // ── State Sync Hints (Fluent API) ──────────────────────
 
     /** Get per-action state sync hints declared via fluent `.invalidates()` / `.cached()`. */

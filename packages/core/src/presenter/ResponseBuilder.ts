@@ -29,7 +29,7 @@
  *
  * @module
  */
-import { type ToolResponse } from '../core/response.js';
+import { type ToolResponse, TOOL_RESPONSE_BRAND } from '../core/response.js';
 import { type UiBlock } from './ui.js';
 import { MVA_META_SYMBOL } from '../testing/MvaMetaSymbol.js';
 import { type StringifyFn } from '../core/serialization/JsonSerializer.js';
@@ -362,6 +362,13 @@ export class ResponseBuilder {
         }
 
         const response: ToolResponse = { content };
+
+        // Stamp the brand symbol so PostProcessor and BuildPipeline
+        // recognize this as a framework-produced ToolResponse.
+        Object.defineProperty(response, TOOL_RESPONSE_BRAND, {
+            value: true,
+            enumerable: false,
+        });
 
         // ── MVA Meta Backdoor (Testing) ──────────────────
         // Attach structured MVA layers via Symbol — invisible to

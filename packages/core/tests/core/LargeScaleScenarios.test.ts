@@ -21,7 +21,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { z } from 'zod';
 import { GroupedToolBuilder } from '../../src/core/builder/GroupedToolBuilder.js';
 import { ToolRegistry } from '../../src/core/registry/ToolRegistry.js';
-import { success } from '../../src/core/response.js';
+import { success, error } from '../../src/core/response.js';
 
 // ============================================================================
 // Helpers — Factory functions to generate realistic domain builders
@@ -1018,7 +1018,7 @@ describe('Enterprise Chaos — Middleware Chains Under Pressure', () => {
         const builder = new GroupedToolBuilder<{ role: string }>('admin_only')
             .use(async (ctx, _args, next) => {
                 if (ctx.role !== 'admin') {
-                    return { isError: true as const, content: [{ type: 'text' as const, text: 'FORBIDDEN: admin role required' }] };
+                    return error('FORBIDDEN: admin role required');
                 }
                 return next();
             })
@@ -1079,10 +1079,7 @@ describe('Enterprise Chaos — Multi-Tenant Context', () => {
             .use(async (ctx, _args, next) => {
                 // Free plan can only list, not create
                 if (ctx.plan === 'free' && _args.action !== 'list') {
-                    return {
-                        isError: true as const,
-                        content: [{ type: 'text' as const, text: `UPGRADE_REQUIRED: ${_args.action} is not available on free plan` }],
-                    };
+                    return error(`UPGRADE_REQUIRED: ${_args.action} is not available on free plan`);
                 }
                 return next();
             })

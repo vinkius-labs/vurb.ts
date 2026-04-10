@@ -104,14 +104,13 @@ export class ToolRegistry<TContext = void> {
         if (existing) {
             // Same namespace — merge actions from the incoming builder
             // into the existing one (e.g. multiple f.query('compliance.xxx') files).
-            const mergeable = existing as unknown as { mergeActions: (a: unknown[]) => void; _cachedTool: unknown; _frozen: boolean };
-            const incoming = builder as unknown as { getActions: () => unknown[] };
-            if (typeof mergeable.mergeActions === 'function' &&
-                typeof incoming.getActions === 'function') {
-                mergeable.mergeActions(incoming.getActions());
-                // Rebuild the tool definition to include the new actions
-                mergeable._cachedTool = null;
-                mergeable._frozen = false;
+            if (typeof existing.mergeActions === 'function' &&
+                typeof existing.invalidateCache === 'function' &&
+                typeof builder.getActions === 'function') {
+                existing.mergeActions(builder.getActions());
+                // Invalidate build caches so the next buildToolDefinition()
+                // recompiles with the newly merged actions.
+                existing.invalidateCache();
                 existing.buildToolDefinition();
                 return;
             }

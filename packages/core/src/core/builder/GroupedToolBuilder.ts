@@ -1224,6 +1224,26 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
         }
     }
 
+    /**
+     * Invalidate all build-time caches, forcing a full recompilation
+     * on the next {@link buildToolDefinition} call.
+     *
+     * Used by {@link ToolRegistry} after `mergeActions()` to ensure
+     * the newly merged actions are included in the compiled tool
+     * definition, execution context, and middleware chains.
+     *
+     * Encapsulates the cache reset logic so that callers don't need
+     * to reach into private fields via duck-type mutation — which is
+     * fragile and breaks silently on field renames.
+     *
+     * @internal
+     */
+    invalidateCache(): void {
+        delete this._cachedTool;
+        delete this._executionContext;
+        this._frozen = false;
+    }
+
     // ── AST Reflection (Exposition Compiler) ─────────────
 
     /** Get the discriminator field name (e.g. `"action"`). Used by the Exposition Compiler. */

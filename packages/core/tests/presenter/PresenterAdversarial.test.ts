@@ -19,6 +19,7 @@ import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { createPresenter, ui, response } from '../../src/presenter/index.js';
 import { postProcessResult, isToolResponse } from '../../src/presenter/PostProcessor.js';
+import { success } from '../../src/core/response.js';
 import { PresenterValidationError } from '../../src/presenter/PresenterValidationError.js';
 
 // =====================================================================
@@ -524,8 +525,12 @@ describe('ResponseBuilder adversarial', () => {
 // =====================================================================
 
 describe('isToolResponse adversarial', () => {
-    it('should return true for object with content=[] (empty array)', () => {
-        expect(isToolResponse({ content: [] })).toBe(true);
+    it('should return true for branded ToolResponse via success()', () => {
+        expect(isToolResponse(success('ok'))).toBe(true);
+    });
+
+    it('should return false for manually constructed empty content array', () => {
+        expect(isToolResponse({ content: [] })).toBe(false);
     });
 
     it('should return false for object with content as typed array', () => {
@@ -537,11 +542,12 @@ describe('isToolResponse adversarial', () => {
         expect(isToolResponse(new Fake())).toBe(false);
     });
 
-    it('should return true for object with extra properties + content array', () => {
+    it('should return false for manually constructed object with extra properties', () => {
+        // Without brand, even perfectly shaped objects are rejected
         expect(isToolResponse({
             content: [{ type: 'text', text: 'x' }],
             isError: true,
             foo: 'bar',
-        })).toBe(true);
+        })).toBe(false);
     });
 });

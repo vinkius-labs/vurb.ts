@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.15.1] - 2026-04-10
+
+### Fixed
+
+#### `@vurb/core` — Unified Brand-Based `ToolResponse` Detection
+
+Three fixes eliminating latent architectural fragilities discovered during a deep audit of the core framework.
+
+- **`PostProcessor.isToolResponse()` — shape-based heuristic replaced with brand-based detection** — The previous implementation used shape-based duck-typing (`typeof value === 'object' && Array.isArray(value.content)`) to determine whether a handler return value was a framework `ToolResponse`. This was vulnerable to false positives: domain objects that coincidentally matched the `ToolResponse` shape (e.g., CMS page models with a `content` array) would bypass the MVA Presenter pipeline entirely, causing silent data loss. Now uses `TOOL_RESPONSE_BRAND in value` — the same symbol already stamped by all framework response helpers (`success()`, `error()`, `toolError()`, `toonSuccess()`, `handoff()`) and already used by `BuildPipeline.ts`. This unifies detection across the entire framework.
+
+- **`ResponseBuilder.build()` — missing `TOOL_RESPONSE_BRAND` stamp** — `ResponseBuilder.build()` produced `ToolResponse` objects without stamping the `TOOL_RESPONSE_BRAND` symbol. When a handler returned `response('data').uiBlock('mermaid', '...').build()`, the `BuildPipeline.wrappedHandler` did not recognize it as a framework response and re-wrapped it in `success()`, serializing the entire multi-block response (UI, rules, hints) as raw JSON — destroying the MVA layer structure. Now stamps the brand via `Object.defineProperty(response, TOOL_RESPONSE_BRAND, { value: true, enumerable: false })`, consistent with all other response helpers.
+
+- **`GroupedToolBuilder.invalidateCache()` — encapsulated cache reset** — `ToolRegistry.register()` used duck-type private field mutation (`mergeable._cachedTool = null; mergeable._frozen = false`) to invalidate build caches after merging actions from same-namespace builders. A field rename in `GroupedToolBuilder` would silently break this mechanism. Added a public `invalidateCache()` method to `GroupedToolBuilder` and the `ToolBuilder` interface. `ToolRegistry.register()` now calls `existing.invalidateCache()` via the interface contract, with no knowledge of internal field names.
+
+- **`TOOL_RESPONSE_BRAND` barrel export** — `TOOL_RESPONSE_BRAND` was not re-exported from `@vurb/core`'s public barrel, preventing satellite packages from stamping responses that need brand-based detection. Importing the symbol resolved to `undefined`, causing brand checks to silently fail. Now exported from `core/index.ts` → `index.ts`.
+
+#### `@vurb/oauth` — Branded Response Alignment
+
+- **`createAuthTool` local helpers `ok()`/`fail()`** — The `ok()` and `fail()` helpers in `createAuthTool` constructed `ToolResponse` objects manually (`{ content: [...] }`) without the `TOOL_RESPONSE_BRAND` stamp. After the brand-based detection migration in `@vurb/core`, these unbranded responses were incorrectly re-wrapped by `PostProcessor` as raw data via `success()`, serializing the entire `ToolResponse` object (including `isError`, `content`) as nested JSON — destroying the response structure. Now `ok()` delegates to `success()` and `fail()` stamps the brand explicitly.
+
+### Changed
+
+- **`ToolBuilder` interface** — Added optional `mergeActions(actions: unknown[]): void` and `invalidateCache(): void` methods to formalize the contract for registry-level tool merging and cache management.
+
 ## [3.15.0] - 2026-04-07
 
 ### Added

@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { postProcessResult, isToolResponse } from '../../src/presenter/PostProcessor.js';
+import { success, error } from '../../src/core/response.js';
 import { response } from '../../src/presenter/ResponseBuilder.js';
 import { createPresenter, ui } from '../../src/presenter/index.js';
 
@@ -20,12 +21,20 @@ import { createPresenter, ui } from '../../src/presenter/index.js';
 // =====================================================================
 
 describe('isToolResponse()', () => {
-    it('should detect valid ToolResponse with content array', () => {
-        expect(isToolResponse({ content: [{ type: 'text', text: 'hi' }] })).toBe(true);
+    it('should detect branded ToolResponse via success()', () => {
+        expect(isToolResponse(success('hi'))).toBe(true);
     });
 
-    it('should detect ToolResponse with empty content array', () => {
-        expect(isToolResponse({ content: [] })).toBe(true);
+    it('should detect branded ToolResponse via error()', () => {
+        expect(isToolResponse(error('fail'))).toBe(true);
+    });
+
+    it('should reject manually constructed ToolResponse-shaped object', () => {
+        expect(isToolResponse({ content: [{ type: 'text', text: 'hi' }] })).toBe(false);
+    });
+
+    it('should reject manually constructed empty content array', () => {
+        expect(isToolResponse({ content: [] })).toBe(false);
     });
 
     it('should reject null', () => {
@@ -59,21 +68,21 @@ describe('isToolResponse()', () => {
 // =====================================================================
 
 describe('postProcessResult() — Priority 1: ToolResponse', () => {
-    it('should pass through a valid ToolResponse unchanged', () => {
-        const toolResponse = { content: [{ type: 'text' as const, text: 'hello' }] };
+    it('should pass through a branded ToolResponse unchanged', () => {
+        const toolResponse = success('hello');
         const result = postProcessResult(toolResponse, undefined);
         expect(result).toBe(toolResponse); // Exact same reference
     });
 
     it('should pass through even if a Presenter is provided', () => {
         const presenter = createPresenter('Ignored').systemRules(['Rule']);
-        const toolResponse = { content: [{ type: 'text' as const, text: 'data' }] };
+        const toolResponse = success('data');
         const result = postProcessResult(toolResponse, presenter);
         expect(result).toBe(toolResponse); // ToolResponse takes priority
     });
 
-    it('should pass through ToolResponse with isError flag', () => {
-        const errorResponse = { content: [{ type: 'text' as const, text: 'error!' }], isError: true };
+    it('should pass through ToolResponse with isError via error()', () => {
+        const errorResponse = error('error!');
         const result = postProcessResult(errorResponse, undefined);
         expect(result).toBe(errorResponse);
     });

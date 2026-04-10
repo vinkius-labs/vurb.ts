@@ -7,7 +7,7 @@
  */
 
 // ── Cross-cutting ────────────────────────────────────────
-export { success, error, required, toonSuccess, toolError, handoff, isHandoffResponse } from './response.js';
+export { success, error, required, toonSuccess, toolError, handoff, isHandoffResponse, TOOL_RESPONSE_BRAND } from './response.js';
 export type { ToolResponse, ToolErrorOptions, ErrorCode, ErrorSeverity, HandoffPayload, HandoffResponse } from './response.js';
 export { succeed, fail } from './result.js';
 export type { Result, Success, Failure } from './result.js';

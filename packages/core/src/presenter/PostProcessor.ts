@@ -8,7 +8,7 @@
  * @internal
  * @module
  */
-import { type ToolResponse, success as successResponse } from '../core/response.js';
+import { type ToolResponse, success as successResponse, TOOL_RESPONSE_BRAND } from '../core/response.js';
 import { isResponseBuilder, type ResponseBuilder } from './ResponseBuilder.js';
 import { type Presenter } from './Presenter.js';
 import { type TelemetrySink } from '../observability/TelemetryEvent.js';
@@ -100,25 +100,23 @@ export function postProcessResult(
 /**
  * Check if a value is a valid MCP ToolResponse.
  *
- * A ToolResponse must have a `content` array — the canonical shape
- * from `response.ts`.
+ * Uses the `TOOL_RESPONSE_BRAND` symbol stamped by all framework
+ * response helpers (`success()`, `error()`, `toolError()`, etc.).
+ *
+ * The previous shape-based heuristic (`content` array + `type` field)
+ * was removed because domain objects that coincidentally match the
+ * ToolResponse shape would be detected as ToolResponses and passed
+ * through, bypassing Presenter processing — a silent data loss bug.
+ *
+ * This aligns with the brand-based detection already established in
+ * `BuildPipeline.ts` (FluentToolBuilder's `wrappedHandler`).
  *
  * @internal
  */
 export function isToolResponse(value: unknown): value is ToolResponse {
-    if (
-        typeof value !== 'object' ||
-        value === null ||
-        !('content' in value) ||
-        !Array.isArray((value as { content: unknown }).content)
-    ) {
-        return false;
-    }
-
-    const content = (value as { content: unknown[] }).content;
-    // Empty content array is valid (e.g. fire-and-forget)
-    if (content.length === 0) return true;
-    // First element must have a string `type` property
-    const first = content[0] as Record<string, unknown> | undefined;
-    return first != null && typeof first['type'] === 'string';
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        TOOL_RESPONSE_BRAND in value
+    );
 }

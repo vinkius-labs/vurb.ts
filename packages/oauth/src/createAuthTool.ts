@@ -21,7 +21,7 @@
  * ```
  */
 
-import { createTool, success, error as vurbError, type ToolResponse } from '@vurb/core';
+import { createTool, success, TOOL_RESPONSE_BRAND, type ToolResponse } from '@vurb/core';
 import { DeviceAuthenticator } from './DeviceAuthenticator.js';
 import type { DeviceCodeResponse, TokenResponse } from './DeviceAuthenticator.js';
 import { TokenManager } from './TokenManager.js';
@@ -86,11 +86,13 @@ export interface AuthContext {
 // ============================================================================
 
 function ok(data: Record<string, unknown>): ToolResponse {
-    return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    return success(JSON.stringify(data, null, 2));
 }
 
 function fail(data: Record<string, unknown>): ToolResponse {
-    return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }], isError: true };
+    const resp: ToolResponse = { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }], isError: true };
+    Object.defineProperty(resp, TOOL_RESPONSE_BRAND, { value: true });
+    return resp;
 }
 
 // ============================================================================

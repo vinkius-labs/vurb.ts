@@ -4,13 +4,11 @@ import { GroupedToolBuilder } from '../../src/core/builder/GroupedToolBuilder.js
 import { generateToonDescription } from '../../src/core/schema/ToonDescriptionGenerator.js';
 import { generateDescription } from '../../src/core/schema/DescriptionGenerator.js';
 import type { InternalAction } from '../../src/core/types.js';
-import type { ToolResponse } from '../../src/core/response.js';
+import { type ToolResponse, success } from '../../src/core/response.js';
 
 // ── Helpers ──────────────────────────────────────────────
 
-const noopHandler = async (): Promise<ToolResponse> => ({
-    content: [{ type: 'text' as const, text: 'ok' }],
-});
+const noopHandler = async (): Promise<ToolResponse> => success('ok');
 
 function makeAction(overrides: Partial<InternalAction<void>> = {}): InternalAction<void> {
     return {
@@ -317,9 +315,7 @@ describe('GroupedToolBuilder .toonDescription()', () => {
                 name: 'echo',
                 description: 'Echo back',
                 schema: z.object({ message: z.string() }),
-                handler: async (_ctx, args) => ({
-                    content: [{ type: 'text' as const, text: `Echo: ${args.message}` }],
-                }),
+                handler: async (_ctx, args) => success(`Echo: ${args.message}`),
             });
 
         builder.buildToolDefinition();
