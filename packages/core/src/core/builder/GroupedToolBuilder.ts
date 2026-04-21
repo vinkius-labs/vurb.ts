@@ -183,6 +183,7 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
     private readonly _stateSyncHints = new Map<string, StateSyncHint>();
     private _fsmStates?: string[];
     private _fsmTransition?: string;
+    private _interactive = false;
 
     // Cached build result
     private _cachedTool?: McpTool;
@@ -601,6 +602,30 @@ export class GroupedToolBuilder<TContext = void, TCommon extends Record<string, 
         };
         if (this._fsmTransition) binding.transition = this._fsmTransition;
         return binding;
+    }
+
+    // ── Elicitation (Human-in-the-Loop) ──────────────────
+
+    /**
+     * Mark this tool as interactive (supports MCP Elicitation).
+     *
+     * When enabled, the standalone `ask()` function can be used inside
+     * the handler to pause execution and request user input.
+     *
+     * @returns `this` for chaining
+     */
+    interactive(): this {
+        this._assertNotFrozen();
+        this._interactive = true;
+        return this;
+    }
+
+    /**
+     * Whether this tool has elicitation enabled.
+     * @internal
+     */
+    isInteractive(): boolean {
+        return this._interactive;
     }
 
     /**

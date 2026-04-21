@@ -145,6 +145,7 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'Agent Skills', link: '/skills' },
+          { text: 'Elicitation', link: '/elicitation' },
           { text: 'Prompts & Resources', link: '/prompts' },
           { text: 'State Sync', link: '/state-sync' },
           { text: 'DLP & Redaction', link: '/dlp-redaction' },

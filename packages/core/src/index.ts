@@ -434,3 +434,25 @@ export type { RateLimitConfig, RateLimitStore, RateLimitEntry, RateLimitMiddlewa
 export type {
     SecurityFirewallEvent, SecurityAuditEvent, SecurityRateLimitEvent,
 } from './observability/TelemetryEvent.js';
+
+// ── Elicitation (Human-in-the-Loop) ─────────────────────
+/** @category Elicitation */
+export { ask } from './core/elicitation/index.js';
+/** @category Elicitation */
+export type { AskFunction } from './core/elicitation/index.js';
+/** @category Elicitation */
+export {
+    AskStringField,
+    AskNumberField,
+    AskBooleanField,
+    AskEnumField,
+    ElicitationUnsupportedError,
+    ElicitationDeclinedError,
+} from './core/elicitation/index.js';
+/** @category Elicitation */
+export type {
+    AskField,
+    AskResponse,
+    InferAskFields,
+    ElicitationAction,
+} from './core/elicitation/index.js';

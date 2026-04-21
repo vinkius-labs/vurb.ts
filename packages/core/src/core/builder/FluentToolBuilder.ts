@@ -123,6 +123,7 @@ export class FluentToolBuilder<
     /** @internal */ _handlerSet = false;
     /** @internal */ _fsmStates?: string[];
     /** @internal */ _fsmTransition?: string;
+    /** @internal */ _interactive = false;
 
     /**
      * @param name - Tool name in `domain.action` format (e.g. `'users.list'`)
@@ -962,6 +963,41 @@ export class FluentToolBuilder<
         return this;
     }
 
+    // ── Elicitation (Human-in-the-Loop) ──────────────────
+
+    /**
+     * Enable human-in-the-loop interaction for this tool.
+     *
+     * When enabled, the handler can use the standalone `ask()` function
+     * to pause execution and request user input via a client-rendered form,
+     * or `ask.redirect()` to send the user to an external URL.
+     *
+     * The transport context is bound via `AsyncLocalStorage` — the
+     * developer never needs to pass or receive any transport objects.
+     *
+     * @returns `this` for chaining (no type augmentation needed — `ask()` is standalone)
+     *
+     * @example
+     * ```typescript
+     * import { ask } from '@vurb/core';
+     *
+     * const deploy = f.mutation('infra.deploy')
+     *     .withString('app_id', 'Application ID')
+     *     .interactive()
+     *     .handle(async (input) => {
+     *         const prefs = await ask('Confirm deployment:', {
+     *             region: ask.enum(['us-east-1', 'eu-west-1'] as const, 'Region'),
+     *         });
+     *         if (prefs.declined) return f.error('CANCELLED', 'Aborted');
+     *         return { region: prefs.data.region };
+     *     });
+     * ```
+     */
+    interactive(): FluentToolBuilder<TContext, TInput, TCtx> {
+        this._interactive = true;
+        return this;
+    }
+
     // ── FSM State Gate (Temporal Anti-Hallucination) ─────
 
     /**
@@ -1134,6 +1170,7 @@ export class FluentToolBuilder<
             sandboxConfig: this._sandboxConfig,
             fsmStates: this._fsmStates,
             fsmTransition: this._fsmTransition,
+            interactive: this._interactive,
             handler: handler as (input: Record<string, unknown>, ctx: TCtx) => Promise<ToolResponse | unknown>,
         });
     }

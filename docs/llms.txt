@@ -48,6 +48,7 @@ The Presenter replaces the human-centric View with an agent-centric perception l
 - **TOON**: Token-Oriented Object Notation for compact descriptions/responses
 - **State Sync**: RFC 7234-inspired cache-control signals to prevent temporal blindness
 - **FSM State Gate**: Temporal anti-hallucination engine — physically removes tools from `tools/list` based on XState finite state machine state. `.bindState(states, event)` on FluentToolBuilder. Transitions only on success. Ungated tools always visible. Serverless via `fsmStore`.
+- **Elicitation**: Human-in-the-loop interaction for agentic workflows. `ask()` callable namespace pauses the handler, sends a form (or URL redirect) to the MCP client, and resumes with typed user input. Uses `AsyncLocalStorage` — zero context injection, zero overhead when unused. `.interactive()` on FluentToolBuilder/FluentRouter to enable.
 - **Tool Exposition**: Compile-time topology compiler — choose flat (one tool per action) or grouped (one tool per builder with discriminator enum) at attach time. Same handlers, different wire format.
 - **Select Reflection**: Opt-in `_select` parameter for context window optimization — AI agents request only the response fields they need. Uses Late Guillotine pattern (filter wire data AFTER UI/rules generation) to preserve UI integrity. Shallow top-level filtering only.
 - **Dynamic Manifest**: RBAC-filtered server capabilities exposed as a native MCP Resource
@@ -405,6 +406,7 @@ All bulk methods preserve full TypeScript type-chaining — `input` is correctly
 | `.concurrency(config)` | Runtime guard: semaphore + queue |
 | `.egress(bytes)` | Runtime guard: max payload size |
 | `.bindState(states, event?)` | FSM State Gate: tool visibility by FSM state + auto-transition |
+| `.interactive()` | Enable MCP Elicitation: allows `ask()` calls inside the handler for human-in-the-loop input |
 | `.fromModel(Model, profile)` | Import input parameters from a Model's fillable profile — zero manual `.with*()` calls |
 | `.handle(handler)` | **Terminal** — sets handler, builds GroupedToolBuilder |
 | `.proxy(endpoint, opts?)` | **Terminal** — auto-generates handler that proxies to `ctx.client.get/post/put/delete(endpoint)`. Infers HTTP method from semantic verb, passes input as query params (GET) or body (POST/PUT), auto-unwraps `{ data }` envelopes, resolves `:param` path placeholders. Eliminates both client wrapper methods and handler boilerplate. |
@@ -934,6 +936,96 @@ handler: async function* (ctx, args) {
 }
 // Wire format: { method: 'notifications/progress', params: { progressToken, progress: 25, total: 100, message: 'Loading data...' } }
 ```
+
+## Elicitation — Human-in-the-Loop
+
+MCP Elicitation allows tool handlers to pause execution, request user input via the MCP client, and resume with the user's response. Vurb.ts wraps this in a zero-boilerplate DSL: one import, one call, full type inference.
+
+### Enabling Elicitation
+
+Mark tools as interactive with `.interactive()` on `FluentToolBuilder` or `FluentRouter`:
+
+```typescript
+import { initVurb, ask } from '@vurb/core';
+
+const f = initVurb<AppContext>();
+
+// Single tool
+const deploy = f.mutation('infra.deploy')
+    .withString('app_id', 'Application ID')
+    .interactive()  // ← enables elicitation
+    .handle(async (input, ctx) => {
+        const prefs = await ask('Confirm deployment settings:', {
+            region:  ask.enum(['us-east-1', 'eu-west-1'] as const, 'Region'),
+            confirm: ask.boolean('I confirm this deployment'),
+        });
+        if (prefs.declined) return f.error('CANCELLED', 'Deployment aborted.');
+        return { deployed: true, region: prefs.data.region };
+    });
+
+// All tools in a router
+const admin = f.router('admin').interactive();
+```
+
+### The `ask` Callable Namespace
+
+`ask` is both a function and a namespace with field factories:
+
+```typescript
+import { ask } from '@vurb/core';
+
+// Form mode — typed fields
+const result = await ask('Choose preferences:', {
+    name:   ask.string('Full name'),
+    plan:   ask.enum(['free', 'pro'] as const, 'Plan'),
+    age:    ask.number('Age').min(18).max(120),
+    notify: ask.boolean('Notifications').default(true),
+});
+// result.data is { name: string; plan: 'free' | 'pro'; age: number; notify: boolean }
+
+// URL mode — for OAuth / sensitive data
+await ask.redirect('Authenticate:', 'https://github.com/login/oauth');
+```
+
+### Field Types
+
+| Factory | Type | Chaining |
+|---|---|---|
+| `ask.string(desc?)` | `string` | `.default()`, `.describe()` |
+| `ask.number(desc?)` | `number` | `.default()`, `.describe()`, `.min()`, `.max()` |
+| `ask.boolean(desc?)` | `boolean` | `.default()`, `.describe()` |
+| `ask.enum(values, desc?)` | literal union | `.default()`, `.describe()` |
+
+### AskResponse
+
+```typescript
+result.accepted   // true when user submitted
+result.declined   // true when user explicitly refused
+result.cancelled  // true when user dismissed
+result.data       // T — throws ElicitationDeclinedError if not accepted
+```
+
+Always check `.accepted`, `.declined`, or `.cancelled` before accessing `.data`. Accessing `.data` on a non-accepted response throws `ElicitationDeclinedError` — fail-fast prevents silent `undefined` propagation.
+
+### Multi-Step Wizards
+
+```typescript
+.handle(async () => {
+    const s1 = await ask('Step 1:', { name: ask.string() });
+    if (s1.declined) return f.error('CANCELLED', 'Aborted.');
+
+    const s2 = await ask(`Hello ${s1.data.name}!`, { plan: ask.enum(['free', 'pro'] as const) });
+    if (s2.declined) return f.error('CANCELLED', 'Aborted.');
+
+    return { name: s1.data.name, plan: s2.data.plan };
+})
+```
+
+### Architecture
+
+`ask()` uses `AsyncLocalStorage` to read the MCP transport — bound once per request in `ServerAttachment`. No context injection (`ctx.ask()`), no overhead when unused, transport-agnostic (stdio, SSE, Streamable HTTP).
+
+The MCP client must declare `{ capabilities: { elicitation: {} } }` during initialization. The framework gracefully degrades: if `sendRequest` is unavailable, `ask()` throws `ElicitationUnsupportedError` with an actionable message.
 
 ## Prompt Engine — Powered by the Presenter
 

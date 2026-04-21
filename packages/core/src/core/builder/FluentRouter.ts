@@ -46,6 +46,7 @@ export class FluentRouter<TContext> {
     /** @internal */ _description?: string;
     /** @internal */ _middlewares: MiddlewareFn<TContext>[] = [];
     /** @internal */ _tags: string[] = [];
+    /** @internal */ _interactive = false;
 
     constructor(prefix: string) {
         this._prefix = prefix;
@@ -88,6 +89,26 @@ export class FluentRouter<TContext> {
      */
     tags(...tags: string[]): this {
         this._tags.push(...tags);
+        return this;
+    }
+
+    /**
+     * Enable human-in-the-loop interaction for all tools in this router.
+     *
+     * All child tools will inherit the `.interactive()` flag, meaning
+     * their handlers can use `ask()` and `ask.redirect()` directly.
+     *
+     * @returns `this` for chaining
+     *
+     * @example
+     * ```typescript
+     * const admin = f.router('admin')
+     *     .use(requireAdmin)
+     *     .interactive()   // ← all children can use ask()
+     * ```
+     */
+    interactive(): this {
+        this._interactive = true;
         return this;
     }
 
@@ -145,6 +166,11 @@ export class FluentRouter<TContext> {
         // Inherit router description as fallback
         if (this._description) {
             builder._description = this._description;
+        }
+
+        // Inherit interactive flag
+        if (this._interactive) {
+            builder._interactive = true;
         }
 
         return builder;

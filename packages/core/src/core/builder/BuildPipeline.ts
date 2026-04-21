@@ -49,6 +49,7 @@ export interface FluentBuildConfig<TContext, TCtx> {
     sandboxConfig: SandboxConfig | undefined;
     fsmStates: string[] | undefined;
     fsmTransition: string | undefined;
+    interactive: boolean;
     handler: (
         input: Record<string, unknown>,
         ctx: TCtx,
@@ -162,6 +163,11 @@ export function buildToolFromFluent<TContext, TCtx>(
     // Propagate FSM state gate
     if (config.fsmStates) {
         builder.bindState(config.fsmStates, config.fsmTransition);
+    }
+
+    // Propagate interactive flag (MCP Elicitation)
+    if (config.interactive) {
+        builder.interactive();
     }
 
     // Apply middleware

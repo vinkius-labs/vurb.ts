@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.16.0] - 2026-04-21
+
+### Added
+
+#### `@vurb/core` — MCP Elicitation: Human-in-the-Loop for Agentic Workflows
+
+A new first-class DSL that enables MCP tool handlers to pause execution, request user input via the MCP client, and resume with typed responses — zero boilerplate, full type inference.
+
+- **`ask()` callable namespace** — Single import, dual-mode API. Use as a function (`await ask('message', fields)`) for form-based elicitation or as a namespace (`ask.string()`, `ask.number()`, `ask.boolean()`, `ask.enum()`) for field construction. Produces fully typed `AskResponse<T>` with boolean guards (`.accepted`, `.declined`, `.cancelled`) and a fail-fast `.data` getter that throws `ElicitationDeclinedError` on non-accepted access — preventing silent `undefined` propagation.
+- **`ask.redirect(message, url)`** — URL-mode elicitation for OAuth flows and sensitive data collection. Sends the user to an external URL instead of rendering inline form fields.
+- **Field descriptor DSL** — Four typed field factories (`AskStringField`, `AskNumberField`, `AskBooleanField`, `AskEnumField<T>`) with fluent chaining: `.default()`, `.describe()`, `.min()`, `.max()`. Each field compiles to MCP-native JSON Schema via `.toDescriptor()` with full `anyOf` enum encoding.
+- **`.interactive()` on `FluentToolBuilder` and `FluentRouter`** — Opt-in capability flag that declares a tool (or all tools in a router) as eligible for elicitation. Propagated through `BuildPipeline` and `GroupedToolBuilder`. Router-level `.interactive()` is inherited by all child tool builders.
+- **Zero-overhead transport binding** — Uses Node.js `AsyncLocalStorage` to bind the MCP `sendRequest` capability per-request in `ServerAttachment`. No context injection (`ctx.ask()`), no handler signature changes, no overhead when `.interactive()` is not declared. The `ask()` function reads the transport from `AsyncLocalStorage` at call time.
+- **`ElicitationUnsupportedError`** — Thrown when `ask()` is called but the MCP client did not declare `{ capabilities: { elicitation: {} } }` during initialization. Actionable error message guides developers to check client configuration.
+- **Multi-step wizard support** — Sequential `await ask()` calls within a single handler create conversational flows. Each step can reference data from previous steps for dynamic prompts.
+- **Transport-agnostic** — Works identically across stdio, SSE, and Streamable HTTP transports. `AsyncLocalStorage` provides per-request isolation, ensuring concurrent HTTP requests never share elicitation state.
+
+#### Documentation
+
+- **`docs/elicitation.md`** — Full documentation page with quick start, architecture diagrams, DSL reference, multi-step wizard examples, URL mode, response handling, transport compatibility, testing guide, API reference, and best practices.
+- **`docs/llms.txt`** — Elicitation added to Core Concepts list and full reference section for LLM consumption.
+- **Sidebar** — Elicitation added to the Features section in VitePress navigation.
+
+### Test Suite
+
+- **72 new tests** across 4 test files:
+  - `ask-dsl.test.ts` — 24 tests: field descriptor compilation, JSON Schema output, chaining, enum `anyOf` encoding, form compilation with mixed field types
+  - `ask-response.test.ts` — 16 tests: boolean guards, fail-fast `.data` access, `ElicitationDeclinedError` on declined/cancelled, edge cases (empty content, null values)
+  - `ask-transport.test.ts` — 16 tests: `AsyncLocalStorage` isolation, concurrent request safety, `ElicitationUnsupportedError` when transport unavailable, `_elicitStore` injection
+  - `server-wiring.test.ts` — 16 tests: `ServerAttachment` integration, `.interactive()` flag propagation, pipeline execution with elicitation context, error handling format
+- Cumulative: **5213 tests passing** across the monorepo
+
 ## [3.15.3] - 2026-04-20
 
 ### Fixed

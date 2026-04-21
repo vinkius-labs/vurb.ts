@@ -42,6 +42,7 @@ import { type LoopbackContext } from '../prompt/types.js';
 import type { StateMachineGate, FsmStateStore, FsmSnapshot } from '../fsm/StateMachineGate.js';
 import type { TelemetrySink } from '../observability/TelemetryEvent.js';
 import { randomUUID } from 'node:crypto';
+import { _elicitStore, type ElicitSink } from '../core/elicitation/index.js';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -65,6 +66,12 @@ interface McpRequestExtra {
     _meta?: { progressToken?: string | number };
     /** Send a notification back to the client within the current request scope */
     sendNotification: (notification: unknown) => Promise<void>;
+    /**
+     * Send a request to the client within the current request scope.
+     * Used by MCP Elicitation (`elicitation/create`) for human-in-the-loop workflows.
+     * Only available when the MCP SDK version supports bidirectional requests.
+     */
+    sendRequest?: (request: { method: string; params: unknown }) => Promise<unknown>;
     /**
      * Abort signal from the MCP SDK protocol layer.
      *
@@ -654,6 +661,7 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
 
         const progressSink = createProgressSink(extra);
         const signal = extractSignal(extra);
+        const elicitSink = extractElicitSink(extra);
         const emit = hCtx.telemetry;
 
         // ── Telemetry: route event ──────────────────────────
@@ -721,26 +729,39 @@ function createToolCallHandler<TContext>(hCtx: HandlerContext<TContext>) {
         let result: ToolResponse;
         const t0 = Date.now();
 
+        // Core execution — optionally wrapped in elicitation context
+        // so ask() can resolve its transport via AsyncLocalStorage.
+        const executeLocal = async (): Promise<ToolResponse> => {
         try {
         if (hCtx.isFlat) {
             // Reuse exposition compiled above for telemetry (avoid double recompile)
             if (flatRoute) {
                 const enrichedArgs = { ...args, [flatRoute.discriminator]: flatRoute.actionKey };
-                result = await flatRoute.builder.execute(ctx, enrichedArgs, progressSink, signal);
-                result = decorateIfSync(hCtx.syncLayer, flatRoute, result);
+                let r = await flatRoute.builder.execute(ctx, enrichedArgs, progressSink, signal);
+                r = decorateIfSync(hCtx.syncLayer, flatRoute, r);
+                return r;
             } else {
-                result = await hCtx.registry.routeCall(ctx, name, args, progressSink, signal);
-                result = hCtx.syncLayer ? hCtx.syncLayer.decorateResult(name, result) : result;
+                let r = await hCtx.registry.routeCall(ctx, name, args, progressSink, signal);
+                r = hCtx.syncLayer ? hCtx.syncLayer.decorateResult(name, r) : r;
+                return r;
             }
         } else {
-            result = await hCtx.registry.routeCall(ctx, name, args, progressSink, signal);
-            result = hCtx.syncLayer ? hCtx.syncLayer.decorateResult(name, result) : result;
+            let r = await hCtx.registry.routeCall(ctx, name, args, progressSink, signal);
+            r = hCtx.syncLayer ? hCtx.syncLayer.decorateResult(name, r) : r;
+            return r;
         }
         } catch (err) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TelemetrySink accepts extensible event shapes
             emit?.({ type: 'error', tool: toolGroup, action, error: String(err), timestamp: Date.now() } as any);
             throw err;
         }
+        };
+
+        // Bind elicitation transport via AsyncLocalStorage.
+        // Zero overhead when elicitSink is undefined — no ALS context created.
+        result = elicitSink
+            ? await _elicitStore.run(elicitSink, executeLocal)
+            : await executeLocal();
 
         // ── Self-Healing: enrich validation errors with contract deltas ( fix) ──
         if (result.isError && hCtx.selfHealing) {
@@ -1366,6 +1387,27 @@ function createProgressSink(extra: unknown): ProgressSink | undefined {
 function extractSignal(extra: unknown): AbortSignal | undefined {
     if (!isMcpExtra(extra)) return undefined;
     return extra.signal;
+}
+
+// ── Elicitation Sink Extraction ────────────────────────
+
+/**
+ * Extract the elicitation transport function from the MCP SDK `extra` object.
+ *
+ * When the MCP SDK provides `sendRequest`, this returns a function that
+ * sends `elicitation/create` requests to the client for human-in-the-loop
+ * workflows. Bound to `AsyncLocalStorage` so `ask()` works as a standalone.
+ *
+ * Returns `undefined` when not available — zero overhead.
+ *
+ * @param extra - The MCP request handler's extra argument (duck-typed)
+ * @returns An ElicitSink or undefined
+ */
+function extractElicitSink(extra: unknown): ElicitSink | undefined {
+    if (!isMcpExtra(extra)) return undefined;
+    const sendRequest = extra.sendRequest;
+    if (typeof sendRequest !== 'function') return undefined;
+    return sendRequest as ElicitSink;
 }
 
 // ── State Sync Hint Collection ──────────────────────────────
