@@ -47,12 +47,12 @@
     "access": "public"
   },
   "dependencies": {
-    "@vurb/core": "^3.17.0"
+    "@vurb/core": "^3.17.3"
   },
   "peerDependencies": {
     "zod": "^3.25.1 || ^4.0.0"
   },
   "license": "Apache-2.0",
   "devDependencies": {},
-  "version": "3.17.2"
+  "version": "3.17.3"
 }

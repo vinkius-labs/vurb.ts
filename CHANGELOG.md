@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.17.3] - 2026-04-30
+
+### Fixed
+
+- **`@vurb/core` — Edge stub missing `AsyncLocalStorage` (V8 isolate boot crash)** — `edge-stub.ts` did not export `AsyncLocalStorage`, but `@vurb/core`'s own `ask.ts` executes `new AsyncLocalStorage()` at module load time (top-level). When esbuild compiled the server for edge deployment, `import { AsyncLocalStorage } from 'node:async_hooks'` was resolved to the edge-stub Proxy, which returned an arrow function (`(...args) => CRASH(prop)`) for the missing property. Arrow functions are not constructable in JavaScript — `new (arrow)()` throws `TypeError: is not a constructor`. Added `AsyncLocalStorage` as a Tier 1 structural stub (real class, synchronous stack-based store) alongside the existing `EventEmitter`, `Readable`, `Writable`, and `Server` stubs. The Proxy's `get` trap now finds `AsyncLocalStorage` via `prop in target` and returns the class directly, making `new AsyncLocalStorage()` succeed during bundle boot.
+
+### Changed
+
+- **All `@vurb/*` cross-dependencies updated to `^3.17.3`** — Ensures consistent resolution across the monorepo.
+
 ## [3.17.2] - 2026-04-23
 
 ### Added

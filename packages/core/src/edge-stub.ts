@@ -41,6 +41,27 @@ export class Socket extends EventEmitter {}
 export class IncomingMessage extends Readable {}
 export class ServerResponse extends Writable {}
 
+// AsyncLocalStorage — @vurb/core's ask.ts does `new AsyncLocalStorage()` at
+// module load time. Must be a real class (constructable), not a Proxy arrow fn.
+export class AsyncLocalStorage<T = unknown> {
+    private _store: T | undefined = undefined;
+    getStore(): T | undefined { return this._store; }
+    run<R>(store: T, fn: (...args: unknown[]) => R, ...args: unknown[]): R {
+        const prev = this._store;
+        this._store = store;
+        try { return fn(...args); }
+        finally { this._store = prev; }
+    }
+    exit<R>(fn: (...args: unknown[]) => R, ...args: unknown[]): R {
+        const prev = this._store;
+        this._store = undefined;
+        try { return fn(...args); }
+        finally { this._store = prev; }
+    }
+    disable(): void { this._store = undefined; }
+    enterWith(store: T): void { this._store = store; }
+}
+
 // ── Tier 2: Executable (fail-fast CRASH at runtime) ─────────────────────────
 
 const CRASH = (api: string): never => {
