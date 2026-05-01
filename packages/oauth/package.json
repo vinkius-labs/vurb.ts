@@ -47,9 +47,9 @@
     "access": "public"
   },
   "dependencies": {
-    "@vurb/core": "^3.19.1"
+    "@vurb/core": "^3.19.2"
   },
   "license": "Apache-2.0",
   "devDependencies": {},
-  "version": "3.19.1"
+  "version": "3.19.2"
 }

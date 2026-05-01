@@ -357,12 +357,13 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
         });
         const introspectCode = new TextDecoder().decode(introspectBuild.outputFiles![0]!.contents);
 
-        const { tmpdir } = await import('node:os');
-        const { join } = await import('node:path');
+        const { join, dirname } = await import('node:path');
         const { writeFileSync, unlinkSync } = await import('node:fs');
         const { pathToFileURL } = await import('node:url');
 
-        const tmpBundle = join(tmpdir(), `vurb-introspect-${Date.now()}.mjs`);
+        // Write adjacent to entrypoint (not tmpdir) — autoDiscover resolves
+        // paths via import.meta.url; a temp-dir location breaks relative lookups.
+        const tmpBundle = join(dirname(absEntry), `.vurb-introspect-${Date.now()}.mjs`);
         writeFileSync(tmpBundle, introspectCode, 'utf-8');
 
         try {

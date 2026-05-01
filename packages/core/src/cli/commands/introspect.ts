@@ -126,12 +126,16 @@ export async function runIntrospection(absEntry: string, projectRoot?: string): 
     g.__vurb_introspect_resolve = resolveIntrospect;
     process.env['VURB_INTROSPECT'] = '1';
 
-    const { tmpdir } = await import('node:os');
-    const { join } = await import('node:path');
+    const { join, dirname } = await import('node:path');
     const { writeFileSync, unlinkSync } = await import('node:fs');
     const { pathToFileURL } = await import('node:url');
 
-    const tmpBundle = join(tmpdir(), `vurb-introspect-${Date.now()}.mjs`);
+    // Write the bundle adjacent to the original entrypoint (not tmpdir).
+    // autoDiscover() resolves paths via import.meta.url — if the bundle
+    // lives in a temp directory, relative paths like './agents' resolve
+    // to non-existent locations. Placing it next to the original file
+    // preserves the correct directory context for all URL-relative lookups.
+    const tmpBundle = join(dirname(absEntry), `.vurb-introspect-${Date.now()}.mjs`);
     writeFileSync(tmpBundle, introspectCode, 'utf-8');
 
     try {

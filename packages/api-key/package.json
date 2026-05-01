@@ -1,6 +1,6 @@
 {
   "name": "@vurb/api-key",
-  "version": "3.19.1",
+  "version": "3.19.2",
   "description": "API key validation middleware for MCP servers built with vurb. Timing-safe comparison, SHA-256 hashing, async validators, and self-healing error responses.",
   "type": "module",
   "main": "dist/index.js",
@@ -46,7 +46,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@vurb/core": "^3.19.1"
+    "@vurb/core": "^3.19.2"
   },
   "devDependencies": {},
   "license": "Apache-2.0"
