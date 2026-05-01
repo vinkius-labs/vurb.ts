@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.3] - 2026-05-01
+
+### Fixed
+
+#### `@vurb/core` — esbuild introspection fails when `isolated-vm` is in the resolution tree
+
+- **Native addon bundling crash** — `vurb validate` and `vurb deploy` introspection builds failed when `isolated-vm` (an optional peerDependency used by `SandboxEngine`) was present in the dependency tree (e.g., via `npm link` during development). esbuild cannot bundle `.node` native binaries. Added `external: ['isolated-vm']` to the introspection esbuild config in both `introspect.ts` and `deploy.ts`. This is not a breaking change — `isolated-vm` is lazy-loaded via `require()` with a try/catch fallback; the `external` directive simply tells esbuild to leave the import as-is for Node.js runtime resolution.
+
+### Changed
+
+- **All `@vurb/*` cross-dependencies updated to `^3.19.3`**
+
 ## [3.19.2] - 2026-05-01
 
 ### Fixed

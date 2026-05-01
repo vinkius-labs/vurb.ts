@@ -354,6 +354,10 @@ export async function commandDeploy(args: CliArgs): Promise<void> {
             minify: false,
             write: false,
             logLevel: 'silent',
+            // Native addons (.node binaries) cannot be bundled by esbuild.
+            // This surfaces when @vurb/core is npm-linked (development) and
+            // transitive native deps like isolated-vm are in the resolution tree.
+            external: ['isolated-vm'],
         });
         const introspectCode = new TextDecoder().decode(introspectBuild.outputFiles![0]!.contents);
 

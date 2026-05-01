@@ -109,6 +109,10 @@ export async function runIntrospection(absEntry: string, projectRoot?: string): 
         minify: false,
         write: false,
         logLevel: 'silent',
+        // Native addons (.node binaries) cannot be bundled by esbuild.
+        // This surfaces when @vurb/core is npm-linked (development) and
+        // transitive native deps like isolated-vm are in the resolution tree.
+        external: ['isolated-vm'],
     });
     const buildTimeMs = Date.now() - buildStart;
     const introspectCode = new TextDecoder().decode(introspectBuild.outputFiles![0]!.contents);
