@@ -2303,3 +2303,122 @@ await subscriptions.notify('config://app/settings');
 ```
 
 `SubscriptionManager` tracks client subscriptions per URI. `ResourceRegistry` handles `resources/list`, `resources/read`, `resources/subscribe`, and `resources/unsubscribe`. Integrates with `ServerAttachment` for automatic MCP protocol handling.
+
+## A2A Protocol Bridge (`@vurb/a2a`)
+
+The Agent-to-Agent (A2A) Protocol bridge provides spec-compliant A2A v1.0.0 interoperability for Vurb.ts servers. Enables MCP servers to participate in multi-agent orchestration through standardized Agent Cards, JSON-RPC dispatch, and SSE streaming.
+
+### Agent Card Discovery
+
+Every Vurb.ts server can expose an A2A Agent Card at `/.well-known/agent-card.json`:
+
+```typescript
+import { AgentCardCompiler } from '@vurb/a2a';
+
+const card = AgentCardCompiler.compile({
+  name: 'InvoiceAgent',
+  description: 'Manages invoice lifecycle',
+  url: 'https://agent.example.com',
+  version: '1.0.0',
+  provider: { organization: 'Acme', url: 'https://acme.com' },
+  capabilities: { streaming: true, pushNotifications: false },
+  skills: [
+    { id: 'invoice.create', name: 'Create Invoice', description: 'Creates a new invoice' },
+    { id: 'invoice.list', name: 'List Invoices', description: 'Lists all invoices' },
+  ],
+});
+```
+
+### JSON-RPC Handler
+
+`A2AHandler` processes all A2A JSON-RPC 2.0 methods synchronously:
+
+```typescript
+import { A2AHandler } from '@vurb/a2a';
+
+const handler = new A2AHandler(toolExecutor, {
+  bridge: { taskTtlMs: 3600000, maxTasks: 1000 },
+});
+
+// Handles: message/send, tasks/get, tasks/cancel, tasks/list
+const response = await handler.handleRequest({
+  jsonrpc: '2.0', id: 1,
+  method: 'message/send',
+  params: { message: { kind: 'message', messageId: 'msg-1', role: 'user', parts: [{ kind: 'text', text: 'math.add' }] } },
+});
+```
+
+### Streamable HTTP Transport (SSE Streaming)
+
+`StreamableHttpTransport` wraps the handler to support SSE streaming for `message/stream` and `tasks/resubscribe`:
+
+```typescript
+import { StreamableHttpTransport, A2AHandler } from '@vurb/a2a';
+
+const handler = new A2AHandler(executor);
+const transport = new StreamableHttpTransport(handler, optionalStreamingExecutor);
+
+// In Express/Hono/Fastify route:
+app.post('/a2a', async (req, res) => {
+  const result = await transport.handle(req.body);
+  if (result.streaming) {
+    for (const [key, value] of Object.entries(result.headers)) {
+      res.setHeader(key, value);
+    }
+    res.flushHeaders();
+    for await (const chunk of result.body) {
+      res.write(chunk);
+    }
+    res.end();
+  } else {
+    res.json(result.body);
+  }
+});
+```
+
+### SSE Utilities
+
+Shared formatting and parsing for Server-Sent Events:
+
+```typescript
+import { SSE_HEADERS, formatSSEEvent, formatSSEErrorEvent, parseSseStream } from '@vurb/a2a';
+
+// Server-side
+res.setHeader('Content-Type', SSE_HEADERS['Content-Type']);
+res.write(formatSSEEvent({ kind: 'status-update', status: { state: 'working' } }));
+res.write(formatSSEErrorEvent({ code: -32603, message: 'Internal error' }));
+
+// Client-side
+for await (const event of parseSseStream(response)) {
+  if (event.type === 'error') handleError(JSON.parse(event.data));
+  else handleData(JSON.parse(event.data));
+}
+```
+
+### Streaming Executor
+
+Implement `StreamingExecutorLike` for full SSE streaming:
+
+```typescript
+import type { StreamingExecutorLike, TaskUpdateEvent } from '@vurb/a2a';
+
+const streamExecutor: StreamingExecutorLike = {
+  async *executeStream(toolName, args) {
+    yield { kind: 'status-update', taskId: 't1', contextId: 'c1', status: { state: 'working' }, final: false };
+    yield { kind: 'artifact-update', taskId: 't1', contextId: 'c1', artifact: { artifactId: 'a1', parts: [{ kind: 'text', text: 'Result' }] }, lastChunk: true };
+    yield { kind: 'status-update', taskId: 't1', contextId: 'c1', status: { state: 'completed' }, final: true };
+  },
+};
+```
+
+### Supported Methods
+
+| Method | Transport | Description |
+|---|---|---|
+| `message/send` | JSON | Synchronous message → task resolution |
+| `message/stream` | SSE | Streaming message with incremental events |
+| `tasks/get` | JSON | Retrieve task by ID |
+| `tasks/cancel` | JSON | Cancel a running task |
+| `tasks/list` | JSON | List tasks with filtering/pagination |
+| `tasks/resubscribe` | SSE | Resume streaming for existing task |
+| `tasks/pushNotificationConfig/*` | JSON | Push notification CRUD |

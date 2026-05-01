@@ -1,6 +1,6 @@
 {
-  "name": "@vurb/yaml",
-  "description": "Declarative MCP Server Engine — define tools, resources, and prompts in vurb.yaml. The docker-compose for MCP servers.",
+  "name": "@vurb/a2a",
+  "description": "A2A Protocol Bridge for Vurb — expose MCP servers as A2A-compliant agents with Agent Cards, task delegation, and structured message exchange.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,32 +11,28 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "a2a",
+    "agent-to-agent",
     "vurb",
-    "yaml",
-    "declarative",
-    "mcp-server",
-    "docker-compose",
+    "agent-card",
+    "json-rpc",
+    "protocol-bridge",
+    "multi-agent",
     "ai",
     "llm",
-    "model-context-protocol",
-    "tools",
-    "resources",
-    "prompts"
+    "task-delegation"
   ],
   "author": "Renato Marinho",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vinkius-labs/vurb.ts.git",
-    "directory": "packages/yaml"
+    "directory": "packages/a2a"
   },
   "bugs": {
     "url": "https://github.com/vinkius-labs/vurb.ts/issues"
@@ -44,7 +40,8 @@
   "homepage": "https://vurb.vinkius.com/",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -53,16 +50,12 @@
     "access": "public"
   },
   "dependencies": {
-    "@vurb/core": "^3.19.0",
-    "yaml": "^2.7.0"
-  },
-  "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "zod": "^3.25.1 || ^4.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^25.3.0"
+    "@vurb/core": "^3.19.0"
   },
   "license": "Apache-2.0",
+  "devDependencies": {
+    "rimraf": "^6.0.0",
+    "vitest": "^3.0.0"
+  },
   "version": "3.19.0"
 }

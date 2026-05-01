@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.0] - 2026-05-01
+
+### Added
+
+#### `@vurb/a2a` — A2A Protocol Bridge: Agent-to-Agent Communication (NEW PACKAGE)
+
+Spec-compliant A2A v1.0.0 bridge enabling Vurb.ts MCP servers to participate in multi-agent orchestration through standardized Agent Cards, JSON-RPC dispatch, and SSE streaming. First TypeScript MCP framework with native A2A interoperability.
+
+- **`A2AHandler`** — Framework-agnostic JSON-RPC 2.0 dispatcher for all 11 A2A protocol methods. Accepts a `ToolExecutorLike` interface to decouple from MCP registry internals. Handles `message/send`, `tasks/get`, `tasks/list`, `tasks/cancel`, `message/stream`, `tasks/resubscribe`, push notification config CRUD, and `agent/getAuthenticatedExtendedCard`.
+- **`StreamableHttpTransport`** — HTTP transport layer supporting both synchronous JSON responses and SSE streaming. Returns a discriminated `TransportResult` union (`{ streaming: false, body }` | `{ streaming: true, headers, body: AsyncIterable<string> }`) so any framework (Express, Hono, Fastify) can consume it. Falls back to sync `message/send` when no `StreamingExecutorLike` is provided.
+- **`StreamingExecutorLike`** — Interface for streaming tool executors. Implementors yield `TaskUpdateEvent` via `AsyncGenerator` for incremental SSE delivery (status updates, artifact chunks).
+- **`TaskManager`** — In-memory task lifecycle engine with finite state machine (submitted → working → completed/failed/canceled/rejected/input-required/auth-required), TTL-based eviction, capacity limits, cursor-based pagination, and `listTasks()` with `contextId`/`taskState` filtering.
+- **`AgentCardCompiler`** — Compiles MCP tool registry metadata into an A2A Agent Card (`/.well-known/agent-card.json`). Auto-maps tools to skills with `inputModes`/`outputModes`, security schemes, and capability declarations.
+- **`SSE Utilities`** — `formatSSEEvent()`, `formatSSEErrorEvent()`, `parseSseStream()` for spec-compliant Server-Sent Events formatting and parsing. `SSE_HEADERS` constant for `Content-Type: text/event-stream` responses.
+- **`Extensions`** — `parseExtensionUri()` and `buildExtensionUri()` for A2A extension URI management.
+- **`Error Classes`** — `A2AError`, `TaskNotFoundError`, `TaskNotCancelableError`, `PushNotificationNotSupportedError`, `UnsupportedOperationError`, `ContentTypeNotSupportedError` — all with spec-compliant JSON-RPC error codes.
+- **`Constants`** — `A2A_METHODS` (11 method names), `A2A_ERROR_CODES` (12 codes: 5 JSON-RPC standard + 7 A2A-specific), `AGENT_CARD_PATH`, `A2A_JSON_RPC_PATH`, `A2A_PROTOCOL_VERSION`.
+- **`Types`** — Complete A2A v1.0.0 type coverage: `Task`, `Message`, `Part` (Text/File/Data), `Artifact`, `TaskStatus`, `TaskState`, `TaskUpdateEvent`, `AgentCard`, `AgentSkill`, `AgentCapabilities`, `AgentInterface`, `AgentCardSignature`, `SecurityScheme` (5 OAuth/API types), `PushNotificationConfig`, `A2ARequest` discriminated union, `JsonRpcRequest`/`JsonRpcResponse`/`JsonRpcError`, and `A2ABridgeConfig`.
+
+### Changed
+
+- **All `@vurb/*` cross-dependencies updated to `^3.19.0`** — Ensures consistent resolution across the monorepo.
+
+### Documentation
+
+- **`llms.txt`** — Added A2A Protocol Bridge section with usage examples for Agent Card discovery, JSON-RPC handler, Streamable HTTP Transport, SSE utilities, streaming executor, and supported methods table.
+
+### Test Suite
+
+- **210 tests** across 7 test files covering:
+  - **A2AHandler** (50): message/send skill resolution, argument extraction, task lifecycle, validation, tasks/get, tasks/cancel, tasks/list (empty, filtered, paginated), adversarial inputs (XSS, unicode, empty parts, large messages), error code compliance (6 codes), 100 concurrent requests
+  - **TaskManager** (36): createTask, updateStatus (state transitions, terminal state guards), addArtifact, getTask, listTasks (contextId/taskState filtering, pagination), cancelTask, TTL eviction, capacity management, adversarial inputs (empty/unicode contextId, concurrent updates)
+  - **AgentCardCompiler** (35): minimal/full card compilation, skill mapping, capability inference, security schemes, protocol version, required fields
+  - **Errors** (45): error code mapping, message formatting, inheritance chain
+  - **SSE** (13): event formatting, error event formatting, stream parsing, multi-line data
+  - **Extensions** (14): URI parsing, URI building, edge cases
+  - **StreamableHttpTransport** (17): sync method delegation, streaming fallback (no executor), SSE headers, tasks/resubscribe (existing/completed/missing/nonexistent tasks), streaming execution (multi-event, lifecycle ordering, JSON-RPC wrapping, missing params, executor crash recovery)
+
 ## [3.18.0] - 2026-05-01
 
 ### Added
