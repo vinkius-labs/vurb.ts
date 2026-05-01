@@ -1,8 +1,10 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/86ae1b28-a938-4e12-af29-bfc60a55dbe8" >
-  <img src="https://github.com/user-attachments/assets/86ae1b28-a938-4e12-af29-bfc60a55dbe8" style="border-radius:8px;background:#000000;padding:10px;border:1px solid #414141;"  alt="Vurb.ts">
+  
+  <img width="844" height="343" alt="image" src="https://github.com/user-attachments/assets/a08b19cb-1149-4d40-ac10-37e430d1f46c" />
+
+
 </picture>
 
 **The Express.js for MCP Servers.**<br>
