@@ -11,6 +11,7 @@
 
 import { A2A_METHODS, A2A_ERROR_CODES } from './constants.js';
 import { TaskManager } from './TaskManager.js';
+import { resolveSkillId, extractMessageArgs } from './message-utils.js';
 import type {
     JsonRpcRequest,
     JsonRpcResponse,
@@ -190,8 +191,8 @@ export class A2AHandler {
 
         try {
             // Resolve which tool to call
-            const skillId = this._resolveSkillId(message);
-            const args = this._extractArgs(message);
+            const skillId = resolveSkillId(message);
+            const args = extractMessageArgs(message);
 
             if (!skillId) {
                 const failedTask = this._taskManager.updateStatus(
@@ -222,10 +223,16 @@ export class A2AHandler {
             const artifact: Artifact = {
                 artifactId: `${task.id}-result`,
                 name: `${skillId} result`,
-                parts: result.content.map((c) => ({
-                    kind: 'text' as const,
-                    text: c.text ?? '',
-                })),
+                parts: result.content.map((c) => {
+                    if (c.text !== undefined) {
+                        return { kind: 'text' as const, text: c.text };
+                    }
+                    // Non-text content (image, resource, etc.): preserve as DataPart
+                    return {
+                        kind: 'data' as const,
+                        data: { contentType: c.type },
+                    };
+                }),
             };
 
             this._taskManager.addArtifact(task.id, artifact);
@@ -310,68 +317,7 @@ export class A2AHandler {
         return Promise.resolve(this._successResponse(request.id, result));
     }
 
-    // ── Skill Resolution ─────────────────────────────────
 
-    /**
-     * Resolve which MCP tool to call from an A2A message.
-     *
-     * Priority:
-     * 1. `metadata.skill_id` — explicit skill selection
-     * 2. First DataPart with `data.tool_name` — structured invocation
-     * 3. First TextPart text content — used as tool name (exact match)
-     */
-    private _resolveSkillId(message: Message): string | undefined {
-        // 1. Explicit skill_id in metadata
-        const metaSkill = message.metadata?.['skill_id'];
-        if (typeof metaSkill === 'string' && metaSkill.length > 0) {
-            return metaSkill;
-        }
-
-        // 2. DataPart with tool_name
-        for (const part of message.parts) {
-            if (part.kind === 'data' && typeof part.data['tool_name'] === 'string') {
-                return part.data['tool_name'];
-            }
-        }
-
-        // 3. TextPart as tool name (first text part, trimmed)
-        for (const part of message.parts) {
-            if (part.kind === 'text' && part.text.trim().length > 0) {
-                const trimmed = part.text.trim();
-                if (!trimmed.includes(' ') || trimmed.length < 64) {
-                    return trimmed;
-                }
-            }
-        }
-
-        return undefined;
-    }
-
-    /**
-     * Extract tool arguments from an A2A message.
-     *
-     * Priority:
-     * 1. First DataPart `data` (excluding `tool_name`)
-     * 2. TextPart content wrapped as `{ text: "..." }`
-     */
-    private _extractArgs(message: Message): Record<string, unknown> {
-        // 1. DataPart
-        for (const part of message.parts) {
-            if (part.kind === 'data') {
-                const { tool_name: _, ...args } = part.data;
-                return args;
-            }
-        }
-
-        // 2. TextPart
-        for (const part of message.parts) {
-            if (part.kind === 'text') {
-                return { text: part.text };
-            }
-        }
-
-        return {};
-    }
 
     // ── Message Factory ──────────────────────────────────
 
@@ -410,13 +356,13 @@ export class A2AHandler {
         if (typeof globalThis.crypto?.randomUUID === 'function') {
             return globalThis.crypto.randomUUID();
         }
-        return `ctx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        return `ctx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
     private _generateMessageId(): string {
         if (typeof globalThis.crypto?.randomUUID === 'function') {
             return globalThis.crypto.randomUUID();
         }
-        return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 6)}`;
     }
 }

@@ -23,7 +23,7 @@ export const A2A_JSON_RPC_PATH = '/a2a' as const;
 // ── Protocol Version ─────────────────────────────────────
 
 /** Current A2A protocol version supported by this bridge. */
-export const A2A_PROTOCOL_VERSION = '0.3.0' as const;
+export const A2A_PROTOCOL_VERSION = '1.0.0' as const;
 
 // ── HTTP Headers ─────────────────────────────────────────
 

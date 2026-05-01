@@ -299,7 +299,7 @@ describe('AgentCardCompiler', () => {
 
         it('protocol version matches constant', () => {
             const card = compileAgentCard(BASE_CONFIG, []);
-            expect(card.protocolVersion).toBe('0.3.0');
+            expect(card.protocolVersion).toBe('1.0.0');
         });
     });
 

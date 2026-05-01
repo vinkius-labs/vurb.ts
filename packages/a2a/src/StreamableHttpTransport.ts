@@ -36,6 +36,7 @@
 import { A2AHandler } from './A2AHandler.js';
 import { A2A_METHODS, A2A_ERROR_CODES } from './constants.js';
 import { SSE_HEADERS, formatSSEEvent, formatSSEErrorEvent } from './sse.js';
+import { resolveSkillId, extractMessageArgs } from './message-utils.js';
 import type {
     JsonRpcRequest,
     JsonRpcResponse,
@@ -61,6 +62,9 @@ export interface StreamingExecutorLike {
         toolName: string,
         args: Record<string, unknown>,
     ): AsyncGenerator<TaskUpdateEvent, void, undefined>;
+
+    /** Optional: check if a tool exists by name before streaming. */
+    hasToolName?(name: string): boolean;
 }
 
 // ── Transport Result Types ───────────────────────────────
@@ -267,6 +271,20 @@ export class StreamableHttpTransport {
         params: MessageSendParams,
     ): AsyncGenerator<string, void, undefined> {
         const { message } = params;
+
+        // Validate message has kind discriminator (mirrors A2AHandler sync validation)
+        if (message.kind !== 'message') {
+            yield formatSSEErrorEvent({
+                jsonrpc: '2.0',
+                id: requestId,
+                error: {
+                    code: A2A_ERROR_CODES.INVALID_PARAMS,
+                    message: 'Message must have kind: "message".',
+                },
+            });
+            return;
+        }
+
         const contextId = message.contextId ?? this._generateId('ctx');
         const task = this._handler.taskManager.createTask(contextId, message);
 
@@ -299,15 +317,22 @@ export class StreamableHttpTransport {
 
         try {
             // Resolve skill
-            const skillId = this._resolveSkillIdFromMessage(message);
+            const skillId = resolveSkillId(message);
             if (!skillId) {
                 yield* this._yieldFinalError(requestId, task.id, contextId,
                     'Unable to determine which skill to invoke.');
                 return;
             }
 
+            // Validate tool exists (if the executor supports the check)
+            if (this._streamingExecutor!.hasToolName && !this._streamingExecutor!.hasToolName(skillId)) {
+                yield* this._yieldFinalError(requestId, task.id, contextId,
+                    `Skill "${skillId}" not found. Check the Agent Card for available skills.`);
+                return;
+            }
+
             // Stream events from the streaming executor
-            for await (const event of this._streamingExecutor!.executeStream(skillId, this._extractArgsFromMessage(message))) {
+            for await (const event of this._streamingExecutor!.executeStream(skillId, extractMessageArgs(message))) {
                 // Wrap each event in a JSON-RPC response and format as SSE
                 yield formatSSEEvent({
                     jsonrpc: '2.0',
@@ -390,45 +415,10 @@ export class StreamableHttpTransport {
         };
     }
 
-    // ── Message Utilities (duplicated from A2AHandler to avoid exposing internals) ──
-
-    private _resolveSkillIdFromMessage(message: MessageSendParams['message']): string | undefined {
-        const metaSkill = message.metadata?.['skill_id'];
-        if (typeof metaSkill === 'string' && metaSkill.length > 0) return metaSkill;
-
-        for (const part of message.parts) {
-            if (part.kind === 'data' && typeof part.data['tool_name'] === 'string') {
-                return part.data['tool_name'];
-            }
-        }
-
-        for (const part of message.parts) {
-            if (part.kind === 'text' && part.text.trim().length > 0) {
-                const trimmed = part.text.trim();
-                if (!trimmed.includes(' ') || trimmed.length < 64) return trimmed;
-            }
-        }
-
-        return undefined;
-    }
-
-    private _extractArgsFromMessage(message: MessageSendParams['message']): Record<string, unknown> {
-        for (const part of message.parts) {
-            if (part.kind === 'data') {
-                const { tool_name: _, ...args } = part.data;
-                return args;
-            }
-        }
-        for (const part of message.parts) {
-            if (part.kind === 'text') return { text: part.text };
-        }
-        return {};
-    }
-
     private _generateId(prefix: string): string {
         if (typeof globalThis.crypto?.randomUUID === 'function') {
             return globalThis.crypto.randomUUID();
         }
-        return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 6)}`;
     }
 }

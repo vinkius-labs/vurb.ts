@@ -186,7 +186,8 @@ export class TaskManager {
 
         // Pagination
         const limit = request.limit ?? 50;
-        const offset = request.cursor ? parseInt(request.cursor, 10) : 0;
+        const rawOffset = request.cursor ? parseInt(request.cursor, 10) : 0;
+        const offset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
         const page = tasks.slice(offset, offset + limit);
         const hasMore = offset + limit < tasks.length;
 
@@ -216,7 +217,7 @@ export class TaskManager {
         if (typeof globalThis.crypto?.randomUUID === 'function') {
             return globalThis.crypto.randomUUID();
         }
-        return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
     private _isExpired(stored: StoredTask): boolean {

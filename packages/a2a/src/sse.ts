@@ -118,7 +118,8 @@ export async function* parseSseStream(
             } else if (line.startsWith('event:')) {
                 eventType = line.substring('event:'.length).trim();
             } else if (line.startsWith('data:')) {
-                eventData = line.substring('data:'.length).trim();
+                const value = line.substring('data:'.length).trim();
+                eventData = eventData ? `${eventData}\n${value}` : value;
             }
         }
     }

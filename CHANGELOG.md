@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.1] - 2026-05-01
+
+### Fixed
+
+#### `@vurb/a2a` — A2A Protocol Audit: 8 Bug Fixes
+
+Deep audit of the A2A protocol bridge identified and remediated 8 bugs across 6 source files, with 35 regression tests added to prevent reintroduction.
+
+- **SSE parser multi-line data loss** — `parseSseStream()` overwrote `eventData` on each `data:` line instead of concatenating with `\n` per the [SSE specification](https://html.spec.whatwg.org/multipage/server-sent-events.html). Any proxy (CloudFront, nginx) splitting JSON across multiple `data:` lines caused silent data corruption. Now concatenates correctly.
+- **Streaming path missing tool existence check** — `StreamableHttpTransport._createMessageStream()` called `executeStream()` without verifying the tool exists. The sync handler (`A2AHandler`) validates via `hasToolName()` but the streaming path skipped it, producing opaque runtime errors. Added optional `hasToolName?()` to `StreamingExecutorLike` interface and a guard before streaming execution.
+- **Streaming path skipped `message.kind` validation** — The sync `message/send` handler rejects messages without `kind: 'message'` discriminator, but `message/stream` accepted them silently. Added the same validation to the streaming path for consistency.
+- **Non-text artifact content silently dropped** — `A2AHandler` mapped all MCP tool result content to `TextPart` with `text: c.text ?? ''`. When a tool returned `type: 'image'` or `type: 'resource'` (no `text` field), the artifact contained empty `TextPart` entries. Now preserves non-text content as `DataPart` with `contentType` metadata.
+- **Skill resolution logic duplicated across files** — `_resolveSkillId()` and `_extractArgs()` were copy-pasted between `A2AHandler` and `StreamableHttpTransport` (acknowledged in a comment as "duplicated to avoid exposing internals"). Extracted to a shared `message-utils.ts` module — single source of truth.
+- **Protocol version mismatch** — `A2A_PROTOCOL_VERSION` was `'0.3.0'` but the type definitions implement A2A v1.0+ schema (mandatory `kind` discriminators, `messageId`, `auth-required` state). Updated to `'1.0.0'`.
+- **Pagination cursor NaN guard** — `TaskManager.listTasks()` used `parseInt(cursor, 10)` without checking for `NaN`. A non-numeric cursor string produced `tasks.slice(NaN, NaN + limit)` which silently returned an empty array. Now falls back to offset `0` for invalid cursors.
+- **UUID fallback low entropy** — Fallback ID generators (when `crypto.randomUUID` is unavailable) used only 6 random base36 characters (~31 bits). Extended to 14 characters across two `Math.random()` calls for better collision resistance under concurrency.
+
+### Added
+
+- **`message-utils.ts`** — New internal module exporting `resolveSkillId()` and `extractMessageArgs()`, shared by both sync and streaming paths.
+
+### Test Suite
+
+- **35 new regression tests** in `tests/bug-regressions.test.ts` covering all 8 fixes:
+  - SSE parser (6): multi-line concatenation, single-line, interleaved event/data, multiple events, stream-end flush, chunked JSON
+  - Streaming tool check (3): `hasToolName` rejects/accepts, backward-compatible without method
+  - Streaming `message.kind` (3): missing kind, wrong kind, correct kind
+  - Non-text artifacts (3): text content, image as DataPart, mixed content
+  - Shared message-utils (9): skill resolution priorities, edge cases, arg extraction
+  - Protocol version (2): is `1.0.0`, is not `0.3.0`
+  - Cursor NaN guard (5): non-numeric, negative, empty, valid, beyond-bounds
+  - UUID uniqueness (2): 1000 concurrent task IDs, 100 concurrent context IDs
+- **Total: 245 tests passing** across 8 test files
+
+### Changed
+
+- **All `@vurb/*` cross-dependencies updated to `^3.19.1`** — Ensures consistent resolution across the monorepo.
+
 ## [3.19.0] - 2026-05-01
 
 ### Added
