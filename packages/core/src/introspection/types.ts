@@ -130,3 +130,120 @@ export interface ManifestPresenter {
     /** Whether the presenter has context-aware system rules */
     readonly has_contextual_rules: boolean;
 }
+
+// ── Server Card (SEP-1649 Auto-Discovery) ────────────────
+
+/**
+ * Configuration for MCP Server Card generation.
+ *
+ * When provided, Vurb auto-generates a `/.well-known/mcp/server-card.json`
+ * endpoint that AI clients use for auto-discovery and configuration.
+ *
+ * @example
+ * ```typescript
+ * await startServer({
+ *     name: 'billing-api',
+ *     version: '2.1.0',
+ *     registry,
+ *     transport: 'http',
+ *     serverCard: {
+ *         title: 'Billing API',
+ *         description: 'Financial operations and invoice management',
+ *         documentationUrl: 'https://docs.example.com/billing',
+ *     },
+ * });
+ * ```
+ */
+export interface ServerCardConfig {
+    /** Server programmatic identifier (usually same as `startServer.name`). */
+    readonly name: string;
+
+    /** Server software version (e.g. '2.1.0'). */
+    readonly version?: string;
+
+    /**
+     * Human-readable display name for the server.
+     * Shown in MCP client UIs (Claude, Cursor, etc.).
+     */
+    readonly title?: string;
+
+    /** Human-readable description of the server's purpose. */
+    readonly description?: string;
+
+    /** URL to an icon representing the server. */
+    readonly iconUrl?: string;
+
+    /** URL to the server's official documentation. */
+    readonly documentationUrl?: string;
+
+    /**
+     * Transport type.
+     * @default 'streamable-http'
+     */
+    readonly transport?: 'streamable-http' | 'stdio';
+
+    /**
+     * Transport endpoint path (for HTTP-based transports).
+     * @default '/mcp'
+     */
+    readonly endpoint?: string;
+
+    /**
+     * MCP protocol version supported by this server.
+     * @default '2025-06-18'
+     */
+    readonly protocolVersion?: string;
+}
+
+/**
+ * The compiled Server Card payload served at `/.well-known/mcp/server-card.json`.
+ *
+ * Follows the SEP-1649 specification for MCP server auto-discovery.
+ */
+export interface ServerCardPayload {
+    /** JSON Schema URL for the server card format. */
+    readonly $schema: string;
+    /** Server card schema version. */
+    readonly version: string;
+    /** MCP protocol version supported. */
+    readonly protocolVersion: string;
+    /** Server identification. */
+    readonly serverInfo: {
+        readonly name: string;
+        readonly version: string;
+        readonly title?: string;
+    };
+    /** Human-readable description. */
+    readonly description?: string;
+    /** Icon URL. */
+    readonly iconUrl?: string;
+    /** Documentation URL. */
+    readonly documentationUrl?: string;
+    /** Transport configuration. */
+    readonly transport: {
+        readonly type: 'streamable-http' | 'stdio';
+        readonly endpoint?: string;
+    };
+    /** Declared capabilities (tools, prompts, resources). */
+    readonly capabilities: {
+        tools?: Record<string, never>;
+        prompts?: Record<string, never>;
+        resources?: Record<string, never>;
+    };
+    /** Detailed tool entries for discovery. */
+    readonly tools?: readonly ServerCardToolEntry[];
+    /** Prompt entries for discovery. */
+    readonly prompts?: readonly { name: string; description?: string }[];
+    /** Resource entries for discovery. */
+    readonly resources?: readonly { uri: string; name: string; description?: string; mimeType?: string }[];
+}
+
+/** A single tool entry in the Server Card. */
+export interface ServerCardToolEntry {
+    /** Tool programmatic name. */
+    readonly name: string;
+    /** Human-readable tool description. */
+    readonly description: string | undefined;
+    /** Tags for categorization. */
+    readonly tags: readonly string[];
+}

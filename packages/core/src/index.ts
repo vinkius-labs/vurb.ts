@@ -368,6 +368,14 @@ export type {
     GovernanceObserverConfig,
     GovernanceObserver,
 } from './introspection/GovernanceObserver.js';
+/** @category Server Card */
+export { compileServerCard, SERVER_CARD_PATH } from './introspection/ServerCard.js';
+/** @category Server Card */
+export type {
+    ServerCardConfig,
+    ServerCardPayload,
+    ServerCardToolEntry,
+} from './introspection/types.js';
 
 // ── Sandbox (Zero-Trust V8 Compute Delegation) ──────────
 /** @category Sandbox */

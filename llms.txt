@@ -868,6 +868,57 @@ registry.attachToServer(server, {
 // input schemas, presenter references — RBAC-filtered per session
 ```
 
+## Server Card — MCP Auto-Discovery (SEP-1649)
+
+Standard `/.well-known/mcp/server-card.json` endpoint for AI client auto-discovery. Compiles tool, prompt, and resource metadata into the SEP-1649 format so AI agents (Claude, Cursor, ChatGPT) can automatically discover, inspect, and configure the server.
+
+Zero overhead when disabled. Pre-compiled once at startup as a static JSON string — zero per-request cost. Served with `Content-Type: application/json`, `Cache-Control: public, max-age=300`, `X-Content-Type-Options: nosniff`, and `Access-Control-Allow-Origin: *`.
+
+```typescript
+// Minimal — auto-generate from name/version
+await startServer({
+    name: 'my-server',
+    version: '1.0.0',
+    registry,
+    transport: 'http',
+    serverCard: true,
+});
+// 🏷️ Server Card at http://localhost:3001/.well-known/mcp/server-card.json
+
+// Custom — full metadata
+await startServer({
+    name: 'billing-api',
+    version: '2.1.0',
+    registry,
+    transport: 'http',
+    serverCard: {
+        title: 'Billing API',
+        description: 'Financial operations and invoice management',
+        iconUrl: 'https://example.com/billing-icon.svg',
+        documentationUrl: 'https://docs.example.com/billing',
+    },
+});
+
+// Programmatic — for custom HTTP frameworks (Cloudflare, Vercel, etc.)
+import { compileServerCard, SERVER_CARD_PATH } from 'Vurb.ts';
+
+const card = compileServerCard(
+    { name: 'custom', version: '1.0.0', transport: 'streamable-http' },
+    registry.getBuilders(),
+    promptRegistry?.getAllPrompts(),
+    resourceList,
+);
+const json = JSON.stringify(card, null, 2);
+```
+
+Server Card config options:
+- `true` — auto-generate with defaults from `name` and `version`
+- `ServerCardConfig` — customize `title`, `description`, `iconUrl`, `documentationUrl`
+- `undefined` — disabled (no server card endpoint registered)
+
+The card payload includes: `$schema`, `version`, `protocolVersion`, `serverInfo`, `transport`, `capabilities`, and optionally `tools[]`, `prompts[]`, `resources[]`.
+
+
 ## Tag Filtering
 
 ```typescript
@@ -1243,6 +1294,14 @@ registry.configurePagination({ pageSize: 50 }); // enable pagination
 - `Presenter.getUiBlockTypes()` → string[] (read-only accessor)
 - `Presenter.hasContextualRules()` → boolean (read-only accessor)
 - `ToolRegistry.getBuilders()` → Iterable<ToolBuilder> (for introspection)
+
+### Server Card (SEP-1649 Auto-Discovery)
+- `compileServerCard(config, builders, prompts?, resources?)` → ServerCardPayload — compile registry metadata into SEP-1649 format
+- `SERVER_CARD_PATH` — `'/.well-known/mcp/server-card.json'` constant
+- `ServerCardConfig` — { name, version?, title?, description?, iconUrl?, documentationUrl?, transport?, endpoint?, protocolVersion? }
+- `ServerCardPayload` — { $schema, version, protocolVersion, serverInfo, description?, iconUrl?, documentationUrl?, transport, capabilities, tools?, prompts?, resources? }
+- `ServerCardToolEntry` — { name, description?, tags }
+- `StartServerOptions.serverCard` — `true | Omit<ServerCardConfig, 'name' | 'version' | 'transport'>` — enables auto-discovery endpoint in HTTP transport
 
 ### Streaming Progress
 - `progress(percent, message)` → ProgressEvent (yield from generator handlers)

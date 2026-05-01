@@ -21,6 +21,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { attachToServer as _attachToServer, type AttachOptions, _missingContextProxy } from './ServerAttachment.js';
 import { createTelemetryBus, type TelemetryBusInstance } from '../observability/TelemetryBus.js';
+import { compileServerCard, SERVER_CARD_PATH } from '../introspection/ServerCard.js';
+import type { ServerCardConfig, ServerCardPayload } from '../introspection/types.js';
 import type { PromptRegistry } from '../prompt/PromptRegistry.js';
 import type { ProgressSink } from '../core/execution/ProgressHelper.js';
 import type { CredentialsMap } from '../credentials/index.js';
@@ -122,6 +124,36 @@ export interface StartServerOptions<TContext> {
      * ```
      */
     readonly cors?: CorsConfig;
+
+    /**
+     * Server Card configuration for MCP auto-discovery (SEP-1649).
+     *
+     * When provided (or set to `true`), Vurb serves a standard
+     * `/.well-known/mcp/server-card.json` endpoint that AI clients
+     * use to automatically discover and configure this server.
+     *
+     * - `true` — auto-generate with defaults from `name` and `version`
+     * - `ServerCardConfig` — customize title, description, icon, etc.
+     * - `undefined` — disabled (no server card endpoint)
+     *
+     * Zero overhead when omitted — no additional route is registered.
+     *
+     * @example
+     * ```typescript
+     * await startServer({
+     *     name: 'billing-api',
+     *     version: '2.1.0',
+     *     registry,
+     *     transport: 'http',
+     *     serverCard: {
+     *         title: 'Billing API',
+     *         description: 'Financial operations and invoice management',
+     *         documentationUrl: 'https://docs.example.com/billing',
+     *     },
+     * });
+     * ```
+     */
+    readonly serverCard?: true | Omit<ServerCardConfig, 'name' | 'version' | 'transport'>;
 
     /** Extra attach options (debug, tracing, zeroTrust, etc.). */
     readonly attach?: Omit<AttachOptions<TContext>, 'contextFactory' | 'prompts' | 'telemetry'>;
@@ -358,6 +390,7 @@ export async function startServer<TContext>(
         attach = {},
         state,
         credentials,
+        serverCard: serverCardOpt,
     } = options;
 
     // ── Vinkius Cloud Edge Detection ─────────────────────────────────────
@@ -563,6 +596,32 @@ export async function startServer<TContext>(
 
     // 4. Connect Transport
     if (transport === 'http') {
+        // ── Server Card Compilation (zero overhead when disabled) ─────────
+        // Pre-compiled as a static JSON string at startup — no per-request cost.
+        let serverCardJson: string | undefined;
+        if (serverCardOpt) {
+            const cardConfig: ServerCardConfig = {
+                name,
+                version,
+                transport: 'streamable-http',
+                ...(serverCardOpt === true ? {} : serverCardOpt),
+            };
+            const resources = (attach as Record<string, unknown>)?.['resources'];
+            const resourceList = resources && typeof (resources as { listResources?: unknown }).listResources === 'function'
+                ? (resources as { listResources: () => Array<{ uri: string; name: string; description?: string; mimeType?: string }> }).listResources()
+                : undefined;
+            const promptList = prompts && typeof prompts.getAllPrompts === 'function'
+                ? prompts.getAllPrompts()
+                : undefined;
+            const card = compileServerCard(
+                cardConfig,
+                registry.getBuilders(),
+                promptList,
+                resourceList,
+            );
+            serverCardJson = JSON.stringify(card, null, 2);
+        }
+
         // ── Streamable HTTP Transport ────────────────────────
         const sessions = new Map<string, StreamableHTTPServerTransport>();
         const sessionActivity = new Map<string, number>();
@@ -593,6 +652,32 @@ export async function startServer<TContext>(
         const httpServer = createHttpServer(async (req, res) => {
             try {
                 const url = new URL(req.url ?? '/', `http://localhost:${port}`);
+
+                // ── Server Card: /.well-known/mcp/server-card.json ──────────
+                // Serves the auto-discovery endpoint BEFORE the /mcp check.
+                // GET-only, publicly cacheable, with security headers.
+                if (url.pathname === SERVER_CARD_PATH && serverCardJson) {
+                    if (req.method === 'OPTIONS') {
+                        // CORS preflight for server card
+                        res.writeHead(204, {
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type',
+                        }).end();
+                        return;
+                    }
+                    if (req.method !== 'GET') {
+                        res.writeHead(405).end();
+                        return;
+                    }
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'public, max-age=300',
+                        'X-Content-Type-Options': 'nosniff',
+                        'Access-Control-Allow-Origin': '*',
+                    }).end(serverCardJson);
+                    return;
+                }
 
                 if (url.pathname !== '/mcp') {
                     res.writeHead(404).end();
@@ -713,6 +798,9 @@ export async function startServer<TContext>(
 
         httpServer.listen(port, () => {
             process.stderr.write(`⚡ ${name} on http://localhost:${port}/mcp\n`);
+            if (serverCardJson) {
+                process.stderr.write(`🏷️ Server Card at http://localhost:${port}${SERVER_CARD_PATH}\n`);
+            }
         });
 
         async function close(): Promise<void> {

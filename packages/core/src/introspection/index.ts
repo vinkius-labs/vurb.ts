@@ -171,3 +171,11 @@ export type {
     GovernanceObserverConfig,
     GovernanceObserver,
 } from './GovernanceObserver.js';
+
+// ── Server Card (SEP-1649 Auto-Discovery) ────────────────
+export { compileServerCard, SERVER_CARD_PATH } from './ServerCard.js';
+export type {
+    ServerCardConfig,
+    ServerCardPayload,
+    ServerCardToolEntry,
+} from './types.js';

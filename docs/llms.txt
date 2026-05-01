@@ -48,7 +48,6 @@ The Presenter replaces the human-centric View with an agent-centric perception l
 - **TOON**: Token-Oriented Object Notation for compact descriptions/responses
 - **State Sync**: RFC 7234-inspired cache-control signals to prevent temporal blindness
 - **FSM State Gate**: Temporal anti-hallucination engine — physically removes tools from `tools/list` based on XState finite state machine state. `.bindState(states, event)` on FluentToolBuilder. Transitions only on success. Ungated tools always visible. Serverless via `fsmStore`.
-- **Elicitation**: Human-in-the-loop interaction for agentic workflows. `ask()` callable namespace pauses the handler, sends a form (or URL redirect) to the MCP client, and resumes with typed user input. Uses `AsyncLocalStorage` — zero context injection, zero overhead when unused. `.interactive()` on FluentToolBuilder/FluentRouter to enable.
 - **Tool Exposition**: Compile-time topology compiler — choose flat (one tool per action) or grouped (one tool per builder with discriminator enum) at attach time. Same handlers, different wire format.
 - **Select Reflection**: Opt-in `_select` parameter for context window optimization — AI agents request only the response fields they need. Uses Late Guillotine pattern (filter wire data AFTER UI/rules generation) to preserve UI integrity. Shallow top-level filtering only.
 - **Dynamic Manifest**: RBAC-filtered server capabilities exposed as a native MCP Resource
@@ -406,7 +405,6 @@ All bulk methods preserve full TypeScript type-chaining — `input` is correctly
 | `.concurrency(config)` | Runtime guard: semaphore + queue |
 | `.egress(bytes)` | Runtime guard: max payload size |
 | `.bindState(states, event?)` | FSM State Gate: tool visibility by FSM state + auto-transition |
-| `.interactive()` | Enable MCP Elicitation: allows `ask()` calls inside the handler for human-in-the-loop input |
 | `.fromModel(Model, profile)` | Import input parameters from a Model's fillable profile — zero manual `.with*()` calls |
 | `.handle(handler)` | **Terminal** — sets handler, builds GroupedToolBuilder |
 | `.proxy(endpoint, opts?)` | **Terminal** — auto-generates handler that proxies to `ctx.client.get/post/put/delete(endpoint)`. Infers HTTP method from semantic verb, passes input as query params (GET) or body (POST/PUT), auto-unwraps `{ data }` envelopes, resolves `:param` path placeholders. Eliminates both client wrapper methods and handler boilerplate. |
@@ -870,6 +868,57 @@ registry.attachToServer(server, {
 // input schemas, presenter references — RBAC-filtered per session
 ```
 
+## Server Card — MCP Auto-Discovery (SEP-1649)
+
+Standard `/.well-known/mcp/server-card.json` endpoint for AI client auto-discovery. Compiles tool, prompt, and resource metadata into the SEP-1649 format so AI agents (Claude, Cursor, ChatGPT) can automatically discover, inspect, and configure the server.
+
+Zero overhead when disabled. Pre-compiled once at startup as a static JSON string — zero per-request cost. Served with `Content-Type: application/json`, `Cache-Control: public, max-age=300`, `X-Content-Type-Options: nosniff`, and `Access-Control-Allow-Origin: *`.
+
+```typescript
+// Minimal — auto-generate from name/version
+await startServer({
+    name: 'my-server',
+    version: '1.0.0',
+    registry,
+    transport: 'http',
+    serverCard: true,
+});
+// 🏷️ Server Card at http://localhost:3001/.well-known/mcp/server-card.json
+
+// Custom — full metadata
+await startServer({
+    name: 'billing-api',
+    version: '2.1.0',
+    registry,
+    transport: 'http',
+    serverCard: {
+        title: 'Billing API',
+        description: 'Financial operations and invoice management',
+        iconUrl: 'https://example.com/billing-icon.svg',
+        documentationUrl: 'https://docs.example.com/billing',
+    },
+});
+
+// Programmatic — for custom HTTP frameworks (Cloudflare, Vercel, etc.)
+import { compileServerCard, SERVER_CARD_PATH } from 'Vurb.ts';
+
+const card = compileServerCard(
+    { name: 'custom', version: '1.0.0', transport: 'streamable-http' },
+    registry.getBuilders(),
+    promptRegistry?.getAllPrompts(),
+    resourceList,
+);
+const json = JSON.stringify(card, null, 2);
+```
+
+Server Card config options:
+- `true` — auto-generate with defaults from `name` and `version`
+- `ServerCardConfig` — customize `title`, `description`, `iconUrl`, `documentationUrl`
+- `undefined` — disabled (no server card endpoint registered)
+
+The card payload includes: `$schema`, `version`, `protocolVersion`, `serverInfo`, `transport`, `capabilities`, and optionally `tools[]`, `prompts[]`, `resources[]`.
+
+
 ## Tag Filtering
 
 ```typescript
@@ -936,96 +985,6 @@ handler: async function* (ctx, args) {
 }
 // Wire format: { method: 'notifications/progress', params: { progressToken, progress: 25, total: 100, message: 'Loading data...' } }
 ```
-
-## Elicitation — Human-in-the-Loop
-
-MCP Elicitation allows tool handlers to pause execution, request user input via the MCP client, and resume with the user's response. Vurb.ts wraps this in a zero-boilerplate DSL: one import, one call, full type inference.
-
-### Enabling Elicitation
-
-Mark tools as interactive with `.interactive()` on `FluentToolBuilder` or `FluentRouter`:
-
-```typescript
-import { initVurb, ask } from '@vurb/core';
-
-const f = initVurb<AppContext>();
-
-// Single tool
-const deploy = f.mutation('infra.deploy')
-    .withString('app_id', 'Application ID')
-    .interactive()  // ← enables elicitation
-    .handle(async (input, ctx) => {
-        const prefs = await ask('Confirm deployment settings:', {
-            region:  ask.enum(['us-east-1', 'eu-west-1'] as const, 'Region'),
-            confirm: ask.boolean('I confirm this deployment'),
-        });
-        if (prefs.declined) return f.error('CANCELLED', 'Deployment aborted.');
-        return { deployed: true, region: prefs.data.region };
-    });
-
-// All tools in a router
-const admin = f.router('admin').interactive();
-```
-
-### The `ask` Callable Namespace
-
-`ask` is both a function and a namespace with field factories:
-
-```typescript
-import { ask } from '@vurb/core';
-
-// Form mode — typed fields
-const result = await ask('Choose preferences:', {
-    name:   ask.string('Full name'),
-    plan:   ask.enum(['free', 'pro'] as const, 'Plan'),
-    age:    ask.number('Age').min(18).max(120),
-    notify: ask.boolean('Notifications').default(true),
-});
-// result.data is { name: string; plan: 'free' | 'pro'; age: number; notify: boolean }
-
-// URL mode — for OAuth / sensitive data
-await ask.redirect('Authenticate:', 'https://github.com/login/oauth');
-```
-
-### Field Types
-
-| Factory | Type | Chaining |
-|---|---|---|
-| `ask.string(desc?)` | `string` | `.default()`, `.describe()` |
-| `ask.number(desc?)` | `number` | `.default()`, `.describe()`, `.min()`, `.max()` |
-| `ask.boolean(desc?)` | `boolean` | `.default()`, `.describe()` |
-| `ask.enum(values, desc?)` | literal union | `.default()`, `.describe()` |
-
-### AskResponse
-
-```typescript
-result.accepted   // true when user submitted
-result.declined   // true when user explicitly refused
-result.cancelled  // true when user dismissed
-result.data       // T — throws ElicitationDeclinedError if not accepted
-```
-
-Always check `.accepted`, `.declined`, or `.cancelled` before accessing `.data`. Accessing `.data` on a non-accepted response throws `ElicitationDeclinedError` — fail-fast prevents silent `undefined` propagation.
-
-### Multi-Step Wizards
-
-```typescript
-.handle(async () => {
-    const s1 = await ask('Step 1:', { name: ask.string() });
-    if (s1.declined) return f.error('CANCELLED', 'Aborted.');
-
-    const s2 = await ask(`Hello ${s1.data.name}!`, { plan: ask.enum(['free', 'pro'] as const) });
-    if (s2.declined) return f.error('CANCELLED', 'Aborted.');
-
-    return { name: s1.data.name, plan: s2.data.plan };
-})
-```
-
-### Architecture
-
-`ask()` uses `AsyncLocalStorage` to read the MCP transport — bound once per request in `ServerAttachment`. No context injection (`ctx.ask()`), no overhead when unused, transport-agnostic (stdio, SSE, Streamable HTTP).
-
-The MCP client must declare `{ capabilities: { elicitation: {} } }` during initialization. The framework gracefully degrades: if `sendRequest` is unavailable, `ask()` throws `ElicitationUnsupportedError` with an actionable message.
 
 ## Prompt Engine — Powered by the Presenter
 
@@ -1335,6 +1294,14 @@ registry.configurePagination({ pageSize: 50 }); // enable pagination
 - `Presenter.getUiBlockTypes()` → string[] (read-only accessor)
 - `Presenter.hasContextualRules()` → boolean (read-only accessor)
 - `ToolRegistry.getBuilders()` → Iterable<ToolBuilder> (for introspection)
+
+### Server Card (SEP-1649 Auto-Discovery)
+- `compileServerCard(config, builders, prompts?, resources?)` → ServerCardPayload — compile registry metadata into SEP-1649 format
+- `SERVER_CARD_PATH` — `'/.well-known/mcp/server-card.json'` constant
+- `ServerCardConfig` — { name, version?, title?, description?, iconUrl?, documentationUrl?, transport?, endpoint?, protocolVersion? }
+- `ServerCardPayload` — { $schema, version, protocolVersion, serverInfo, description?, iconUrl?, documentationUrl?, transport, capabilities, tools?, prompts?, resources? }
+- `ServerCardToolEntry` — { name, description?, tags }
+- `StartServerOptions.serverCard` — `true | Omit<ServerCardConfig, 'name' | 'version' | 'transport'>` — enables auto-discovery endpoint in HTTP transport
 
 ### Streaming Progress
 - `progress(percent, message)` → ProgressEvent (yield from generator handlers)
@@ -2336,143 +2303,3 @@ await subscriptions.notify('config://app/settings');
 ```
 
 `SubscriptionManager` tracks client subscriptions per URI. `ResourceRegistry` handles `resources/list`, `resources/read`, `resources/subscribe`, and `resources/unsubscribe`. Integrates with `ServerAttachment` for automatic MCP protocol handling.
-
-## Credentials — BYOC (Bring Your Own Credentials)
-
-The Credentials API enables marketplace-publishable MCP servers to declare per-buyer credential requirements. The Vinkius marketplace prompts buyers to configure credentials before activation; the runtime injects them per-request via `globalThis.__vinkius_secrets`. Seller code never sees raw buyer credentials.
-
-### defineCredentials(schema)
-
-Declare what credentials your server needs. Read at deploy/introspect time by the marketplace:
-
-```typescript
-import { defineCredentials } from '@vurb/core';
-
-export const credentials = defineCredentials({
-  openai_key: {
-    type: 'api_key',
-    label: 'OpenAI API Key',
-    description: 'Used for GPT-4 completions.',
-    required: true,
-    sensitive: true,
-  },
-  database_url: {
-    type: 'uri',
-    label: 'PostgreSQL Connection URL',
-    required: true,
-    sensitive: true,
-    validation: {
-      pattern: '^postgres(ql)?://',
-      message: 'Must be a valid PostgreSQL URI',
-    },
-  },
-  webhook_secret: {
-    type: 'token',
-    label: 'Webhook Secret (optional)',
-    required: false,
-  },
-});
-```
-
-### Credential Types
-
-| Type | Category | Common Use |
-|---|---|---|
-| `api_key` | Secret | Stripe, SendGrid, Upstash |
-| `token` | Secret | OAuth / Bearer — Notion, GitHub |
-| `password` | Secret | MySQL, PostgreSQL, SSH |
-| `connection_string` | Connection | Structured DB DSN |
-| `uri` | Connection | Full URL — `postgres://…`, `redis://…` |
-| `hostname` | Connection | Custom domain or IP |
-| `json_config` | Structured | Service account key, full JSON config |
-| `certificate` | Structured | PEM certificates / private keys |
-| `custom` | Structured | Anything else |
-
-### CredentialSchema Fields
-
-```typescript
-interface CredentialSchema {
-  type: CredentialType        // One of the 9 types above
-  label: string               // Shown in the marketplace UI
-  description?: string        // Explanation for the buyer
-  required?: boolean          // Default: true
-  sensitive?: boolean         // Masked in UI/logs — default: true for secrets/connection types
-  placeholder?: string        // Example value shown in the input field
-  validation?: {
-    pattern: string           // Regex pre-check on buyer side
-    message?: string          // Error shown when pattern fails
-  }
-}
-```
-
-### requireCredential(name, options?)
-
-Read a credential at runtime. Resolves in order: `globalThis.__vinkius_secrets` (Cloud Edge) → `process.env[NAME.toUpperCase()]` (local) → `options.fallback`:
-
-```typescript
-import { requireCredential } from '@vurb/core';
-
-// Required (throws if missing)
-const apiKey = requireCredential('openai_key');
-
-// Optional (returns undefined if missing)
-const webhookSecret = requireCredential('webhook_secret', { required: false });
-
-// With fallback (testing / mocks)
-const dbUrl = requireCredential('database_url', { fallback: 'postgres://localhost/test' });
-```
-
-```typescript
-requireCredential(name: string, options?: {
-  fallback?: string    // Used when not found in secrets or env
-  required?: boolean   // Default: true — throws if missing; false allows undefined
-}): string | undefined
-```
-
-### Full Example
-
-```typescript
-import { defineCredentials, requireCredential, initVurb } from '@vurb/core';
-import Stripe from 'stripe';
-
-// 1. Declare credentials (read by marketplace at deploy time)
-export const credentials = defineCredentials({
-  stripe_secret_key: {
-    type: 'api_key',
-    label: 'Stripe Secret Key',
-    required: true,
-    sensitive: true,
-    placeholder: 'sk_live_...',
-    validation: { pattern: '^sk_(live|test)_', message: 'Must start with sk_live_ or sk_test_' },
-  },
-});
-
-const f = initVurb();
-
-// 2. Use credential inside handlers — never log or return the raw value
-const listPayments = f.query('payments.list')
-  .describe('List recent Stripe payments')
-  .handle(async () => {
-    const key = requireCredential('stripe_secret_key');
-    const stripe = new Stripe(key);
-    const payments = await stripe.paymentIntents.list({ limit: 10 });
-    return payments.data.map(p => ({ id: p.id, amount: p.amount, status: p.status }));
-  });
-```
-
-### Local Development
-
-Credentials resolve from env vars locally. Create a `.env` file (add to `.gitignore`):
-
-```dotenv
-OPENAI_KEY=sk-proj-...
-DATABASE_URL=postgres://localhost:5432/mydb
-STRIPE_SECRET_KEY=sk_test_...
-```
-
-### Security Notes
-
-- **Zero-knowledge** — seller code never receives raw buyer credentials during marketplace execution
-- **Server-side enforcement** — `vurb deploy` rejects bundles accessing `__vinkius_secrets`, `process.env`, `Object.keys(globalThis)`, etc. Returns HTTP 422 with structured `violations[]`
-- **Sensitive by default** — `api_key`, `token`, `password`, `connection_string`, `uri`, `certificate`, `json_config` are `sensitive: true` by default
-- **Never leak** — do not log, return, or embed credential values in tool responses

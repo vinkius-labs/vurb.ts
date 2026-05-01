@@ -21,3 +21,7 @@ export type { DevServerConfig, DevServer, DevServerSetupContext } from './DevSer
 // ── Quick Start (One-Liner Bootstrap) ────────────────────
 export { startServer } from './startServer.js';
 export type { StartServerOptions, StartServerResult, ServerTransport } from './startServer.js';
+
+// ── Server Card (SEP-1649 Auto-Discovery) ────────────────
+export { compileServerCard, SERVER_CARD_PATH } from '../introspection/ServerCard.js';
+export type { ServerCardConfig, ServerCardPayload, ServerCardToolEntry } from '../introspection/types.js';

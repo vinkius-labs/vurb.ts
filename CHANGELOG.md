@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.18.0] - 2026-05-01
+
+### Added
+
+#### `@vurb/core` — MCP Server Card: Auto-Discovery Endpoint (SEP-1649)
+
+Standard `/.well-known/mcp/server-card.json` endpoint enabling AI clients (Claude, Cursor, ChatGPT) to automatically discover, inspect, and configure MCP servers — zero manual configuration required.
+
+- **`compileServerCard(config, builders, prompts?, resources?)`** — Pure-function compiler that aggregates registry metadata (tools, prompts, resources) into the SEP-1649 `ServerCardPayload` format. Uses duck-typed interfaces (`ServerCardBuilderLike`, `PromptEntryLike`, `ResourceEntryLike`) to decouple the introspection layer from heavy registry dependencies, preventing circular imports and complex generic constraints.
+- **`ServerCardConfig`** — Configuration interface: `name`, `version?`, `title?`, `description?`, `iconUrl?`, `documentationUrl?`, `transport?` (`'streamable-http'` | `'stdio'`), `endpoint?`, `protocolVersion?`.
+- **`ServerCardPayload`** — Compiled payload interface: `$schema`, `version`, `protocolVersion`, `serverInfo`, `description?`, `iconUrl?`, `documentationUrl?`, `transport`, `capabilities`, `tools?`, `prompts?`, `resources?`.
+- **`ServerCardToolEntry`** — Tool entry interface: `name`, `description?`, `tags`.
+- **`SERVER_CARD_PATH`** — Constant: `'/.well-known/mcp/server-card.json'`.
+- **`startServer({ serverCard })` integration** — Accepts `true` (auto-generate from name/version) or `Omit<ServerCardConfig, 'name' | 'version' | 'transport'>` (custom metadata). Pre-compiles the card once at startup as a static JSON string — zero per-request overhead. Served with `Content-Type: application/json`, `Cache-Control: public, max-age=300`, `X-Content-Type-Options: nosniff`, and `Access-Control-Allow-Origin: *`.
+- **Startup log indicator** — `🏷️ Server Card at http://localhost:{port}/.well-known/mcp/server-card.json` when active.
+- **Barrel exports** — All Server Card primitives exported from `@vurb/core` root and `@vurb/core/server` sub-path.
+
+### Changed
+
+- **All `@vurb/*` cross-dependencies updated to `^3.18.0`** — Ensures consistent resolution across the monorepo.
+
+### Documentation
+
+- **`llms.txt`** — Added Server Card feature section (usage examples, config options) and public API reference (`compileServerCard`, `SERVER_CARD_PATH`, types).
+
+### Test Suite
+
+- **55 tests** in `tests/introspection/ServerCard.test.ts` covering:
+  - Happy path (16): minimal card, full metadata, stdio/http transport, custom endpoint, custom protocolVersion, mixed primitives
+  - JSON schema compliance (5): round-trip fidelity, omitted optionals, no `undefined` in JSON
+  - Adversarial inputs (11): XSS in name/description/prompts, prototype pollution, JSON injection, null-byte injection, newline injection, unicode (CJK/Cyrillic/Korean), emoji-heavy content, empty strings, 10,000-char names
+  - Edge cases (9): generator iterables, `Set` iterables, `undefined`/`null` from `buildToolDefinition()`, duplicate names, empty arrays, mixed builder types, tag ordering preservation
+  - Scale (4): 1,000 tools, 10,000 tools stress, 100 prompts + 100 resources, JSON.stringify at scale
+  - Idempotency (3): frozen config, no input mutations, deterministic output
+  - Type contract (6): required fields always present, correct types
+
 ## [3.17.3] - 2026-04-30
 
 ### Fixed
