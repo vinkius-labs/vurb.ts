@@ -327,8 +327,10 @@ Each `with*()` call narrows the TypeScript generic `TInput` — the IDE provides
 | `.withOptionalBoolean(name, desc?)` | `Partial<Record<K, boolean>>` |
 | `.withEnum(name, values, desc?)` | `Record<K, V>` (literal union) |
 | `.withOptionalEnum(name, values, desc?)` | `Partial<Record<K, V>>` |
-| `.withArray(name, itemType, desc?)` | `Record<K, T[]>` |
-| `.withOptionalArray(name, itemType, desc?)` | `Partial<Record<K, T[]>>` |
+| `.withArray(name, itemType, desc?)` | `Record<K, T[]>` |\r
+| `.withOptionalArray(name, itemType, desc?)` | `Partial<Record<K, T[]>>` |\r
+| `.withJson(name, desc?)` | `Record<K, Record<string, unknown>>` |\r
+| `.withOptionalJson(name, desc?)` | `Partial<Record<K, Record<string, unknown>>>` |
 
 ### FluentToolBuilder — Bulk with*() Methods
 
