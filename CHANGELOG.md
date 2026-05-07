@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.5] - 2026-05-07
+
+### Added
+
+- **`@vurb/core` README Update** — Simplified and realigned the core package README to match the new framework positioning, prioritizing "The TypeScript framework for MCP Servers", declarative YAML execution, and the Presenter MVA flow over internal documentation bloat.
+
 ## [3.19.4] - 2026-05-07
 
 ### Added
