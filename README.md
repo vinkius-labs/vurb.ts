@@ -263,7 +263,22 @@ Full guides, API reference, and cookbook recipes:
 
 **[vurb.vinkius.com](https://vurb.vinkius.com/)** · **[llms.txt](https://vurb.vinkius.com/llms.txt)** *(AI-optimized spec)*
 
+---
+
+## 💬 Community
+
+Built something with Vurb.ts? Hit a weird edge case? Want to see what others are shipping?
+
+[![Discord](https://img.shields.io/badge/Discord-Join%20the%20builders-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/pKEdyxAYD)
+
+**[Join the Vinkius Discord →](https://discord.gg/pKEdyxAYD)**
+
+This is where MCP builders share what they're working on, ask questions about Presenters and FSM gating, and get direct access to the team. If you're building something serious with Vurb.ts, you'll want to be here.
+
+---
+
 ## Contributing
+
 
 See [CONTRIBUTING.md](https://github.com/vinkius-labs/vurb.ts/blob/main/CONTRIBUTING.md) for development setup and guidelines.
 
