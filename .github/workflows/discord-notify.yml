@@ -1,0 +1,61 @@
+name: Discord Notifications
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify-commit:
+    name: Notify Discord — commit on main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          AUTHOR_NAME: ${{ github.event.head_commit.author.name }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          COMPARE_URL: ${{ github.event.compare }}
+          COMMIT_COUNT: ${{ github.event.commits && toJson(github.event.commits) }}
+        run: |
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+
+          # First line of commit message only
+          TITLE=$(echo "$COMMIT_MESSAGE" | head -1)
+          # Truncate if too long
+          [ ${#TITLE} -gt 80 ] && TITLE="${TITLE:0:80}..."
+
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"[\`${SHORT_SHA}\`] ${TITLE}\",
+                \"url\": \"${COMMIT_URL}\",
+                \"color\": 3447003,
+                \"fields\": [
+                  {
+                    \"name\": \"Author\",
+                    \"value\": \"${AUTHOR_NAME}\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Branch\",
+                    \"value\": \"\`${BRANCH}\`\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Diff\",
+                    \"value\": \"[View changes](${COMPARE_URL})\",
+                    \"inline\": true
+                  }
+                ],
+                \"footer\": {
+                  \"text\": \"${REPO}\"
+                },
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }"

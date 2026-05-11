@@ -125,3 +125,38 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         continue-on-error: true
+
+      - name: Notify Discord — new release
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          # Truncate body to 300 chars to keep embed clean
+          BODY="${RELEASE_BODY:0:300}"
+          [ ${#RELEASE_BODY} -gt 300 ] && BODY="${BODY}..."
+
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🚀 Vurb.ts ${RELEASE_TAG} released\",
+                \"url\": \"${RELEASE_URL}\",
+                \"description\": \"${BODY//$'\"'/\\\\\"}\",
+                \"color\": 5763719,
+                \"fields\": [
+                  {
+                    \"name\": \"Install\",
+                    \"value\": \"\\\`\\\`\\\`bash\\nnpm install @vurb/core@${RELEASE_TAG}\\n\\\`\\\`\\\`\",
+                    \"inline\": false
+                  }
+                ],
+                \"footer\": {
+                  \"text\": \"vinkius-labs/vurb.ts\"
+                },
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }"
