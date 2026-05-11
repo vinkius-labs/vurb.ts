@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/vinkius-labs-vurb-ts-badge.png)](https://mseep.ai/app/vinkius-labs-vurb-ts)
+
 <div align="center">
 
 <picture>
