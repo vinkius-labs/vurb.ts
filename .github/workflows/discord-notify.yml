@@ -14,127 +14,72 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Gather commit metadata
-        id: meta
-        run: |
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          COMMIT_TITLE=$(git log -1 --format="%s")
-          COMMIT_BODY=$(git log -1 --format="%b" | head -10)
-          AUTHOR_LOGIN="${{ github.event.head_commit.author.username }}"
-          # Fallback: derive from pusher
-          if [ -z "$AUTHOR_LOGIN" ]; then
-            AUTHOR_LOGIN="${{ github.actor }}"
-          fi
-          AUTHOR_NAME="${{ github.event.head_commit.author.name }}"
-          COMMIT_COUNT="${{ github.event.forced == true && '(forced push)' || '' }}"
-          TOTAL_COMMITS=$(echo '${{ toJson(github.event.commits) }}' | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "1")
-
-          # File stats
-          STAT=$(git diff --shortstat HEAD~1 HEAD 2>/dev/null || echo "")
-          FILES_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | head -6)
-          TOTAL_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | wc -l | tr -d ' ')
-
-          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "commit_title=$COMMIT_TITLE" >> $GITHUB_OUTPUT
-          echo "author_login=$AUTHOR_LOGIN" >> $GITHUB_OUTPUT
-          echo "author_name=$AUTHOR_NAME" >> $GITHUB_OUTPUT
-          echo "total_commits=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
-          echo "total_files=$TOTAL_FILES" >> $GITHUB_OUTPUT
-
-          # Multi-line outputs
-          {
-            echo "commit_body<<EOF"
-            echo "$COMMIT_BODY"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-
-          {
-            echo "files_changed<<EOF"
-            echo "$FILES_CHANGED"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-
-          {
-            echo "stat<<EOF"
-            echo "$STAT"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-
       - name: Send Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          SHORT_SHA:       ${{ github.sha }}
+          COMMIT_TITLE:    ${{ github.event.head_commit.message }}
+          COMMIT_URL:      ${{ github.event.head_commit.url }}
+          COMPARE_URL:     ${{ github.event.compare }}
+          AUTHOR_NAME:     ${{ github.event.head_commit.author.name }}
+          AUTHOR_LOGIN:    ${{ github.actor }}
+          BRANCH:          ${{ github.ref_name }}
+          REPO:            ${{ github.repository }}
         run: |
-          python3 << 'PYEOF'
-          import json, os, urllib.request, urllib.error
-          from datetime import datetime, timezone
+          SHORT="${SHORT_SHA:0:7}"
+          TITLE=$(echo "$COMMIT_TITLE" | head -1 | cut -c1-80)
+          STAT=$(git diff --shortstat HEAD~1 HEAD 2>/dev/null || echo "")
+          AVATAR="https://avatars.githubusercontent.com/${AUTHOR_LOGIN}?size=64"
 
-          webhook = os.environ["DISCORD_WEBHOOK"]
+          python3 - <<PYEOF
+import json, os, urllib.request, urllib.error
+from datetime import datetime, timezone
 
-          short_sha   = "${{ steps.meta.outputs.short_sha }}"
-          commit_title = """${{ steps.meta.outputs.commit_title }}"""
-          commit_body  = """${{ steps.meta.outputs.commit_body }}""".strip()
-          author_login = "${{ steps.meta.outputs.author_login }}"
-          author_name  = "${{ steps.meta.outputs.author_name }}"
-          branch       = "${{ github.ref_name }}"
-          repo         = "${{ github.repository }}"
-          compare_url  = "${{ github.event.compare }}"
-          commit_url   = "${{ github.event.head_commit.url }}"
-          total_commits = "${{ steps.meta.outputs.total_commits }}"
-          total_files   = "${{ steps.meta.outputs.total_files }}"
-          stat          = """${{ steps.meta.outputs.stat }}""".strip()
-          files_raw     = """${{ steps.meta.outputs.files_changed }}""".strip()
+webhook      = os.environ["DISCORD_WEBHOOK"]
+short_sha    = os.environ["SHORT_SHA"][:7]
+title        = os.environ["COMMIT_TITLE"].splitlines()[0][:80]
+commit_url   = os.environ["COMMIT_URL"]
+compare_url  = os.environ["COMPARE_URL"]
+author_name  = os.environ["AUTHOR_NAME"]
+author_login = os.environ["AUTHOR_LOGIN"]
+branch       = os.environ["BRANCH"]
+repo         = os.environ["REPO"]
+stat         = os.environ.get("STAT", "").strip()
+avatar       = os.environ["AVATAR"]
 
-          # Build files list
-          files = [f for f in files_raw.splitlines() if f.strip()]
-          total_f = int(total_files) if total_files.isdigit() else len(files)
-          displayed = files[:5]
-          files_value = "\n".join(f"`{f}`" for f in displayed)
-          if total_f > 5:
-              files_value += f"\n_…and {total_f - 5} more_"
-          if not files_value:
-              files_value = "_No file data available_"
+fields = [
+    {"name": "🌿 Branch",  "value": f"\`{branch}\`", "inline": True},
+    {"name": "👤 Author",  "value": author_name,      "inline": True},
+    {"name": "🔗 Compare", "value": f"[View diff]({compare_url})", "inline": True},
+]
+if stat:
+    fields.append({"name": "📊 Diff", "value": stat, "inline": False})
 
-          # Stat line (e.g. "2 files changed, 96 insertions(+)")
-          stat_value = stat if stat else "—"
+payload = {
+    "embeds": [{
+        "author": {
+            "name": f"@{author_login}",
+            "url":  f"https://github.com/{author_login}",
+            "icon_url": avatar,
+        },
+        "title":  f"[{short_sha}] {title}",
+        "url":    commit_url,
+        "color":  6365423,
+        "fields": fields,
+        "footer": {
+            "text":     repo,
+            "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+        },
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }]
+}
 
-          # Description: body only if it exists
-          description = f"```\n{commit_body[:300]}\n```" if commit_body else ""
-
-          # Avatar URL
-          avatar_url = f"https://avatars.githubusercontent.com/{author_login}?size=64" if author_login else "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-
-          payload = {
-            "embeds": [{
-              "author": {
-                "name": f"{author_name} (@{author_login})",
-                "url": f"https://github.com/{author_login}",
-                "icon_url": avatar_url
-              },
-              "title": f"[{short_sha}] {commit_title[:80]}{'...' if len(commit_title) > 80 else ''}",
-              "url": commit_url,
-              "description": description,
-              "color": 6365423,
-              "fields": [
-                {"name": "🌿 Branch",   "value": f"`{branch}`",      "inline": True},
-                {"name": "📦 Commits",  "value": total_commits,       "inline": True},
-                {"name": "📝 Files",    "value": total_files,         "inline": True},
-                {"name": "📊 Diff",     "value": stat_value,          "inline": False},
-                {"name": "🗂️ Changed",  "value": files_value,         "inline": False},
-              ],
-              "footer": {
-                "text": f"{repo}",
-                "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-              },
-              "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            }]
-          }
-
-          data = json.dumps(payload).encode("utf-8")
-          req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
-          try:
-              urllib.request.urlopen(req)
-              print("✅ Discord notified")
-          except urllib.error.HTTPError as e:
-              print(f"❌ Discord error: {e.code} {e.read()}")
-              raise
-          PYEOF
+data = json.dumps(payload).encode("utf-8")
+req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"})
+try:
+    urllib.request.urlopen(req)
+    print("Discord notified OK")
+except urllib.error.HTTPError as e:
+    print(f"Discord error: {e.code} {e.read().decode()}")
+    raise
+PYEOF
